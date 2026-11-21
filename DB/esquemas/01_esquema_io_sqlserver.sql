@@ -272,7 +272,7 @@ CREATE TABLE dbo.PrestamoProductos (
     tienda_aliada            NVARCHAR(120)     NOT NULL,
     cantidad                 INT               NOT NULL,
     fecha_salida             DATETIME2(0)      NOT NULL CONSTRAINT DF_Prestamo_Salida DEFAULT (SYSDATETIME()),
-    plazo_dias               TINYINT           NOT NULL CONSTRAINT DF_Prestamo_Plazo DEFAULT (30), -- RN-PRE-02
+    plazo_dias               TINYINT           NOT NULL CONSTRAINT DF_Prestamo_Plazo DEFAULT (7), -- RN-PRE-02: máx. 7 días (1 semana)
     fecha_vencimiento        AS (DATEADD(DAY, plazo_dias, CAST(fecha_salida AS DATE))) PERSISTED,
     estado                   NVARCHAR(30)      NOT NULL CONSTRAINT DF_Prestamo_Estado DEFAULT (N'En Consignación'),
     gerente_disponible       BIT               NOT NULL CONSTRAINT DF_Prestamo_Gerente DEFAULT (1),
@@ -283,7 +283,7 @@ CREATE TABLE dbo.PrestamoProductos (
     CONSTRAINT FK_Prestamo_Producto FOREIGN KEY (producto_id) REFERENCES dbo.Producto(producto_id),
     CONSTRAINT FK_Prestamo_Empleado FOREIGN KEY (empleado_autorizador_id) REFERENCES dbo.Empleado(empleado_id),
     CONSTRAINT CK_Prestamo_Cantidad CHECK (cantidad > 0),
-    CONSTRAINT CK_Prestamo_Plazo CHECK (plazo_dias BETWEEN 1 AND 30),
+    CONSTRAINT CK_Prestamo_Plazo CHECK (plazo_dias BETWEEN 1 AND 7), -- RN-PRE-02: máx. 7 días (1 semana)
     CONSTRAINT CK_Prestamo_Estado CHECK (
         estado IN (N'En Consignación', N'Devuelto Intacto', N'Liquidado', N'Facturado por Deterioro')
     ),

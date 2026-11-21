@@ -33,7 +33,7 @@ Esta capa alojará las interfaces de usuario centradas en la persona, responsiva
    * Generación en 1 clic de **Guía de Envío** con código de seguimiento único y registro de hasta 2 intentos de entrega (`RN-ENV-01` a `RN-ENV-03`).
    * Lista de chequeo física contra Guía de Remisión para ingreso de `PedidoProveedor` (`RN-COM-03`) y alertas de stock $\le 5$ unidades (`RN-INV-03`).
 4. **Módulo de Préstamos en Consignación (`M06` — `CUN06`):**
-   * Flujo guiado *Poka-Yoke* (`DD-02`) con conmutador **"¿Gerente disponible?"**: en ausencia del Dueño, habilita al **Almacenero** para emitir la **Constancia Formal de Préstamo (`RN-PRE-01`)** con vencimiento máximo de 30 días (`RN-PRE-02`) y estado *"En Consignación"* (`RN-PRE-03`).
+   * Flujo guiado *Poka-Yoke* (`DD-02`) con conmutador **"¿Gerente disponible?"**: en ausencia del Dueño, habilita al **Almacenero** para emitir la **Constancia Formal de Préstamo (`RN-PRE-01`)** con vencimiento máximo de 7 días (`RN-PRE-02`) y estado *"En Consignación"* (`RN-PRE-03`).
 5. **Dashboard Interactivo Gerencial y Planilla (`M07`, `M08` — `CUN07`, `IHC 7.8` & `C3.3`):**
    * Tarjetas KPI en tiempo real, semáforo de préstamos y gráficos con paleta **colorblind-safe Okabe-Ito** + tramas + tablas equivalentes para lectores de pantalla.
    * Módulo de liquidación mensual de planilla con panel de verificación previa de **liquidez bancaria (`RN-FIN-02`)**.
