@@ -1,0 +1,91 @@
+# ==============================================================================
+# .gitignore RAÍZ – PROYECTO OMNICANAL EMPRESA I&O
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. REGLA CRÍTICA: AISLAMIENTO DE REPOSITORIOS ACADÉMICOS INDEPENDIENTES
+# ------------------------------------------------------------------------------
+# Los dos cursos de la UPN dentro de documentos/ mantienen sus propios .git
+# independientes y equipos diferenciados. Ignorarlos aquí evita conflictos si
+# se inicializa un repositorio Git en la raíz para versionar frontend/, backend/ y DB/.
+documentos/
+documentos/Model Soft Proyecto/
+documentos/Interaccion Humano Com Proyecto/
+documentos/model soft proyecto/
+documentos/interaccion human com proyecto/
+
+# ------------------------------------------------------------------------------
+# 2. VARIABLES DE ENTORNO, SECRETOS Y CREDENCIALES (PCI-DSS / LEY N° 29733)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ------------------------------------------------------------------------------
+# 3. DEPENDENCIAS, COMPILADOS Y CACHÉ DE STACKS FUTUROS (JS/TS, PYTHON, JAVA, .NET)
+# ------------------------------------------------------------------------------
+node_modules/
+jspm_packages/
+.pnp
+.pnp.js
+
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+.angular/
+.cache/
+.parcel-cache/
+.turbo/
+coverage/
+
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+target/
+.gradle/
+bin/
+obj/
+
+# ------------------------------------------------------------------------------
+# 4. ARCHIVOS LOCALES DE BASE DE DATOS Y RESPALDOS TEMPORALES
+# ------------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+*.bak
+*.dump
+
+# ------------------------------------------------------------------------------
+# 5. LOGS, SISTEMA OPERATIVO, OFFICE Y EDITORES
+# ------------------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+*.tmp
+*.swp
+*.swo
+.vscode/
+.idea/
+.agents/

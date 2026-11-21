@@ -1,0 +1,12 @@
+Hola, vamos a continuar con el proyecto general de la empresa I&O en este workspace raíz (I&O E-Comerce).
+
+Por favor lee primero `AGENTS.md` y `ESTADO_GLOBAL_PROYECTO.md` en la raíz para recuperar el contexto completo.
+
+Recuerda las reglas clave del workspace:
+1. Estructura unificada: `documentos/` contiene los dos cursos académicos UPN con repositorios `.git` independientes que NO deben mezclarse ni alterarse (`documentos/Model Soft Proyecto/` con 5 integrantes; `documentos/Interaccion Humano Com Proyecto/` exclusivo de Olver Daniel Andrade Chirinos `N00401718` y Josue Daniel Razuri Paredes `N00421512`). El `.gitignore` raíz protege `documentos/`.
+2. Autores exclusivos del proyecto general, IHC y futuro código (`frontend/`, `backend/`, `DB/`): únicamente **ANDRADE CHIRINOS, Olver Daniel (`N00401718`)** y **RAZURI PAREDES, Josue Daniel (`N00421512`)**.
+3. Stacks aprobados en `ESTADO_GLOBAL_PROYECTO.md` (`20/11/2026`): Frontend **React + Vite + TypeScript**, Backend **Node.js + Express (TypeScript)** y Base de Datos **Microsoft SQL Server**.
+4. Todo desarrollo futuro debe sincronizarse estrictamente con los 7 CUNs, las 12 entidades aprobadas (herencia en `Pedido`/`DetallePedido` y `stock` en `Producto`), las 42 reglas operativas (incluyendo `RN-PRE-01`: Constancia Formal de Préstamo emitida por el Almacenero en ausencia del gerente) y las 6 reglas de accesibilidad WCAG 2.1 AA (`RN-ACC-01` a `RN-ACC-06`).
+5. Actualiza `ESTADO_GLOBAL_PROYECTO.md` en cada sesión en que avancemos arquitectura, stacks o módulos.
+
+¿Qué haremos hoy? (Revisar entregables en `documentos/`, diseñar contratos en `frontend/docs_ui/`, `backend/docs_api/`, `DB/esquemas/` o iniciar los módulos `M01`–`M08`).
