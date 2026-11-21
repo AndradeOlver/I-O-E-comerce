@@ -1,6 +1,6 @@
 # ⚙️ Backend – Sistema Omnicanal I&O (`1.3 backend/`)
 
-> **Estado Actual:** ⏳ **Esqueleto Inicializado — Stack Tecnológico por Elegir** *(prohibido crear archivos `.ts`, `.js`, `.py`, `.java`, `.cs` hasta aprobar el stack en [ESTADO_GLOBAL_PROYECTO.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/ESTADO_GLOBAL_PROYECTO.md))*  
+> **Estado Actual:** ✅ **Stack Aprobado: Node.js + Express (TypeScript)** — Aprobado el `20/11/2026` en [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md)  
 > **Autores Exclusivos:** **ANDRADE CHIRINOS, Olver Daniel (`N00401718`)** y **RAZURI PAREDES, Josue Daniel (`N00421512`)**  
 > **Fuentes de Verdad:**  
 > * Reglas y procesos RUP: `../documentos/Model Soft Proyecto/Informacion del negocio/03_Reglas_de_Negocio_IO.md`  
@@ -51,9 +51,9 @@ El servidor implementará la lógica transaccional y APIs de los **7 Casos de Us
 
 ---
 
-## ⚖️ Opciones de Stack Tecnológico a Elegir
+## ⚖️ Stack Tecnológico Aprobado
 
-La decisión final se registrará en la Sección 2.2 de [ESTADO_GLOBAL_PROYECTO.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/ESTADO_GLOBAL_PROYECTO.md):
-* **Opción A:** Node.js + Express o NestJS + TypeScript.
-* **Opción B:** Python + FastAPI o Django.
-* **Opción C:** Java Spring Boot / C# ASP.NET Core.
+Decisión registrada en la Sección 2.2 de [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md) (`20/11/2026`):
+* **Opción A:** **Node.js + Express (TypeScript)** *(✅ Aprobado)*.
+* **Opción B:** Python + FastAPI o Django *(⬜ Descartada)*.
+* **Opción C:** Java Spring Boot / C# ASP.NET Core *(⬜ Descartada)*.

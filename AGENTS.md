@@ -17,9 +17,9 @@ Toda decisión arquitectónica o funcional debe consultar la fuente autorizada s
 |---|---|---|
 | **Procesos de Negocio y Modelado RUP/UML** | `documentos/Model Soft Proyecto/Informacion del negocio/` (y `ESTADO_PROYECTO.md`) | **7 Casos de Uso de Negocio (`CUN01`–`CUN07`)**, **12 Entidades aprobadas con herencia (`EN01`–`EN12`)**, **42 Reglas de Negocio (`RN-*`)**, Glosario (45 términos), ECUN y Ficha YAML. |
 | **UX/UI, Accesibilidad WCAG 2.1 AA y RE3** | `documentos/Interaccion Humano Com Proyecto/Informacion_IHC/` (y `ESTADO_PROYECTO_IHC.md`) | **5 Hallazgos (`H01`–`H05`)**, **10 RF priorizados**, **10 Historias de Usuario**, **48 Reglas (42 I&O + 6 `RN-ACC-01` a `RN-ACC-06`)**, 6 User Personas, Guía de Estilos (`#0F2043`, `#FFC000`, `#F8FAFC`), Design Sprint (`SUS 88.5`, `SEQ 6.4`, `Éxito 96.4%`) y Rúbrica RE3 (`C3.1`, `C3.2`, `C3.3`). |
-| **Capa de Presentación (`frontend/`)** | `frontend/` y `frontend/docs_ui/` | Prototipos de interfaz, Guía de Estilos WCAG 2.1 AA/AAA, vistas POS/E-commerce/Almacén/Préstamos y Dashboard Okabe-Ito *(stack aún por elegir)*. |
-| **Capa de Lógica y API (`backend/`)** | `backend/` y `backend/docs_api/` | Contratos de API, control RBAC (5 roles), validación de las 42 reglas de negocio, integraciones tokenizadas PCI-DSS y auditoría *(stack aún por elegir)*. |
-| **Capa de Persistencia (`DB/`)** | `DB/`, `DB/esquemas/` y `DB/seeds/` | Diccionario físico de las 12 entidades con herencia (`Pedido`/`DetallePedido`), restricciones ACID y datos de prueba *(motor aún por elegir)*. |
+| **Capa de Presentación (`frontend/`)** | `frontend/` y `frontend/docs_ui/` | Prototipos de interfaz, Guía de Estilos WCAG 2.1 AA/AAA, vistas POS/E-commerce/Almacén/Préstamos y Dashboard Okabe-Ito (**Stack aprobado:** `React + Vite + TypeScript + Bootstrap 5.3`). |
+| **Capa de Lógica y API (`backend/`)** | `backend/` y `backend/docs_api/` | Contratos de API, control RBAC (5 roles), validación de las 42 reglas de negocio, integraciones tokenizadas PCI-DSS y auditoría (**Stack aprobado:** `Node.js + Express (TypeScript)`). |
+| **Capa de Persistencia (`DB/`)** | `DB/`, `DB/esquemas/` y `DB/seeds/` | Diccionario físico de las 12 entidades con herencia (`Pedido`/`DetallePedido`), restricciones ACID y datos de prueba (**Motor aprobado:** `Microsoft SQL Server (T-SQL)`). |
 
 ---
 
@@ -33,22 +33,24 @@ Toda decisión arquitectónica o funcional debe consultar la fuente autorizada s
    * Queda prohibido atribuir autoría del proyecto general, del curso IHC o del futuro código fuente a terceros fuera de Olver Andrade y Josue Razuri.
 
 2. **Aislamiento de Repositorios `.git`:**
-   * Los dos directorios dentro de `documentos/` poseen **repositorios `.git` independientes** (`documentos/Model Soft Proyecto/.git` conectado a `MoAnSo_G2.git`, y `documentos/Interaccion Humano Com Proyecto/.git` local).
+   * Los dos directorios dentro de `documentos/` poseen **repositorios `.git` independientes** (`documentos/Model Soft Proyecto/.git` conectado a `MoAnSo_G2.git`, y `documentos/Interaccion Humano Com Proyecto/.git` conectado a `IHC_G3.git`).
    * **Prohibido tocar, mover, eliminar o fusionar** los `.git` internos de `documentos/`.
    * Todo comando `git` destinado a cualquiera de los dos cursos **debe ejecutarse explícitamente dentro de la subcarpeta correspondiente** (mediante `cd` o `git -C "<subcarpeta>"`).
-   * El archivo `.gitignore` de la raíz ignora explícitamente `documentos/` para garantizar que un futuro repositorio Git en la raíz (destinado exclusivamente a `frontend/`, `backend/` y `DB/`) jamás interfiera con los repositorios académicos.
+   * El archivo `.gitignore` de la raíz ignora explícitamente `documentos/` para garantizar que el repositorio Git de la raíz (`I-O-E-comerce.git`, destinado exclusivamente a `frontend/`, `backend/` y `DB/`) jamás interfiera con los repositorios académicos.
 
 ---
 
-### 3. Regla de No Anticipación de Stack Tecnológico
-* Mientras en `ESTADO_GLOBAL_PROYECTO.md` los stacks de `frontend/`, `backend/` y `DB/` permanezcan como **Pendiente de Elección**:
-  * **NO crear** archivos de código fuente de implementación (`.html`, `.css`, `.ts`, `.tsx`, `.js`, `.py`, `.java`, `.cs`, `.sql`, etc.) dentro de `frontend/`, `backend/` o `DB/`.
-  * Trabajar únicamente en documentación arquitectónica (`docs_ui/`, `docs_api/`, `README.md`), contratos conceptuales o en los entregables documentales dentro de `documentos/` cuando el usuario lo solicite.
+### 3. Regla de Respeto a los Stacks Tecnológicos Aprobados
+* Los stacks oficiales aprobados el `20/11/2026` en `ESTADO_GLOBAL_PROYECTO.md` son:
+  * **`frontend/`:** `React + Vite + TypeScript + Bootstrap 5.3` (HTML5 Semántico / CSS3).
+  * **`backend/`:** `Node.js + Express (TypeScript)`.
+  * **`DB/`:** `Microsoft SQL Server (T-SQL)`.
+* **NO introducir** frameworks, lenguajes o motores distintos (ej. Angular, Vue, Python/Django, Java, PostgreSQL, MySQL) sin aprobación explícita previa de Olver y Josue registrada en `ESTADO_GLOBAL_PROYECTO.md`.
 
 ---
 
-### 4. Sincronización Documentación ↔ Código (Cuando se Elijan los Stacks)
-Cuando Olver y Josue aprueben los stacks tecnológicos en la Mesa de Decisión e inicien la construcción en `frontend/`, `backend/` y `DB/`, toda implementación deberá respetar sin excepción:
+### 4. Sincronización Documentación ↔ Código
+Con los stacks tecnológicos aprobados en la Mesa de Decisión, toda implementación en `frontend/`, `backend/` y `DB/` deberá respetar sin excepción:
 1. **Los 7 Procesos de Negocio (`CUN01`–`CUN07`):** Venta en Tienda, Venta Online, Envíos, Compra de Mercadería, Marketing, Préstamo de Productos y Pago de Planilla (más el Módulo transversal `M08` de Dashboard y Accesibilidad).
 2. **Las 12 Entidades Aprobadas (`EN01`–`EN12`):**
    * Herencia obligatoria en **`Pedido`** (`PedidoCliente`, `PedidoProveedor`) y **`DetallePedido`** (`DetallePedidoCliente`, `DetallePedidoProveedor`).

@@ -43,9 +43,9 @@ Toda implementación relacional futura deberá respetar estrictamente las **12 e
 
 ---
 
-## 🛠️ Lineamientos Físicos para Cuando se Elija el Motor de BD
+## 🛠️ Lineamientos Físicos en Microsoft SQL Server (T-SQL)
 
-1. **Estrategia de Herencia (`Pedido` y `DetallePedido`):** Evaluar entre *Class Table Inheritance* (tablas padre `pedido` / `detalle_pedido` + tablas hijas con FK compartida) o *Single Table Inheritance* con discriminador `tipo_pedido`, priorizando integridad referencial para `MovimientoFinanciero`.
+1. **Estrategia de Herencia (`Pedido` y `DetallePedido`):** *Class Table Inheritance* (tablas padre `Pedido` / `DetallePedido` + tablas hijas con FK compartida) garantizando integridad referencial para `MovimientoFinanciero`.
 2. **Soporte Transversal de Seguridad y Reglas:**
    * Tabla/entidad operativa auxiliar para **Bitácora de Auditoría Inmutable (*Audit Log*)** (`RN-SEG-03`: usuario, rol, acción, fecha/hora, detalle de Constancia `RN-PRE-01` o anulación `RN-TRI-03`).
    * **Prohibición PCI-DSS (`RN-SEG-02`):** Ninguna columna almacenará PAN completo ni CVV de tarjetas; únicamente identificador/referencia tokenizada de la pasarela.
@@ -53,9 +53,9 @@ Toda implementación relacional futura deberá respetar estrictamente las **12 e
 
 ---
 
-## ⚖️ Opciones de Motor de Base de Datos a Elegir
+## ⚖️ Motor de Base de Datos Aprobado
 
-La decisión final se registrará en la Sección 2.3 de [ESTADO_GLOBAL_PROYECTO.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/ESTADO_GLOBAL_PROYECTO.md):
-* **Opción A:** PostgreSQL *(recomendado por robustez ACID, CHECK constraints y auditoría)*.
-* **Opción B:** MySQL / MariaDB (motor InnoDB).
-* **Opción C:** SQL Server / SQLite.
+Decisión registrada en la Sección 2.3 de [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md) (`20/11/2026`):
+* **Opción A:** PostgreSQL *(⬜ Descartada)*.
+* **Opción B:** MySQL / MariaDB (motor InnoDB) *(⬜ Descartada)*.
+* **Opción C:** **Microsoft SQL Server (T-SQL)** *(✅ Aprobado — DDL y seeds en `esquemas/` y `seeds/`)*.
