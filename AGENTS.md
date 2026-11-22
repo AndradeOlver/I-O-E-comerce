@@ -40,12 +40,29 @@ Toda decisión arquitectónica o funcional debe consultar la fuente autorizada s
 
 ---
 
-### 3. Regla de Respeto a los Stacks Tecnológicos Aprobados
+### 3. Regla de Respeto a los Stacks Tecnológicos y Arquitectura Aprobada
 * Los stacks oficiales aprobados el `20/11/2026` en `ESTADO_GLOBAL_PROYECTO.md` son:
   * **`frontend/`:** `React + Vite + TypeScript + Bootstrap 5.3` (HTML5 Semántico / CSS3).
   * **`backend/`:** `Node.js + Express (TypeScript)`.
   * **`DB/`:** `Microsoft SQL Server (T-SQL)`.
 * **NO introducir** frameworks, lenguajes o motores distintos (ej. Angular, Vue, Python/Django, Java, PostgreSQL, MySQL) sin aprobación explícita previa de Olver y Josue registrada en `ESTADO_GLOBAL_PROYECTO.md`.
+
+#### 3.1. Arquitectura y Modelo de Construcción Incremental del Backend (`backend/`)
+Todo desarrollo dentro de `backend/` debe seguir obligatoriamente la arquitectura detallada en [backend/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/backend/README.md) y en la skill [.agents/skills/arquitectura-backend-io/SKILL.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/.agents/skills/arquitectura-backend-io/SKILL.md):
+1. **Patrón Arquitectónico:** **Monolito Modular por Dominio (*Feature-Sliced*)** bajo `backend/src/modules/` (9 módulos: `auth`, `catalogo`, `m01-ventas-pos`, `m02-ecommerce`, `m03-envios`, `m04-compras`, `m05-marketing`, `m06-prestamos`, `m07-finanzas-planilla`, `m08-dashboard`), separando cada módulo en 4 capas estrictas:
+   * `*.schema.ts` (**Zod** para validación y DTOs) → `*.routes.ts` (middlewares `authenticate`, `requireRole`, `validate`) → `*.controller.ts` (HTTP) → `*.service.ts` (42 reglas de negocio, `decimal.js`, transacciones y auditoría) → `*.repository.ts` (consultas T-SQL).
+2. **Acceso a Datos sin ORM Pesado:** Usar el driver nativo **`mssql` (`tedious`)** con consultas T-SQL parametrizadas y repositorios tipados para respetar íntegramente la herencia Tabla-por-Tipo (`Pedido`/`DetallePedido`), columnas `PERSISTED`, índices filtrados y triggers de `DB/esquemas/01_esquema_io_sqlserver.sql`.
+3. **5 Mecanismos Transversales Obligatorios (`backend/src/shared/` y `config/`):**
+   * **Transacciones ACID y Concurrencia (`withTransaction`):** Descuento atómico de stock (`WHERE stock >= @qty` / `UPDLOCK, ROWLOCK`) en `Pedido` + `DetallePedido` + `Producto` (`RN-VEN-06`) y job `node-cron` cada 1 minuto para liberar carritos expirados a los 15 minutos (`RN-ECO-03`).
+   * **Auditoría Atómica (`auditService.log(tx, ...)`):** Toda operación crítica (especialmente la **Constancia Formal de Préstamo emitida por el Almacenero sin gerente en `RN-PRE-01`**, anulaciones `RN-TRI-03` y cierres de planilla `RN-FIN-05`) debe registrar su evento en `dbo.AuditLog` dentro de la **misma transacción SQL** (`RN-SEG-03`).
+   * **Errores Tipados para Accesibilidad (`sqlErrorMapper` + `BusinessRuleError`):** Traducir violaciones de reglas y constraints/triggers de SQL Server a un JSON uniforme (`{ ok: false, ruleCode: "RN-*", error, message, field }`) listo para alertas *Poka-Yoke* y regiones `aria-live` en React.
+   * **Precisión Monetaria (`decimal.js`):** Prohibido calcular IGV (`18%`), descuentos ($\le 10\%$) o planilla con punto flotante nativo de JavaScript.
+   * **Seguridad RBAC y PCI-DSS:** JWT + `bcryptjs`/`argon2` para los 5 roles internos (`TN01`–`TN05`) y clientes (`AN01`), y webhooks de pago idempotentes almacenando solo `token_pasarela_ref` (cero PAN/CVV, `RN-SEG-02`).
+4. **Construcción Incremental por Fases (No monolito de golpe):** Construir y verificar el backend paso a paso siguiendo las 4 fases de `backend/README.md`:
+   * **Fase 0 (Cimientos y Contratos):** `docs_api/` (`openapi.yaml`, matriz RBAC), configuración base Express+TS+`mssql`, `shared/`, `/api/health`, `auth/` y `catalogo/`.
+   * **Fase 1 (Núcleo Comercial):** `m01-ventas-pos` (`CUN01`) y `m02-ecommerce` (`CUN02` + cron 15 min).
+   * **Fase 2 (Operación Interna):** `m03-envios` (`CUN03`), `m04-compras` (`CUN04`) y `m06-prestamos` (`CUN06` — `RN-PRE-01` y plazo máx. 7 días `RN-PRE-02`).
+   * **Fase 3 (Marketing, Planilla y KPIs):** `m05-marketing` (`CUN05`), `m07-finanzas-planilla` (`CUN07`) y `m08-dashboard` (`M08`).
 
 ---
 
