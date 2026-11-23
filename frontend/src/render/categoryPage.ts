@@ -56,8 +56,8 @@ export function renderCategoryPage({
         </a>
       </div>
 
-      <header class="mb-4 pb-3 border-bottom">
-        <h1 class="h2 fw-bold mb-3" style="color: var(--color-primary-navy)">
+      <header class="mb-4 pb-3 border-bottom" style="border-color: var(--color-border-subtle) !important;">
+        <h1 class="h2 fw-bold mb-3" style="color: var(--color-primary-espresso)">
           ${escapeHtml(pageTitle)}
         </h1>
         <nav aria-label="Cambiar de categoría" class="d-flex flex-wrap gap-2">

@@ -41,7 +41,7 @@ function renderTextureSwatchSvg(
     patternDef = `
       <pattern id="${pid}" width="6" height="6" patternUnits="userSpaceOnUse">
         <rect width="6" height="6" fill="${colorHex}"/>
-        <circle cx="3" cy="3" r="1.2" fill="rgba(15,32,67,0.55)"/>
+        <circle cx="3" cy="3" r="1.2" fill="rgba(38,30,27,0.55)"/>
       </pattern>
     `;
   } else if (patternId === 'cuadricula') {
@@ -87,8 +87,8 @@ function renderProductCard(
     activeVariant.stock === 0
       ? `<span class="io-stock-badge is-out">${icons.xCircle(15)}<span>Agotado</span></span>`
       : activeVariant.stock <= activeVariant.stock_minimo
-      ? `<span class="io-stock-badge is-low">${icons.alertTriangle(15)}<span>Últimas ${activeVariant.stock}</span></span>`
-      : `<span class="io-stock-badge is-ok">${icons.checkCircle(15)}<span>${activeVariant.stock} disp.</span></span>`;
+        ? `<span class="io-stock-badge is-low">${icons.alertTriangle(15)}<span>Últimas ${activeVariant.stock}</span></span>`
+        : `<span class="io-stock-badge is-ok">${icons.checkCircle(15)}<span>${activeVariant.stock} disp.</span></span>`;
 
   const colorButtonsHtml = uniqueColors
     .map((colorOpt) => {
@@ -103,12 +103,12 @@ function renderProductCard(
           aria-pressed="${isSelected}"
         >
           ${renderTextureSwatchSvg(
-            colorOpt.colorHex,
-            colorOpt.patternId,
-            `${product.groupId}-${colorOpt.producto_id}`
-          )}
+        colorOpt.colorHex,
+        colorOpt.patternId,
+        `${product.groupId}-${colorOpt.producto_id}`
+      )}
           <span class="small" style="line-height: 1.2">
-            <strong class="d-block">${escapeHtml(colorOpt.color)}</strong>
+            <strong class="d-block" style="color: var(--color-ink)">${escapeHtml(colorOpt.color)}</strong>
             <span style="color: var(--color-ink-muted)">${escapeHtml(colorOpt.color_textura)}</span>
           </span>
         </button>
@@ -142,16 +142,16 @@ function renderProductCard(
       <article class="io-product-card">
         <div class="mb-3 position-relative">
           ${renderImageSlot({
-            slotKey: activeVariant.imageSlotKey,
-            alt: activeVariant.alt_text,
-            aspectRatio: '3 / 4',
-          })}
+    slotKey: activeVariant.imageSlotKey,
+    alt: activeVariant.alt_text,
+    aspectRatio: '3 / 4',
+  })}
         </div>
 
-        <h3 class="h5 fw-bold mb-2">${escapeHtml(product.nombre)}</h3>
+        <h3 class="h5 fw-bold mb-2" style="color: var(--color-ink)">${escapeHtml(product.nombre)}</h3>
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-          <span class="fw-bold" style="font-size: 1.25rem; color: var(--color-primary-navy)">
+          <span class="fw-bold" style="font-size: 1.25rem; color: var(--color-primary-espresso)">
             S/ ${activeVariant.precio_venta.toFixed(2)}
           </span>
           ${stockBadge}
@@ -200,10 +200,10 @@ export function renderProductCatalog(
     return `
       <section id="seccion-catalogo" aria-labelledby="heading-catalogo" class="mb-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 id="heading-catalogo" class="h4 fw-bold mb-0">Catálogo</h2>
+          <h2 id="heading-catalogo" class="h4 fw-bold mb-0" style="color: var(--color-ink)">Catálogo</h2>
         </div>
-        <div class="p-4 p-md-5 text-center bg-white rounded-3 border" role="status" aria-live="polite">
-          <p class="fw-bold mb-1">Sin productos cargados aún</p>
+        <div class="p-4 p-md-5 text-center bg-white rounded-1 border" style="border-color: var(--color-border-subtle) !important;" role="status" aria-live="polite">
+          <p class="fw-bold mb-1" style="color: var(--color-ink)">Sin productos cargados aún</p>
           <p class="small mb-0" style="color: var(--color-ink-muted)">
             Se mostrarán aquí al conectar la base de datos.
           </p>
@@ -224,8 +224,8 @@ export function renderProductCatalog(
   const bodyHtml =
     products.length === 0
       ? `
-        <div class="p-4 text-center bg-white rounded-3 border" role="status" aria-live="polite">
-          <p class="fw-bold mb-2">Sin resultados</p>
+        <div class="p-4 text-center bg-white rounded-1 border" style="border-color: var(--color-border-subtle) !important;" role="status" aria-live="polite">
+          <p class="fw-bold mb-2" style="color: var(--color-ink)">Sin resultados</p>
           <button type="button" class="io-btn-primary" data-action="reset-filters">
             ${icons.filterX(18)}
             <span>Ver todo</span>
@@ -235,22 +235,22 @@ export function renderProductCatalog(
       : `
         <div class="row g-4">
           ${products
-            .map((product) =>
-              renderProductCard(
-                product,
-                selectedVariants[product.groupId] ??
-                  product.variants.find((v) => v.stock > 0)?.producto_id ??
-                  product.variants[0].producto_id
-              )
-            )
-            .join('')}
+        .map((product) =>
+          renderProductCard(
+            product,
+            selectedVariants[product.groupId] ??
+            product.variants.find((v) => v.stock > 0)?.producto_id ??
+            product.variants[0].producto_id
+          )
+        )
+        .join('')}
         </div>
       `;
 
   return `
     <section id="seccion-catalogo" aria-labelledby="heading-catalogo" class="mb-5">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3 border-bottom">
-        <h2 id="heading-catalogo" class="h4 fw-bold mb-0">Catálogo (${products.length})</h2>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3 border-bottom" style="border-color: var(--color-border-subtle) !important;">
+        <h2 id="heading-catalogo" class="h4 fw-bold mb-0" style="color: var(--color-ink)">Catálogo (${products.length})</h2>
 
         <div class="d-flex flex-wrap align-items-center gap-2">
           <select
@@ -274,14 +274,13 @@ export function renderProductCatalog(
             <option value="precio-desc" ${sortBy === 'precio-desc' ? 'selected' : ''}>Mayor precio</option>
           </select>
 
-          ${
-            hasActiveFilters
-              ? `<button type="button" class="io-btn-outline" data-action="reset-filters">
+          ${hasActiveFilters
+      ? `<button type="button" class="io-btn-outline" data-action="reset-filters">
                    ${icons.filterX(16)}
                    <span>Limpiar</span>
                  </button>`
-              : ''
-          }
+      : ''
+    }
         </div>
       </div>
 

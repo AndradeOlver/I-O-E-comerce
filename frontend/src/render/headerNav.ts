@@ -22,19 +22,17 @@ function renderBrandLogo(): string {
     return `
       <a href="#/" class="io-brand-logo-link" data-action="go-home" aria-label="Inicio I&O">
         <img src="${escapeHtml(src)}" alt="I&O" class="io-brand-logo-img" data-logo-img />
-        <span class="io-logo-placeholder d-none" data-logo-fallback>
-          ${icons.imagePlus(18)}
-          <span>Logo</span>
+        <span class="io-brand-text d-none" data-logo-fallback>
+          I<span>&</span>O
         </span>
       </a>
     `;
   }
 
   return `
-    <a href="#/" class="io-brand-logo-link" data-action="go-home" aria-label="Inicio I&O">
-      <span class="io-logo-placeholder" title="${escapeHtml(logoSlot?.recommendedPath ?? 'public/img/brand/logo-io.png')}">
-        ${icons.imagePlus(18)}
-        <span>Logo</span>
+    <a href="#/" class="io-brand-logo-link" data-action="go-home" aria-label="Inicio I&O" title="${escapeHtml(logoSlot?.recommendedPath ?? 'public/img/brand/logo-io.png')}">
+      <span class="io-brand-text">
+        I<span>&</span>O
       </span>
     </a>
   `;
@@ -92,6 +90,7 @@ export function renderHeaderNav({
           data-action="go-category"
           data-category="${escapeHtml(item.category)}"
         >
+          ${item.isAccent ? '<span class="io-nav-indicator-dot" aria-hidden="true"></span>' : ''}
           <span>${escapeHtml(item.label)}</span>
         </a>
         <div class="${panelClass}" data-menu-panel="${escapeHtml(item.key)}">
@@ -103,175 +102,200 @@ export function renderHeaderNav({
     `;
   }).join('');
 
-  const mobileNavHtml = isMobileMenuOpen
-    ? `
-      <div class="io-drawer-backdrop" data-action="close-mobile-menu" aria-hidden="true"></div>
-      <aside class="io-mobile-nav-drawer" role="dialog" aria-modal="true" aria-label="Menú de categorías">
-        <div class="d-flex justify-content-between align-items-center p-3 border-bottom border-secondary">
-          <span class="fw-bold text-white">Categorías</span>
-          <button type="button" class="io-icon-action-btn" data-action="close-mobile-menu" aria-label="Cerrar menú">
-            ${icons.x(20)}
-          </button>
-        </div>
-        <nav class="p-3 overflow-auto flex-grow-1" aria-label="Categorías móvil">
-          <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-            ${NAV_MENU_ITEMS.map((item) => {
-              const isExpanded = expandedMobileKey === item.key;
-              const subColumnsHtml = item.columns
-                .map(
-                  (col) => `
-                    <div class="io-mobile-subgroup">
-                      <div class="io-mobile-subheading">${escapeHtml(col.heading)}</div>
-                      <ul class="list-unstyled d-flex flex-column gap-1 mb-0">
-                        ${col.links
-                          .map(
-                            (link) => `
-                              <li>
-                                <a
-                                  href="#/categoria/${escapeHtml(link.category)}"
-                                  class="io-mobile-sublink"
-                                  data-action="go-category"
-                                  data-category="${escapeHtml(link.category)}"
-                                  ${link.sizeFilter ? `data-filter-size="${escapeHtml(link.sizeFilter)}"` : ''}
-                                >
-                                  ${escapeHtml(link.label)}
-                                </a>
-                              </li>
-                            `
-                          )
-                          .join('')}
-                      </ul>
-                    </div>
-                  `
-                )
-                .join('');
+  const mobileNavItemsHtml = NAV_MENU_ITEMS.map((item) => {
+    const isExpanded = expandedMobileKey === item.key;
+    const allLinks = item.columns.flatMap((c) => c.links);
 
-              return `
-                <li>
-                  <button
-                    type="button"
-                    class="io-mobile-drawer-link ${item.isAccent ? 'is-accent' : ''} ${isExpanded ? 'is-expanded' : ''}"
-                    data-action="toggle-mobile-cat"
-                    data-nav-key="${escapeHtml(item.key)}"
-                    aria-expanded="${isExpanded}"
-                  >
-                    <span>${escapeHtml(item.label)}</span>
-                    <span class="io-mobile-chevron">${icons.chevronDown(16)}</span>
-                  </button>
-                  <div class="io-mobile-subpanel ${isExpanded ? 'is-open' : ''}">
-                    ${subColumnsHtml}
-                  </div>
-                </li>
-              `;
-            }).join('')}
-          </ul>
-        </nav>
-      </aside>
-    `
-    : '';
+    return `
+      <div class="border-bottom border-secondary border-opacity-25">
+        <button
+          type="button"
+          class="io-mobile-drawer-link ${item.isAccent ? 'is-accent' : ''} ${isExpanded ? 'is-expanded' : ''}"
+          data-action="toggle-mobile-item"
+          data-nav-key="${escapeHtml(item.key)}"
+          aria-expanded="${isExpanded}"
+        >
+          <span class="d-inline-flex align-items-center gap-2">
+            ${item.isAccent ? '<span class="io-nav-indicator-dot" aria-hidden="true"></span>' : ''}
+            <span>${escapeHtml(item.label)}</span>
+          </span>
+          <span class="io-mobile-chevron" aria-hidden="true">
+            ${icons.chevronDown(18)}
+          </span>
+        </button>
 
-  const searchBarHtml = isSearchOpen
-    ? `
-      <div class="io-search-overlay">
-        <div class="container-xl py-2">
-          <form role="search" aria-label="Buscar prendas en el catálogo" id="form-busqueda" class="d-flex align-items-center gap-2">
-            <label for="buscador-catalogo" class="visually-hidden">Buscar prenda</label>
-            <div class="input-group flex-grow-1">
-              <span class="input-group-text bg-white border-0">${icons.search(18)}</span>
-              <input
-                id="buscador-catalogo"
-                type="search"
-                class="form-control border-0"
-                style="min-height: 44px"
-                placeholder="Buscar..."
-                value="${escapeHtml(searchQuery)}"
-              />
-            </div>
-            <button type="button" class="io-icon-action-btn" data-action="close-search" aria-label="Cerrar buscador">
-              ${icons.x(20)}
-            </button>
-          </form>
+        <div class="io-mobile-subpanel ${isExpanded ? 'is-open' : ''}">
+          <a
+            href="#/categoria/${escapeHtml(item.category)}"
+            class="io-mobile-sublink fw-bold"
+            data-action="go-category"
+            data-category="${escapeHtml(item.category)}"
+          >
+            Ver todo en ${escapeHtml(item.label)} →
+          </a>
+          ${allLinks
+            .map(
+              (l) => `
+                <a
+                  href="#/categoria/${escapeHtml(l.category)}"
+                  class="io-mobile-sublink"
+                  data-action="go-category"
+                  data-category="${escapeHtml(l.category)}"
+                  ${l.sizeFilter ? `data-filter-size="${escapeHtml(l.sizeFilter)}"` : ''}
+                >
+                  ${escapeHtml(l.label)}
+                </a>
+              `
+            )
+            .join('')}
         </div>
       </div>
-    `
-    : '';
+    `;
+  }).join('');
 
   return `
-    <a class="skip-link" href="#contenido-principal">Saltar al contenido principal</a>
+    <header class="io-header" role="banner">
+      <div class="container-xl io-header-inner">
+        <div class="io-header-left">
+          <button
+            type="button"
+            class="io-icon-action-btn d-lg-none"
+            data-action="toggle-mobile-menu"
+            aria-label="Abrir menú de navegación"
+            aria-expanded="${isMobileMenuOpen}"
+          >
+            ${icons.menu(22)}
+          </button>
+          ${renderBrandLogo()}
+        </div>
 
-    <div class="io-top-strip py-1">
-      <div class="container-xl text-center">
-        <span>Envío GRATIS mayores a S/ 150</span>
-      </div>
-    </div>
+        <nav class="io-header-center d-none d-lg-flex" aria-label="Navegación principal de categorías">
+          <ul class="io-nav-list">
+            ${navItemsHtml}
+          </ul>
+        </nav>
 
-    <header class="io-header" id="io-site-header">
-      <div class="container-fluid px-3 px-xl-4">
-        <div class="io-header-inner">
-          <div class="io-header-left">
-            <button
-              type="button"
-              class="io-icon-action-btn d-lg-none"
-              data-action="open-mobile-menu"
-              aria-label="Abrir menú de categorías"
-            >
-              ${icons.menu(22)}
-            </button>
-            ${renderBrandLogo()}
-          </div>
+        <div class="io-header-right">
+          <button
+            type="button"
+            class="io-icon-action-btn"
+            data-action="toggle-search"
+            aria-label="Buscar productos"
+            aria-expanded="${isSearchOpen}"
+          >
+            ${icons.search(20)}
+          </button>
 
-          <nav class="io-header-center d-none d-lg-flex" aria-label="Categorías principales">
-            <ul class="io-nav-list">
-              ${navItemsHtml}
-            </ul>
-          </nav>
+          <button
+            type="button"
+            class="io-icon-action-btn position-relative"
+            data-action="open-wishlist"
+            aria-label="Prendas deseadas (${wishlistCount})"
+          >
+            ${icons.heart(20)}
+            ${
+              wishlistCount > 0
+                ? `<span class="io-bag-badge" aria-hidden="true">${wishlistCount}</span>`
+                : ''
+            }
+          </button>
 
-          <div class="io-header-right">
-            <button
-              type="button"
-              class="io-icon-action-btn"
-              data-action="toggle-search"
-              aria-label="Buscar prendas"
-              aria-expanded="${isSearchOpen}"
-            >
-              ${icons.search(20)}
-            </button>
+          <button
+            type="button"
+            class="io-icon-action-btn position-relative"
+            data-action="open-cart"
+            aria-label="Bolsa de compras (${cartCount} prendas)"
+          >
+            ${icons.bag(20)}
+            ${
+              cartCount > 0
+                ? `<span class="io-bag-badge" aria-hidden="true">${cartCount}</span>`
+                : ''
+            }
+          </button>
 
-            <button
-              type="button"
-              class="io-icon-action-btn position-relative"
-              data-action="open-wishlist"
-              aria-label="Lista de deseados"
-            >
-              ${icons.heart(20)}
-              ${wishlistCount > 0 ? `<span class="io-bag-badge">${wishlistCount}</span>` : ''}
-            </button>
-
-            <button
-              type="button"
-              class="io-icon-action-btn"
-              data-action="open-login"
-              aria-label="Iniciar sesión"
-            >
-              ${icons.user(20)}
-            </button>
-
-            <button
-              type="button"
-              class="io-icon-action-btn position-relative"
-              data-action="open-cart"
-              aria-label="Abrir bolsa de compras, ${cartCount} prendas"
-            >
-              ${icons.bag(20)}
-              <span class="io-bag-badge" aria-live="polite">${cartCount}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            class="io-icon-action-btn d-none d-md-inline-flex"
+            data-action="open-login"
+            aria-label="Iniciar sesión o mi cuenta"
+          >
+            ${icons.user(20)}
+          </button>
         </div>
       </div>
 
-      ${searchBarHtml}
+      ${
+        isSearchOpen
+          ? `
+            <div class="io-search-overlay py-2 px-3" role="search">
+              <div class="container-xl d-flex align-items-center gap-2">
+                <label for="input-search-header" class="visually-hidden">Buscar en catálogo</label>
+                <input
+                  id="input-search-header"
+                  type="search"
+                  class="form-control"
+                  style="min-height: 44px"
+                  placeholder="Buscar vestido, pantalón, casaca..."
+                  value="${escapeHtml(searchQuery)}"
+                  data-action="search-input"
+                  autofocus
+                />
+                <button
+                  type="button"
+                  class="io-btn-outline"
+                  data-action="toggle-search"
+                  aria-label="Cerrar búsqueda"
+                >
+                  ${icons.x(18)}
+                  <span>Cerrar</span>
+                </button>
+              </div>
+            </div>
+          `
+          : ''
+      }
     </header>
 
-    ${mobileNavHtml}
+    ${
+      isMobileMenuOpen
+        ? `
+          <div class="io-drawer-backdrop" data-action="close-mobile-menu" aria-hidden="true"></div>
+          <nav
+            class="io-mobile-nav-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menú móvil de categorías"
+          >
+            <div class="d-flex align-items-center justify-content-between p-3 border-bottom border-secondary border-opacity-25">
+              <span class="io-brand-text">
+                I<span>&</span>O
+              </span>
+              <button
+                type="button"
+                class="io-icon-action-btn"
+                data-action="close-mobile-menu"
+                aria-label="Cerrar menú"
+              >
+                ${icons.x(22)}
+              </button>
+            </div>
+            <div class="overflow-auto flex-grow-1 p-2">
+              ${mobileNavItemsHtml}
+            </div>
+            <div class="p-3 border-top border-secondary border-opacity-25">
+              <button
+                type="button"
+                class="io-btn-primary w-100"
+                data-action="open-login"
+              >
+                ${icons.user(18)}
+                <span>Iniciar sesión</span>
+              </button>
+            </div>
+          </nav>
+        `
+        : ''
+    }
   `;
 }

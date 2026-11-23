@@ -240,7 +240,7 @@ function renderApp(): void {
           ${
             state.liveFeedback
               ? `
-                <div class="alert alert-light border d-flex justify-content-between align-items-center mb-4" role="status" aria-live="polite" style="border-color: var(--color-primary-navy)">
+                <div class="alert alert-light border d-flex justify-content-between align-items-center mb-4" role="status" aria-live="polite" style="border-color: var(--color-primary-espresso)">
                   <span class="small fw-semibold">${escapeHtml(state.liveFeedback)}</span>
                   <button type="button" class="btn-close" data-action="dismiss-feedback" aria-label="Ocultar notificación"></button>
                 </div>
@@ -280,10 +280,10 @@ function renderApp(): void {
         ${mainContentHtml}
       </main>
 
-      <footer class="border-top bg-white py-3 mt-5">
+      <footer class="border-top py-4 mt-5" style="background-color: var(--color-surface-card); border-color: var(--color-border-subtle) !important;">
         <div class="container-xl d-flex flex-wrap justify-content-between align-items-center gap-2 small" style="color: var(--color-ink-muted)">
-          <strong style="color: var(--color-primary-navy)">I&amp;O · Lima, Perú</strong>
-          <span>Precios con IGV incluido</span>
+          <strong style="color: var(--color-primary-espresso)">I&amp;O · Lima, Perú</strong>
+          <span>Precios con IGV incluido (18% — RN-TRI-01) · RUC: 10458796321</span>
         </div>
       </footer>
 

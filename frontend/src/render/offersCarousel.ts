@@ -99,11 +99,13 @@ export function renderOffersCarousel(
             <div class="d-flex align-items-center gap-2">
               ${dotsHtml}
             </div>
+
             <button
               type="button"
               class="io-carousel-pause-btn"
-              data-action="carousel-toggle"
-              aria-label="${isPaused ? 'Reanudar carrusel' : 'Pausar carrusel'}"
+              data-action="carousel-toggle-pause"
+              aria-label="${isPaused ? 'Reanudar carrusel automático' : 'Pausar carrusel automático'}"
+              aria-pressed="${isPaused}"
             >
               ${isPaused ? icons.play(14) : icons.pause(14)}
             </button>

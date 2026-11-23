@@ -25,7 +25,7 @@ export function renderImageSlot({
   const placeholderHtml = `
     <div class="d-flex flex-column align-items-center justify-content-center gap-1" data-slot-fallback>
       ${icons.imagePlus(compact ? 20 : 28)}
-      <span class="fw-semibold text-dark" style="font-size: ${compact ? '0.8125rem' : '0.875rem'}">
+      <span class="fw-semibold" style="font-size: ${compact ? '0.8125rem' : '0.875rem'}; color: var(--color-ink)">
         ${escapeHtml(label)}
       </span>
       ${

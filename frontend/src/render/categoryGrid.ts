@@ -15,17 +15,24 @@ export function renderCategoryGrid(
         <a
           href="#/categoria/${escapeHtml(cat.slug)}"
           role="listitem"
-          class="io-category-tile text-decoration-none ${isActive ? 'is-active' : ''}"
+          class="io-category-tile ${isActive ? 'is-active' : ''}"
           data-action="go-category"
           data-category="${escapeHtml(cat.slug)}"
         >
-          ${renderImageSlot({
-            slotKey: cat.imageSlotKey,
-            alt: `Categoría ${cat.nombre}`,
-            aspectRatio: '1 / 1',
-            compact: true,
-          })}
-          <span class="io-category-tile-title">${escapeHtml(cat.nombre)}</span>
+          <div class="io-category-tile-media">
+            ${renderImageSlot({
+              slotKey: cat.imageSlotKey,
+              alt: `Categoría ${cat.nombre}`,
+              aspectRatio: '1 / 1',
+              compact: true,
+            })}
+          </div>
+          <div class="io-category-tile-footer">
+            <span class="io-category-tile-title">
+              ${escapeHtml(cat.nombre)}
+              <span class="io-category-tile-arrow" aria-hidden="true">→</span>
+            </span>
+          </div>
         </a>
       `;
     })
