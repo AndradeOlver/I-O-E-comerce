@@ -697,7 +697,7 @@ function resetCarouselTimer(): void {
       state.carouselIndex = (state.carouselIndex + 1) % count;
       syncCarouselDom();
     }
-  }, 10000);
+  }, 6000);
 }
 
 resetCarouselTimer();
