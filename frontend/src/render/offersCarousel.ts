@@ -31,6 +31,7 @@ export function renderOffersCarousel(
             alt: offer.alt_text,
             aspectRatio: '16 / 7',
             responsivePicture: true,
+            ambientBackdrop: true,
           })}
 
           <div class="io-carousel-scrim" aria-hidden="true"></div>

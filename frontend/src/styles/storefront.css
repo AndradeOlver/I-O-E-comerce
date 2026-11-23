@@ -715,7 +715,7 @@
 .io-carousel-stage {
   position: relative;
   width: 100%;
-  height: clamp(380px, 72vh, 720px);
+  height: clamp(380px, 70vh, 660px);
   background-color: var(--color-top-strip-bg);
   overflow: hidden;
 }
@@ -744,26 +744,54 @@
   padding: 0;
 }
 
-.io-carousel-slide .io-image-slot img {
+.io-carousel-slide .io-image-slot picture {
+  display: contents;
+}
+
+/* Capa 1: Fondo ambiental automático con los tonos de la propia foto */
+.io-carousel-slide .io-image-slot img.io-image-slot-ambient {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 28%; /* Encuadre armónico: cabeza intacta y vestido/cuerpo visible en PC y móvil */
+  object-position: center;
+  filter: blur(40px) brightness(0.9);
+  transform: scale(1.18);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Capa 2: Foto protagonista completa sin recortar ni cabeza ni vestido en desktop */
+.io-carousel-slide .io-image-slot img[data-slot-img] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: right center;
+  z-index: 1;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 100%);
   transform: scale(1);
-  transform-origin: center 30%;
+  transform-origin: right center;
   /* Al salir, vuelve a escala 1 solo cuando el fundido ya terminó (sin saltos visibles) */
   transition: transform 0s linear 1.3s;
 }
 
 /* Zoom lento hacia adentro (Ken Burns) mientras el slide está visible */
-.io-carousel-slide.is-zooming .io-image-slot img {
-  transform: scale(1.05);
+.io-carousel-slide.is-zooming .io-image-slot img[data-slot-img] {
+  transform: scale(1.04);
   transition: transform 7s linear;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .io-carousel-slide .io-image-slot img,
-  .io-carousel-slide.is-zooming .io-image-slot img {
+  .io-carousel-slide .io-image-slot img[data-slot-img],
+  .io-carousel-slide.is-zooming .io-image-slot img[data-slot-img] {
     transform: none;
   }
 }
@@ -944,6 +972,22 @@
 @media (max-width: 767.98px) {
   .io-carousel-stage {
     height: clamp(300px, 58vh, 420px);
+  }
+
+  .io-carousel-slide .io-image-slot img.io-image-slot-ambient {
+    display: none;
+  }
+
+  .io-carousel-slide .io-image-slot img[data-slot-img] {
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 22%;
+    transform-origin: center 25%;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 
   .io-carousel-scrim {

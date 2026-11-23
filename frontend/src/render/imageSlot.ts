@@ -7,6 +7,7 @@ interface ImageSlotOptions {
   aspectRatio: string;
   compact?: boolean;
   responsivePicture?: boolean;
+  ambientBackdrop?: boolean;
 }
 
 export function renderImageSlot({
@@ -15,6 +16,7 @@ export function renderImageSlot({
   aspectRatio,
   compact = false,
   responsivePicture = false,
+  ambientBackdrop = false,
 }: ImageSlotOptions): string {
   const config = IMAGE_SLOTS[slotKey];
   const desktopSrc = config?.src?.trim() ?? '';
@@ -47,9 +49,14 @@ export function renderImageSlot({
     `;
   }
 
+  const ambientHtml = ambientBackdrop
+    ? `<img src="${escapeHtml(effectiveSrc)}" alt="" aria-hidden="true" class="io-image-slot-ambient" />`
+    : '';
+
   const mediaHtml =
     responsivePicture && mobileSrc
       ? `
+        ${ambientHtml}
         <picture>
           <source media="(max-width: 767.98px)" srcset="${escapeHtml(mobileSrc)}" />
           <img
@@ -61,6 +68,7 @@ export function renderImageSlot({
         </picture>
       `
       : `
+        ${ambientHtml}
         <img
           src="${escapeHtml(effectiveSrc)}"
           alt="${escapeHtml(alt)}"
