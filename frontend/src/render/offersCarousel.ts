@@ -103,7 +103,7 @@ export function renderOffersCarousel(
             <button
               type="button"
               class="io-carousel-pause-btn"
-              data-action="carousel-toggle-pause"
+              data-action="carousel-toggle"
               aria-label="${isPaused ? 'Reanudar carrusel automático' : 'Pausar carrusel automático'}"
               aria-pressed="${isPaused}"
             >

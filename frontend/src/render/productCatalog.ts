@@ -138,9 +138,9 @@ function renderProductCard(
     .join('');
 
   return `
-    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+    <div class="col-12 col-sm-6 col-lg-4 col-xl-3 io-reveal">
       <article class="io-product-card">
-        <div class="mb-3 position-relative">
+        <div class="io-product-media">
           ${renderImageSlot({
     slotKey: activeVariant.imageSlotKey,
     alt: activeVariant.alt_text,
@@ -148,10 +148,10 @@ function renderProductCard(
   })}
         </div>
 
-        <h3 class="h5 fw-bold mb-2" style="color: var(--color-ink)">${escapeHtml(product.nombre)}</h3>
+        <h3 class="io-product-title">${escapeHtml(product.nombre)}</h3>
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-          <span class="fw-bold" style="font-size: 1.25rem; color: var(--color-primary-espresso)">
+          <span class="io-product-price">
             S/ ${activeVariant.precio_venta.toFixed(2)}
           </span>
           ${stockBadge}
@@ -199,14 +199,13 @@ export function renderProductCatalog(
   if (totalCatalogCount === 0) {
     return `
       <section id="seccion-catalogo" aria-labelledby="heading-catalogo" class="mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 id="heading-catalogo" class="h4 fw-bold mb-0" style="color: var(--color-ink)">Catálogo</h2>
+        <div class="io-section-head">
+          <h2 id="heading-catalogo" class="io-display io-section-title">Catálogo</h2>
         </div>
-        <div class="p-4 p-md-5 text-center bg-white rounded-1 border" style="border-color: var(--color-border-subtle) !important;" role="status" aria-live="polite">
-          <p class="fw-bold mb-1" style="color: var(--color-ink)">Sin productos cargados aún</p>
-          <p class="small mb-0" style="color: var(--color-ink-muted)">
-            Se mostrarán aquí al conectar la base de datos.
-          </p>
+        <div class="io-empty io-empty--panel" role="status" aria-live="polite">
+          <span class="io-empty-icon">${icons.bag(30)}</span>
+          <p class="io-empty-title">Sin productos cargados aún</p>
+          <p class="small mb-0">Se mostrarán aquí al conectar la base de datos.</p>
         </div>
       </section>
     `;
@@ -224,8 +223,10 @@ export function renderProductCatalog(
   const bodyHtml =
     products.length === 0
       ? `
-        <div class="p-4 text-center bg-white rounded-1 border" style="border-color: var(--color-border-subtle) !important;" role="status" aria-live="polite">
-          <p class="fw-bold mb-2" style="color: var(--color-ink)">Sin resultados</p>
+        <div class="io-empty io-empty--panel" role="status" aria-live="polite">
+          <span class="io-empty-icon">${icons.search(30)}</span>
+          <p class="io-empty-title">Sin resultados</p>
+          <p class="small mb-3">Prueba con otra categoría, talla o palabra clave.</p>
           <button type="button" class="io-btn-primary" data-action="reset-filters">
             ${icons.filterX(18)}
             <span>Ver todo</span>
@@ -233,7 +234,7 @@ export function renderProductCatalog(
         </div>
       `
       : `
-        <div class="row g-4">
+        <div class="row g-4 io-product-grid">
           ${products
         .map((product) =>
           renderProductCard(
@@ -249,15 +250,15 @@ export function renderProductCatalog(
 
   return `
     <section id="seccion-catalogo" aria-labelledby="heading-catalogo" class="mb-5">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3 border-bottom" style="border-color: var(--color-border-subtle) !important;">
-        <h2 id="heading-catalogo" class="h4 fw-bold mb-0" style="color: var(--color-ink)">Catálogo (${products.length})</h2>
+      <div class="io-filterbar">
+        <h2 id="heading-catalogo" class="io-display" style="font-size: 1.6rem; margin: 0">Catálogo <span class="fw-normal" style="color: var(--color-ink-muted)">(${products.length})</span></h2>
 
         <div class="d-flex flex-wrap align-items-center gap-2">
           <select
             id="filtro-talla"
             aria-label="Filtrar por talla"
             class="form-select"
-            style="min-height: 44px; min-width: 130px; border-color: var(--color-border-strong)"
+            style="min-width: 130px"
           >
             <option value="todas" ${selectedSize === 'todas' ? 'selected' : ''}>Tallas: Todas</option>
             ${sizeOptionsHtml}
@@ -267,7 +268,7 @@ export function renderProductCatalog(
             id="orden-catalogo"
             aria-label="Ordenar catálogo"
             class="form-select"
-            style="min-height: 44px; min-width: 155px; border-color: var(--color-border-strong)"
+            style="min-width: 155px"
           >
             <option value="relevancia" ${sortBy === 'relevancia' ? 'selected' : ''}>Destacados</option>
             <option value="precio-asc" ${sortBy === 'precio-asc' ? 'selected' : ''}>Menor precio</option>

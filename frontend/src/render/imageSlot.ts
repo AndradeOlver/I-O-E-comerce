@@ -70,7 +70,7 @@ export function renderImageSlot({
       `;
 
   return `
-    <div class="io-image-slot" style="aspect-ratio: ${aspectRatio}">
+    <div class="io-image-slot is-filled" style="aspect-ratio: ${aspectRatio}">
       ${mediaHtml}
       <div class="d-none" data-slot-fallback-hidden>
         ${placeholderHtml}

@@ -25,7 +25,7 @@ export function renderCartDrawer(
   const itemsHtml = items
     .map(
       (item) => `
-        <li class="p-3 border rounded-1 bg-white" style="border-color: var(--color-border-subtle) !important;">
+        <li class="io-cart-line">
           <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
             <div>
               <div class="fw-bold" style="color: var(--color-ink)">${escapeHtml(item.nombre)}</div>
@@ -35,8 +35,7 @@ export function renderCartDrawer(
             </div>
             <button
               type="button"
-              class="btn btn-sm btn-outline-danger"
-              style="min-width: 44px; min-height: 44px; border-radius: var(--radius-sm)"
+              class="io-icon-btn-danger"
               data-action="cart-remove"
               data-producto-id="${item.producto_id}"
               aria-label="Quitar ${escapeHtml(item.nombre)}"
@@ -83,10 +82,10 @@ export function renderCartDrawer(
   return `
     <div class="io-drawer-backdrop" data-action="close-cart" aria-hidden="true"></div>
     <aside class="io-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-bolsa">
-      <div class="d-flex justify-content-between align-items-center p-3 border-bottom" style="border-color: var(--color-border-subtle) !important;">
+      <div class="io-drawer-head">
         <div class="d-flex align-items-center gap-2">
-          ${icons.bag(20)}
-          <h2 id="titulo-bolsa" class="h5 fw-bold mb-0" style="color: var(--color-ink)">Bolsa</h2>
+          ${icons.bag(22)}
+          <h2 id="titulo-bolsa" class="io-drawer-title">Bolsa</h2>
         </div>
         <button type="button" class="io-btn-outline" data-action="close-cart" aria-label="Cerrar bolsa">
           ${icons.x(18)}
@@ -98,22 +97,22 @@ export function renderCartDrawer(
         ${
           items.length > 0
             ? `
-              <div
-                class="p-2 mb-3 rounded-1 border"
-                style="background-color: var(--color-surface-subtle); border-color: var(--color-border-subtle) !important;"
-                role="status"
-                aria-live="polite"
-              >
-                <div class="d-flex align-items-center justify-content-between small fw-bold mb-1">
+              <div class="io-reserve-box">
+                <div class="d-flex align-items-center justify-content-between small fw-bold mb-2">
                   <span class="d-inline-flex align-items-center gap-1" style="color: var(--color-ink)">
                     ${icons.clock(15)} Reserva de prendas
                   </span>
-                  <span class="badge" style="background-color: var(--color-primary-espresso); color: #faf7f2">${mins}:${secs} min</span>
+                  <span
+                    class="badge"
+                    role="timer"
+                    data-cart-timer
+                    style="background-color: var(--color-primary-espresso); color: #faf7f2"
+                  >${mins}:${secs} min</span>
                 </div>
-                <div class="progress" style="height: 6px; background-color: var(--color-border-subtle)" role="progressbar" aria-valuenow="${progressPct}" aria-valuemin="0" aria-valuemax="100">
-                  <div class="progress-bar" style="width: ${progressPct}%; background-color: var(--color-accent-terracotta)"></div>
+                <div class="progress" style="height: 6px" role="progressbar" aria-label="Progreso hacia el envío gratis" aria-valuenow="${progressPct}" aria-valuemin="0" aria-valuemax="100">
+                  <div class="progress-bar io-progress-fill" style="width: ${progressPct}%; background-color: var(--color-accent-terracotta)"></div>
                 </div>
-                <div class="small mt-1" style="color: var(--color-ink-muted)">
+                <div class="small mt-2" style="color: var(--color-ink-muted)" role="status" aria-live="polite">
                   ${
                     qualifiesFreeShipping
                       ? '✓ ¡Tienes envío gratis incluido!'
@@ -127,12 +126,14 @@ export function renderCartDrawer(
               </ul>
             `
             : `
-              <div class="text-center py-5">
-                <div class="mb-2" style="color: var(--color-ink-muted)">${icons.bag(40)}</div>
-                <p class="fw-bold mb-1" style="color: var(--color-ink)">Tu bolsa está vacía</p>
-                <p class="small" style="color: var(--color-ink-muted)">
-                  Explora las colecciones y agrega tus prendas favoritas.
-                </p>
+              <div class="io-empty">
+                <span class="io-empty-icon">${icons.bag(30)}</span>
+                <p class="io-empty-title">Tu bolsa está vacía</p>
+                <p class="small mb-3">Explora las colecciones y agrega tus prendas favoritas.</p>
+                <button type="button" class="io-btn-primary" data-action="close-cart">
+                  <span>Seguir explorando</span>
+                  ${icons.chevronRight(16)}
+                </button>
               </div>
             `
         }
@@ -141,7 +142,7 @@ export function renderCartDrawer(
       ${
         items.length > 0
           ? `
-            <div class="p-3 border-top" style="border-color: var(--color-border-subtle) !important; background-color: var(--color-surface-card)">
+            <div class="io-cart-summary">
               <div class="d-flex justify-content-between mb-1 small" style="color: var(--color-ink-muted)">
                 <span>Subtotal:</span>
                 <span>S/ ${subtotal.toFixed(2)}</span>
@@ -159,11 +160,10 @@ export function renderCartDrawer(
                 <input
                   class="form-check-input"
                   type="checkbox"
-                  id="cart-optin-marketing"
-                  data-action="toggle-optin"
+                  id="opt-in-marketing"
                   ${optInMarketing ? 'checked' : ''}
                 />
-                <label class="form-check-label small" for="cart-optin-marketing" style="color: var(--color-ink-muted)">
+                <label class="form-check-label small" for="opt-in-marketing" style="color: var(--color-ink-muted)">
                   Acepto recibir novedades y promociones exclusivas de I&O (Consentimiento explícito RN-MKT-03).
                 </label>
               </div>
@@ -171,7 +171,8 @@ export function renderCartDrawer(
               <button
                 type="button"
                 class="io-btn-primary w-100 py-3"
-                data-action="checkout-start"
+                data-action="cart-checkout"
+                data-total="${total.toFixed(2)}"
               >
                 <span>Proceder al pago seguro</span>
                 ${icons.chevronRight(18)}

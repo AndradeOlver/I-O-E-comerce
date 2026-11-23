@@ -8,14 +8,15 @@ export function renderCategoryGrid(
   selectedCategory: CategorySlug
 ): string {
   const tilesHtml = categories
-    .map((cat) => {
+    .map((cat, idx) => {
       const isActive = selectedCategory === cat.slug;
 
       return `
         <a
           href="#/categoria/${escapeHtml(cat.slug)}"
           role="listitem"
-          class="io-category-tile ${isActive ? 'is-active' : ''}"
+          class="io-category-tile io-reveal ${isActive ? 'is-active' : ''}"
+          style="--i: ${idx}"
           data-action="go-category"
           data-category="${escapeHtml(cat.slug)}"
         >
@@ -23,7 +24,7 @@ export function renderCategoryGrid(
             ${renderImageSlot({
               slotKey: cat.imageSlotKey,
               alt: `Categoría ${cat.nombre}`,
-              aspectRatio: '1 / 1',
+              aspectRatio: '4 / 5',
               compact: true,
             })}
           </div>
@@ -40,8 +41,11 @@ export function renderCategoryGrid(
 
   return `
     <section id="seccion-categorias" aria-labelledby="heading-categorias" class="mb-5">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <h2 id="heading-categorias" class="h4 fw-bold mb-0">Categorías</h2>
+      <div class="io-section-head">
+        <div>
+          <span class="io-eyebrow">Colección</span>
+          <h2 id="heading-categorias" class="io-display io-section-title">Categorías</h2>
+        </div>
 
         <a
           href="#/categoria/todas"
@@ -49,8 +53,8 @@ export function renderCategoryGrid(
           data-action="go-category"
           data-category="todas"
         >
-          ${icons.grid(16)}
           <span>Todas</span>
+          ${icons.chevronRight(16)}
         </a>
       </div>
 

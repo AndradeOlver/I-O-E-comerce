@@ -6,10 +6,10 @@ export function renderWishlistDrawer(isOpen: boolean): string {
   return `
     <div class="io-drawer-backdrop" data-action="close-wishlist" aria-hidden="true"></div>
     <aside class="io-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-deseados">
-      <div class="d-flex justify-content-between align-items-center p-3 border-bottom" style="border-color: var(--color-border-subtle) !important;">
+      <div class="io-drawer-head">
         <div class="d-flex align-items-center gap-2">
-          ${icons.heart(20)}
-          <h2 id="titulo-deseados" class="h5 fw-bold mb-0" style="color: var(--color-ink)">Deseados</h2>
+          ${icons.heart(22)}
+          <h2 id="titulo-deseados" class="io-drawer-title">Deseados</h2>
         </div>
         <button type="button" class="io-btn-outline" data-action="close-wishlist" aria-label="Cerrar deseados">
           ${icons.x(18)}
@@ -17,14 +17,13 @@ export function renderWishlistDrawer(isOpen: boolean): string {
         </button>
       </div>
 
-      <div class="p-4 text-center my-auto">
-        <div class="mb-2" style="color: var(--color-ink-muted)">${icons.heart(36)}</div>
-        <p class="fw-bold mb-1" style="color: var(--color-ink)">Sin favoritos aún</p>
-        <p class="small mb-3" style="color: var(--color-ink-muted)">
-          Guarda prendas aquí cuando el catálogo esté conectado.
-        </p>
+      <div class="io-empty my-auto">
+        <span class="io-empty-icon">${icons.heart(30)}</span>
+        <p class="io-empty-title">Sin favoritos aún</p>
+        <p class="small mb-3">Guarda prendas aquí cuando el catálogo esté conectado.</p>
         <button type="button" class="io-btn-primary" data-action="close-wishlist">
-          Seguir explorando
+          <span>Seguir explorando</span>
+          ${icons.chevronRight(16)}
         </button>
       </div>
     </aside>
@@ -37,16 +36,15 @@ export function renderLoginModal(isOpen: boolean, feedback: string): string {
   return `
     <div class="io-drawer-backdrop" data-action="close-login" aria-hidden="true"></div>
     <div
-      class="position-fixed top-50 start-50 translate-middle bg-white rounded-1 border p-4 shadow-lg"
-      style="width: min(92vw, 420px); z-index: 1055; border-color: var(--color-border-subtle) !important;"
+      class="io-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="titulo-login"
     >
-      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: var(--color-border-subtle) !important;">
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom: 1px solid var(--color-border-subtle)">
         <div class="d-flex align-items-center gap-2">
-          ${icons.user(20)}
-          <h2 id="titulo-login" class="h5 fw-bold mb-0" style="color: var(--color-ink)">Iniciar sesión</h2>
+          ${icons.user(22)}
+          <h2 id="titulo-login" class="io-drawer-title">Iniciar sesión</h2>
         </div>
         <button type="button" class="io-btn-outline" data-action="close-login" aria-label="Cerrar inicio de sesión">
           ${icons.x(18)}
@@ -55,7 +53,7 @@ export function renderLoginModal(isOpen: boolean, feedback: string): string {
 
       ${
         feedback
-          ? `<div class="alert alert-secondary py-2 small" role="status" style="background-color: var(--color-surface-subtle); border-color: var(--color-border-subtle); color: var(--color-ink);">${escapeHtml(feedback)}</div>`
+          ? `<div class="io-alert" role="status" aria-live="polite"><span>${escapeHtml(feedback)}</span></div>`
           : ''
       }
 
@@ -66,8 +64,8 @@ export function renderLoginModal(isOpen: boolean, feedback: string): string {
             id="login-email"
             type="email"
             class="form-control"
-            style="min-height: 44px; border-color: var(--color-border-strong)"
             placeholder="cliente@ejemplo.pe"
+            autocomplete="email"
             required
           />
         </div>
@@ -78,14 +76,15 @@ export function renderLoginModal(isOpen: boolean, feedback: string): string {
             id="login-password"
             type="password"
             class="form-control"
-            style="min-height: 44px; border-color: var(--color-border-strong)"
             placeholder="••••••••"
+            autocomplete="current-password"
             required
           />
         </div>
 
         <button type="submit" class="io-btn-primary w-100 mt-1">
-          Ingresar
+          <span>Ingresar</span>
+          ${icons.chevronRight(16)}
         </button>
       </form>
     </div>

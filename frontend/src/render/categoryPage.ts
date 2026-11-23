@@ -56,10 +56,11 @@ export function renderCategoryPage({
         </a>
       </div>
 
-      <header class="mb-4 pb-3 border-bottom" style="border-color: var(--color-border-subtle) !important;">
-        <h1 class="h2 fw-bold mb-3" style="color: var(--color-primary-espresso)">
-          ${escapeHtml(pageTitle)}
-        </h1>
+      <header class="io-section-head flex-column align-items-start">
+        <div>
+          <span class="io-eyebrow">Tienda</span>
+          <h1 class="io-display io-section-title">${escapeHtml(pageTitle)}</h1>
+        </div>
         <nav aria-label="Cambiar de categoría" class="d-flex flex-wrap gap-2">
           ${chipsHtml}
         </nav>

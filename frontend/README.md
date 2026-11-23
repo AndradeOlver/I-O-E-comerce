@@ -58,11 +58,28 @@ Esta capa aloja las interfaces de usuario centradas en la persona, responsivas (
 
 ## 🎨 Resumen de la Paleta Oficial Espresso & Piedra
 
-* **Barra superior de anuncios:** Fondo `#1A1512` | Texto `#FAF7F2` (15.6:1 AAA).
+* **Barra superior de anuncios:** Fondo `#1A1512` | Texto `#FAF7F2` (15.6:1 AAA) — `Envío GRATIS en compras mayores a S/ 150`.
 * **Header / Navbar:** Fondo `#261E1B` (con opción translúcida `rgba(38,30,27,0.94)` + `backdrop-filter: blur(10px)`) | Texto `#FAF7F2` (13.8:1 AAA).
-* **Acentos (OFERTAS, badges, estados):** Terracota `#C98A7B` (5.8:1 AA sobre `#261E1B`).
+* **Acentos (OFERTAS, badges, estados):** Terracota `#C98A7B` (5.76:1 AA sobre `#261E1B`).
+* **Tipografía:** `Cormorant Garamond` (titulares editoriales) + `Inter` (interfaz).
 * **Fondo general (`--bg-page`):** Beige piedra cálido `#F4F0EA`.
 * **Superficies (Tarjetas, Drawers):** Marfil cálido `#FAF7F2` / Blanco `#FFFFFF`.
 * **Bordes:** `#D6CEC2` (estructurales) y `#7A6F68` (controles interactivos e inputs $\ge 3:1$).
 * **Textos sobre fondo claro:** Primario `#261E1B` (14.2:1 AAA), Secundario `#574C46` (7.1:1 AAA).
-* **Foco accesible (`:focus-visible`):** Anillo de `2px solid #C98A7B` con `outline-offset: 2px`.
+* **Foco accesible (`:focus-visible`):** Anillo de `2px solid #C98A7B` con `outline-offset: 2px` más banda interior espresso (contraste $\ge 3:1$ sobre fondos claros).
+
+---
+
+## 🖼️ Logo de la Marca (listo para colocar)
+
+El logo **no se diseña en código**. El header contiene solo un contenedor limpio (sin marco ni adornos) conectado a [`src/data/imageSlots.ts`](src/data/imageSlots.ts) y [`src/render/brand.ts`](src/render/brand.ts):
+
+* **Carpeta:** `frontend/public/img/brand/`
+* **Archivo esperado:** `logo-io.svg` (si no existe, se prueba automáticamente `logo-io.png`; si tampoco, se muestra el texto simple `I&O`).
+* **Formato:** SVG transparente (recomendado) o PNG transparente de `360 x 80 px` (@2x).
+* **Medidas:** se renderiza a `40 px` de alto (`34 px` con el header compacto), ancho automático, máx. `180 px`. Proporción ideal `3:1`–`4.5:1`.
+* **Color:** versión clara/marfil (`#FAF7F2`), porque el header es espresso `#261E1B`.
+
+## ✨ Micro-interacciones (resumen)
+
+Header translúcido y compacto al hacer scroll, subrayados animados en el menú, flechas que se desplazan en botones y tarjetas, zoom suave de fotografías, revelado escalonado al cambiar de vista, drawers y modales con apertura/cierre animado, *shimmer* de carga y estados vacíos editoriales. Todo se desactiva con `prefers-reduced-motion: reduce`. Detalle completo en [docs_ui/guia_estilos_espresso_piedra.md](docs_ui/guia_estilos_espresso_piedra.md).

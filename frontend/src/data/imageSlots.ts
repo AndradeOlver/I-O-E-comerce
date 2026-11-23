@@ -7,16 +7,21 @@ export interface ImageSlotConfig {
   recommendedPath: string;
   /** Ruta sugerida para versión celular */
   mobileRecommendedPath?: string;
+  /** Alternativa si `src` no existe (p. ej. PNG cuando no hay SVG). Solo el logo la usa. */
+  fallbackSrc?: string;
   dimensions: string;
   slotLabel: string;
 }
 
 export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
-  // Logo institucional en el header azul
+  // Logo institucional sobre el header espresso (#261E1B): subir la versión CLARA/marfil.
+  // Archivo esperado: frontend/public/img/brand/logo-io.svg (o logo-io.png si no hay SVG).
+  // Mientras no exista ninguno, el header muestra el texto simple "I&O".
   'brand-logo': {
-    src: '',
-    recommendedPath: 'public/img/brand/logo-io.png',
-    dimensions: '180 x 48 px',
+    src: '/img/brand/logo-io.svg',
+    fallbackSrc: '/img/brand/logo-io.png',
+    recommendedPath: 'public/img/brand/logo-io.svg',
+    dimensions: 'Alto 40 px · SVG (o PNG 360 x 80 px @2x)',
     slotLabel: 'Logo',
   },
 

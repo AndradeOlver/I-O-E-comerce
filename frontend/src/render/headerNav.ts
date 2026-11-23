@@ -1,7 +1,7 @@
-import { IMAGE_SLOTS } from '../data/imageSlots';
 import { NAV_MENU_ITEMS } from '../data/navigationData';
 import { CategorySlug } from '../types/store.types';
 import { escapeHtml, icons } from '../utils/icons';
+import { renderBrandMark } from './brand';
 
 interface HeaderNavOptions {
   selectedCategory: CategorySlug;
@@ -15,25 +15,14 @@ interface HeaderNavOptions {
 }
 
 function renderBrandLogo(): string {
-  const logoSlot = IMAGE_SLOTS['brand-logo'];
-  const src = logoSlot?.src?.trim() ?? '';
-
-  if (src) {
-    return `
-      <a href="#/" class="io-brand-logo-link" data-action="go-home" aria-label="Inicio I&O">
-        <img src="${escapeHtml(src)}" alt="I&O" class="io-brand-logo-img" data-logo-img />
-        <span class="io-brand-text d-none" data-logo-fallback>
-          I<span>&</span>O
-        </span>
-      </a>
-    `;
-  }
-
   return `
-    <a href="#/" class="io-brand-logo-link" data-action="go-home" aria-label="Inicio I&O" title="${escapeHtml(logoSlot?.recommendedPath ?? 'public/img/brand/logo-io.png')}">
-      <span class="io-brand-text">
-        I<span>&</span>O
-      </span>
+    <a
+      href="#/"
+      class="io-brand-logo-link"
+      data-action="go-home"
+      aria-label="Inicio I&O"
+    >
+      ${renderBrandMark()}
     </a>
   `;
 }
@@ -111,7 +100,7 @@ export function renderHeaderNav({
         <button
           type="button"
           class="io-mobile-drawer-link ${item.isAccent ? 'is-accent' : ''} ${isExpanded ? 'is-expanded' : ''}"
-          data-action="toggle-mobile-item"
+          data-action="toggle-mobile-cat"
           data-nav-key="${escapeHtml(item.key)}"
           aria-expanded="${isExpanded}"
         >
@@ -153,8 +142,17 @@ export function renderHeaderNav({
     `;
   }).join('');
 
+  const bagBadge = `<span class="io-bag-badge ${cartCount === 0 ? 'is-empty' : ''}" aria-hidden="true">${cartCount}</span>`;
+
   return `
-    <header class="io-header" role="banner">
+    <div class="io-top-strip">
+      <p>
+        ${icons.truck(16)}
+        <span><strong>Envío GRATIS</strong> en compras mayores a S/ 150</span>
+      </p>
+    </div>
+
+    <header class="io-header" id="io-site-header" role="banner">
       <div class="container-xl io-header-inner">
         <div class="io-header-left">
           <button
@@ -188,30 +186,12 @@ export function renderHeaderNav({
 
           <button
             type="button"
-            class="io-icon-action-btn position-relative"
+            class="io-icon-action-btn"
             data-action="open-wishlist"
             aria-label="Prendas deseadas (${wishlistCount})"
           >
             ${icons.heart(20)}
-            ${
-              wishlistCount > 0
-                ? `<span class="io-bag-badge" aria-hidden="true">${wishlistCount}</span>`
-                : ''
-            }
-          </button>
-
-          <button
-            type="button"
-            class="io-icon-action-btn position-relative"
-            data-action="open-cart"
-            aria-label="Bolsa de compras (${cartCount} prendas)"
-          >
-            ${icons.bag(20)}
-            ${
-              cartCount > 0
-                ? `<span class="io-bag-badge" aria-hidden="true">${cartCount}</span>`
-                : ''
-            }
+            ${wishlistCount > 0 ? `<span class="io-bag-badge" aria-hidden="true">${wishlistCount}</span>` : ''}
           </button>
 
           <button
@@ -222,6 +202,16 @@ export function renderHeaderNav({
           >
             ${icons.user(20)}
           </button>
+
+          <button
+            type="button"
+            class="io-icon-action-btn"
+            data-action="open-cart"
+            aria-label="Bolsa de compras (${cartCount} prendas)"
+          >
+            ${icons.bag(20)}
+            ${bagBadge}
+          </button>
         </div>
       </div>
 
@@ -230,16 +220,14 @@ export function renderHeaderNav({
           ? `
             <div class="io-search-overlay py-2 px-3" role="search">
               <div class="container-xl d-flex align-items-center gap-2">
-                <label for="input-search-header" class="visually-hidden">Buscar en catálogo</label>
+                <label for="buscador-catalogo" class="visually-hidden">Buscar en catálogo</label>
                 <input
-                  id="input-search-header"
+                  id="buscador-catalogo"
                   type="search"
                   class="form-control"
-                  style="min-height: 44px"
                   placeholder="Buscar vestido, pantalón, casaca..."
                   value="${escapeHtml(searchQuery)}"
-                  data-action="search-input"
-                  autofocus
+                  autocomplete="off"
                 />
                 <button
                   type="button"
@@ -268,9 +256,7 @@ export function renderHeaderNav({
             aria-label="Menú móvil de categorías"
           >
             <div class="d-flex align-items-center justify-content-between p-3 border-bottom border-secondary border-opacity-25">
-              <span class="io-brand-text">
-                I<span>&</span>O
-              </span>
+              ${renderBrandMark()}
               <button
                 type="button"
                 class="io-icon-action-btn"

@@ -11,6 +11,7 @@ import { renderCartDrawer } from './render/cartDrawer';
 import { renderCategoryGrid } from './render/categoryGrid';
 import { renderCategoryPage } from './render/categoryPage';
 import { renderHeaderNav } from './render/headerNav';
+import { bindBrandLogo } from './render/brand';
 import { renderOffersCarousel } from './render/offersCarousel';
 import { CartItem, CategorySlug } from './types/store.types';
 import { escapeHtml, icons } from './utils/icons';
@@ -144,6 +145,7 @@ function attachImageFallbacks(): void {
         const slotContainer = img.closest('.io-image-slot');
         const fallback = slotContainer?.querySelector('[data-slot-fallback-hidden]');
         if (slotContainer && fallback) {
+          slotContainer.classList.remove('is-filled');
           slotContainer.innerHTML = fallback.innerHTML;
         }
       },
@@ -151,18 +153,63 @@ function attachImageFallbacks(): void {
     );
   });
 
-  const logoImg = root.querySelector<HTMLImageElement>('img[data-logo-img]');
-  if (logoImg) {
-    logoImg.addEventListener(
-      'error',
-      () => {
-        logoImg.classList.add('d-none');
-        const fallback = logoImg.parentElement?.querySelector('[data-logo-fallback]');
-        fallback?.classList.remove('d-none');
-      },
-      { once: true }
-    );
+  bindBrandLogo(root);
+}
+
+// ---------------------------------------------------------------------------
+// Utilidades de presentación: header con scroll, overlays y cierre animado
+// ---------------------------------------------------------------------------
+let headerScrolled = false;
+let lastOverlayKey = 'none';
+let lastViewKey = '';
+let overlayOpenerAction: string | null = null;
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function syncHeaderScroll(): void {
+  const y = window.scrollY;
+  // Histéresis para evitar parpadeo cerca del umbral
+  if (!headerScrolled && y > 24) headerScrolled = true;
+  else if (headerScrolled && y < 8) headerScrolled = false;
+  root.querySelector('.io-header')?.classList.toggle('is-scrolled', headerScrolled);
+}
+
+function getOverlayKey(): string {
+  if (state.isCartOpen) return 'cart';
+  if (state.isWishlistOpen) return 'wishlist';
+  if (state.isLoginOpen) return 'login';
+  if (state.isMobileMenuOpen) return 'mobile';
+  return 'none';
+}
+
+/** Anima el cierre de drawers/modales antes de desmontarlos. */
+function animateClose(done: () => void): void {
+  const targets = root.querySelectorAll<HTMLElement>(
+    '.io-drawer-backdrop, .io-drawer-panel, .io-modal, .io-mobile-nav-drawer'
+  );
+  if (prefersReducedMotion() || targets.length === 0) {
+    done();
+    return;
   }
+  targets.forEach((el) => el.classList.add('is-closing'));
+  window.setTimeout(done, 220);
+}
+
+function closeAllOverlays(): void {
+  state.isSearchOpen = false;
+  state.isCartOpen = false;
+  state.isWishlistOpen = false;
+  state.isLoginOpen = false;
+  state.isMobileMenuOpen = false;
+  state.expandedMobileKey = null;
+}
+
+function formatReserveTime(totalSeconds: number): string {
+  const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  const secs = String(totalSeconds % 60).padStart(2, '0');
+  return `${mins}:${secs} min`;
 }
 
 function syncHeaderMenuDom(openKey: string | null): void {
@@ -236,12 +283,12 @@ function renderApp(): void {
       ? `
         ${renderOffersCarousel(OFERTAS_CARRUSEL, state.carouselIndex, state.carouselPaused)}
 
-        <div class="container-xl py-4">
+        <div class="container-xl pt-5 pb-2">
           ${
             state.liveFeedback
               ? `
-                <div class="alert alert-light border d-flex justify-content-between align-items-center mb-4" role="status" aria-live="polite" style="border-color: var(--color-primary-espresso)">
-                  <span class="small fw-semibold">${escapeHtml(state.liveFeedback)}</span>
+                <div class="io-alert" role="status" aria-live="polite">
+                  <span>${escapeHtml(state.liveFeedback)}</span>
                   <button type="button" class="btn-close" data-action="dismiss-feedback" aria-label="Ocultar notificación"></button>
                 </div>
               `
@@ -280,10 +327,10 @@ function renderApp(): void {
         ${mainContentHtml}
       </main>
 
-      <footer class="border-top py-4 mt-5" style="background-color: var(--color-surface-card); border-color: var(--color-border-subtle) !important;">
-        <div class="container-xl d-flex flex-wrap justify-content-between align-items-center gap-2 small" style="color: var(--color-ink-muted)">
-          <strong style="color: var(--color-primary-espresso)">I&amp;O · Lima, Perú</strong>
-          <span>Precios con IGV incluido (18% — RN-TRI-01) · RUC: 10458796321</span>
+      <footer class="io-footer">
+        <div class="container-xl d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <strong class="io-footer-brand">I&amp;O · Lima, Perú</strong>
+          <span class="io-footer-meta">Precios con IGV incluido (18% — RN-TRI-01) · RUC: 10458796321</span>
         </div>
       </footer>
 
@@ -309,6 +356,33 @@ function renderApp(): void {
   `;
 
   attachImageFallbacks();
+
+  // Las animaciones de entrada solo corren al cambiar de vista u overlay, no en re-renders menores
+  const overlayKey = getOverlayKey();
+  const viewKey = `${state.view}:${state.selectedCategory}`;
+  root.classList.toggle('io-steady-overlay', overlayKey !== 'none' && overlayKey === lastOverlayKey);
+  root.classList.toggle('io-steady-view', viewKey === lastViewKey);
+  document.body.classList.toggle('io-scroll-lock', overlayKey !== 'none');
+
+  if (overlayKey !== 'none' && overlayKey !== lastOverlayKey) {
+    // Foco al botón de cierre del panel recién abierto
+    root
+      .querySelector<HTMLElement>(
+        '.io-drawer-panel [data-action^="close"], .io-modal [data-action^="close"], .io-mobile-nav-drawer [data-action^="close"]'
+      )
+      ?.focus();
+  } else if (overlayKey === 'none' && lastOverlayKey !== 'none' && overlayOpenerAction) {
+    // Devuelve el foco al control que abrió el panel
+    const opener = Array.from(
+      root.querySelectorAll<HTMLElement>(`[data-action="${overlayOpenerAction}"]`)
+    ).find((el) => el.offsetParent !== null);
+    opener?.focus();
+    overlayOpenerAction = null;
+  }
+
+  lastOverlayKey = overlayKey;
+  lastViewKey = viewKey;
+  syncHeaderScroll();
 
   if (restoreFocusId === 'buscador-catalogo') {
     const input = document.getElementById('buscador-catalogo') as HTMLInputElement | null;
@@ -354,12 +428,10 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     syncHeaderMenuDom(null);
     if (state.isSearchOpen || state.isCartOpen || state.isWishlistOpen || state.isLoginOpen || state.isMobileMenuOpen) {
-      state.isSearchOpen = false;
-      state.isCartOpen = false;
-      state.isWishlistOpen = false;
-      state.isLoginOpen = false;
-      state.isMobileMenuOpen = false;
-      renderApp();
+      animateClose(() => {
+        closeAllOverlays();
+        renderApp();
+      });
     }
   }
 });
@@ -398,15 +470,20 @@ root.addEventListener('click', (event) => {
       renderApp();
       break;
     case 'open-mobile-menu':
+    case 'toggle-mobile-menu':
+      overlayOpenerAction = 'toggle-mobile-menu';
       state.isMobileMenuOpen = true;
       state.expandedMobileKey = null;
       renderApp();
       break;
     case 'close-mobile-menu':
-      state.isMobileMenuOpen = false;
-      state.expandedMobileKey = null;
-      renderApp();
+      animateClose(() => {
+        state.isMobileMenuOpen = false;
+        state.expandedMobileKey = null;
+        renderApp();
+      });
       break;
+    case 'toggle-mobile-item':
     case 'toggle-mobile-cat': {
       const key = target.dataset.navKey ?? null;
       state.expandedMobileKey = state.expandedMobileKey === key ? null : key;
@@ -414,21 +491,28 @@ root.addEventListener('click', (event) => {
       break;
     }
     case 'open-wishlist':
+      overlayOpenerAction = 'open-wishlist';
       state.isWishlistOpen = true;
       renderApp();
       break;
     case 'close-wishlist':
-      state.isWishlistOpen = false;
-      renderApp();
+      animateClose(() => {
+        state.isWishlistOpen = false;
+        renderApp();
+      });
       break;
     case 'open-login':
+      overlayOpenerAction = 'open-login';
+      state.isMobileMenuOpen = false;
       state.isLoginOpen = true;
       state.loginFeedback = '';
       renderApp();
       break;
     case 'close-login':
-      state.isLoginOpen = false;
-      renderApp();
+      animateClose(() => {
+        state.isLoginOpen = false;
+        renderApp();
+      });
       break;
     case 'dismiss-feedback':
       state.liveFeedback = '';
@@ -516,12 +600,15 @@ root.addEventListener('click', (event) => {
       break;
     }
     case 'open-cart':
+      overlayOpenerAction = 'open-cart';
       state.isCartOpen = true;
       renderApp();
       break;
     case 'close-cart':
-      state.isCartOpen = false;
-      renderApp();
+      animateClose(() => {
+        state.isCartOpen = false;
+        renderApp();
+      });
       break;
     case 'cart-qty': {
       const productoId = Number(target.dataset.productoId ?? 0);
@@ -626,9 +713,25 @@ window.setInterval(() => {
   } else {
     state.secondsRemaining -= 1;
     if (state.isCartOpen) {
-      renderApp();
+      const timerEl = root.querySelector<HTMLElement>('[data-cart-timer]');
+      if (timerEl) timerEl.textContent = formatReserveTime(state.secondsRemaining);
     }
   }
 }, 1000);
 
 renderApp();
+
+// Header dinámico: se compacta y se vuelve translúcido al hacer scroll
+let scrollTicking = false;
+window.addEventListener(
+  'scroll',
+  () => {
+    if (scrollTicking) return;
+    scrollTicking = true;
+    window.requestAnimationFrame(() => {
+      syncHeaderScroll();
+      scrollTicking = false;
+    });
+  },
+  { passive: true }
+);
