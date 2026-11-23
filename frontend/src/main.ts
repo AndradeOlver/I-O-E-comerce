@@ -37,6 +37,7 @@ interface StoreState {
   loginFeedback: string;
   isSearchOpen: boolean;
   isMobileMenuOpen: boolean;
+  expandedMobileKey: string | null;
   optInMarketing: boolean;
   liveFeedback: string;
 }
@@ -78,6 +79,7 @@ const state: StoreState = {
   loginFeedback: '',
   isSearchOpen: false,
   isMobileMenuOpen: false,
+  expandedMobileKey: null,
   optInMarketing: false,
   liveFeedback: '',
 };
@@ -270,6 +272,7 @@ function renderApp(): void {
         wishlistCount: state.wishlistCount,
         isSearchOpen: state.isSearchOpen,
         isMobileMenuOpen: state.isMobileMenuOpen,
+        expandedMobileKey: state.expandedMobileKey,
         searchQuery: state.searchQuery,
       })}
 
@@ -396,12 +399,20 @@ root.addEventListener('click', (event) => {
       break;
     case 'open-mobile-menu':
       state.isMobileMenuOpen = true;
+      state.expandedMobileKey = null;
       renderApp();
       break;
     case 'close-mobile-menu':
       state.isMobileMenuOpen = false;
+      state.expandedMobileKey = null;
       renderApp();
       break;
+    case 'toggle-mobile-cat': {
+      const key = target.dataset.navKey ?? null;
+      state.expandedMobileKey = state.expandedMobileKey === key ? null : key;
+      renderApp();
+      break;
+    }
     case 'open-wishlist':
       state.isWishlistOpen = true;
       renderApp();

@@ -10,6 +10,7 @@ interface HeaderNavOptions {
   wishlistCount: number;
   isSearchOpen: boolean;
   isMobileMenuOpen: boolean;
+  expandedMobileKey: string | null;
   searchQuery: string;
 }
 
@@ -46,6 +47,7 @@ export function renderHeaderNav({
   wishlistCount,
   isSearchOpen,
   isMobileMenuOpen,
+  expandedMobileKey,
   searchQuery,
 }: HeaderNavOptions): string {
   const navItemsHtml = NAV_MENU_ITEMS.map((item) => {
@@ -113,21 +115,55 @@ export function renderHeaderNav({
         </div>
         <nav class="p-3 overflow-auto flex-grow-1" aria-label="Categorías móvil">
           <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-            ${NAV_MENU_ITEMS.map(
-              (item) => `
+            ${NAV_MENU_ITEMS.map((item) => {
+              const isExpanded = expandedMobileKey === item.key;
+              const subColumnsHtml = item.columns
+                .map(
+                  (col) => `
+                    <div class="io-mobile-subgroup">
+                      <div class="io-mobile-subheading">${escapeHtml(col.heading)}</div>
+                      <ul class="list-unstyled d-flex flex-column gap-1 mb-0">
+                        ${col.links
+                          .map(
+                            (link) => `
+                              <li>
+                                <a
+                                  href="#/categoria/${escapeHtml(link.category)}"
+                                  class="io-mobile-sublink"
+                                  data-action="go-category"
+                                  data-category="${escapeHtml(link.category)}"
+                                  ${link.sizeFilter ? `data-filter-size="${escapeHtml(link.sizeFilter)}"` : ''}
+                                >
+                                  ${escapeHtml(link.label)}
+                                </a>
+                              </li>
+                            `
+                          )
+                          .join('')}
+                      </ul>
+                    </div>
+                  `
+                )
+                .join('');
+
+              return `
                 <li>
-                  <a
-                    href="#/categoria/${escapeHtml(item.category)}"
-                    class="io-mobile-drawer-link ${item.isAccent ? 'is-accent' : ''}"
-                    data-action="go-category"
-                    data-category="${escapeHtml(item.category)}"
+                  <button
+                    type="button"
+                    class="io-mobile-drawer-link ${item.isAccent ? 'is-accent' : ''} ${isExpanded ? 'is-expanded' : ''}"
+                    data-action="toggle-mobile-cat"
+                    data-nav-key="${escapeHtml(item.key)}"
+                    aria-expanded="${isExpanded}"
                   >
                     <span>${escapeHtml(item.label)}</span>
-                    ${icons.chevronRight(16)}
-                  </a>
+                    <span class="io-mobile-chevron">${icons.chevronDown(16)}</span>
+                  </button>
+                  <div class="io-mobile-subpanel ${isExpanded ? 'is-open' : ''}">
+                    ${subColumnsHtml}
+                  </div>
                 </li>
-              `
-            ).join('')}
+              `;
+            }).join('')}
           </ul>
         </nav>
       </aside>
