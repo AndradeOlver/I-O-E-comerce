@@ -715,7 +715,7 @@
 .io-carousel-stage {
   position: relative;
   width: 100%;
-  height: clamp(340px, 68vh, 640px);
+  height: clamp(380px, 72vh, 720px);
   background-color: var(--color-top-strip-bg);
   overflow: hidden;
 }
@@ -748,16 +748,16 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 18%; /* Ancla el encuadre en la zona superior (cabeza y torso) para evitar cortes en desktop */
+  object-position: center 28%; /* Encuadre armónico: cabeza intacta y vestido/cuerpo visible en PC y móvil */
   transform: scale(1);
-  transform-origin: center 20%; /* El zoom lento Ken Burns hace foco en el modelo en vez de recortar arriba */
+  transform-origin: center 30%;
   /* Al salir, vuelve a escala 1 solo cuando el fundido ya terminó (sin saltos visibles) */
   transition: transform 0s linear 1.3s;
 }
 
 /* Zoom lento hacia adentro (Ken Burns) mientras el slide está visible */
 .io-carousel-slide.is-zooming .io-image-slot img {
-  transform: scale(1.07);
+  transform: scale(1.05);
   transition: transform 7s linear;
 }
 
