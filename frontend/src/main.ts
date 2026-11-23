@@ -227,6 +227,7 @@ function syncCarouselDom(): void {
     const idx = Number(slide.dataset.slideIndex ?? -1);
     const active = idx === state.carouselIndex;
     slide.classList.toggle('is-active', active);
+    slide.classList.toggle('is-zooming', active);
     slide.setAttribute('aria-hidden', String(!active));
   });
 
@@ -383,6 +384,15 @@ function renderApp(): void {
   lastOverlayKey = overlayKey;
   lastViewKey = viewKey;
   syncHeaderScroll();
+
+  // Zoom lento del hero: se activa tras el primer frame para que la transición arranque en escala 1
+  if (state.view === 'home') {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        root.querySelector('.io-carousel-slide.is-active')?.classList.add('is-zooming');
+      });
+    });
+  }
 
   if (restoreFocusId === 'buscador-catalogo') {
     const input = document.getElementById('buscador-catalogo') as HTMLInputElement | null;

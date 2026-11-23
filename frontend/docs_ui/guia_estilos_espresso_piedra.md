@@ -90,7 +90,7 @@ La identidad **Espresso & Piedra** proyecta una estética editorial moderna, sob
 * **Navegación:** subrayado animado desde el centro en los enlaces principales y desde la izquierda en los enlaces de los menús desplegables, con desplazamiento sutil `translateX(3px)`. **OFERTAS** mantiene punto indicador + subrayado permanente (WCAG 1.4.1).
 * **Botones:** las flechas (`›`/`→`) se desplazan `4px` en hover; elevación `translateY(-1px)` con sombra cálida en el primario; `:active` con escala `0.985`.
 * **Categorías y productos:** zoom de imagen (`1.06x` / `1.05x`) dentro de contenedor `overflow: hidden`, elevación `-3px`, sombra cálida y revelado escalonado (`io-rise`) solo al cambiar de vista.
-* **Hero:** transición de slides con fundido + zoom lento; el titular y el CTA aparecen con retardo (`0.35s`) al activarse cada slide.
+* **Hero:** fundido de 1.2 s entre slides y zoom lento hacia adentro (`1 → 1.07` en 7 s, estilo Ken Burns) mientras cada slide está visible; el titular y el CTA aparecen con retardo (`0.35s`) al activarse cada slide.
 * **Drawers y modales:** apertura con deslizamiento + fundido y **cierre animado** (`.is-closing`, 220 ms) antes de desmontar; bloqueo de scroll del cuerpo (`io-scroll-lock`), foco automático al botón de cierre y retorno del foco al control que abrió el panel.
 * **Carga y estados vacíos:** *shimmer* discreto bajo las fotografías mientras cargan; estados vacíos (bolsa, deseados, sin resultados) con icono, título editorial y acción de salida.
 * **Temporizador de reserva (RN-ECO-03):** se actualiza por nodo (`role="timer"`), sin re-renderizar el drawer, por lo que no pierde el foco ni repite animaciones.

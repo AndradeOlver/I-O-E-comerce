@@ -724,15 +724,13 @@
   position: absolute;
   inset: 0;
   opacity: 0;
-  transform: scale(1.04);
-  transition: opacity 1.2s var(--ease-out), transform 2.4s var(--ease-out);
+  transition: opacity 1.2s var(--ease-out);
   pointer-events: none;
   z-index: 1;
 }
 
 .io-carousel-slide.is-active {
   opacity: 1;
-  transform: scale(1);
   pointer-events: auto;
   z-index: 2;
 }
@@ -751,6 +749,23 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
+  transform: scale(1);
+  transform-origin: center;
+  /* Al salir, vuelve a escala 1 solo cuando el fundido ya terminó (sin saltos visibles) */
+  transition: transform 0s linear 1.3s;
+}
+
+/* Zoom lento hacia adentro (Ken Burns) mientras el slide está visible */
+.io-carousel-slide.is-zooming .io-image-slot img {
+  transform: scale(1.07);
+  transition: transform 7s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .io-carousel-slide .io-image-slot img,
+  .io-carousel-slide.is-zooming .io-image-slot img {
+    transform: none;
+  }
 }
 
 /* Degradado lateral cálido desde la izquierda (#1A1512 78% → transparente) */
