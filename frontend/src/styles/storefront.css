@@ -748,9 +748,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: center 18%; /* Ancla el encuadre en la zona superior (cabeza y torso) para evitar cortes en desktop */
   transform: scale(1);
-  transform-origin: center;
+  transform-origin: center 20%; /* El zoom lento Ken Burns hace foco en el modelo en vez de recortar arriba */
   /* Al salir, vuelve a escala 1 solo cuando el fundido ya terminó (sin saltos visibles) */
   transition: transform 0s linear 1.3s;
 }
