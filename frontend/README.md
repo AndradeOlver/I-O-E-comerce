@@ -1,6 +1,6 @@
 # 🎨 Frontend – Sistema Omnicanal I&O (`1.2 frontend/`)
 
-> **Estado Actual:** ✅ **Stack Aprobado: React + Vite + TypeScript + Bootstrap 5.3 (HTML5 Semántico / CSS3)** — Aprobado el `20/11/2026` en [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md)  
+> **Estado Actual:** 🟡 **En desarrollo — Stack: Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3** — Actualizado el `22/11/2026` en [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md)  
 > **Autores Exclusivos:** **ANDRADE CHIRINOS, Olver Daniel (`N00401718`)** y **RAZURI PAREDES, Josue Daniel (`N00421512`)**  
 > **Fuente de Verdad UI/UX:** `../documentos/Interaccion Humano Com Proyecto/Informacion_IHC/04_UX_Personas_Estilos_y_Pruebas_IO.md` (Secciones `7.5` a `7.8`)
 
@@ -52,7 +52,7 @@ Esta capa alojará las interfaces de usuario centradas en la persona, responsiva
 
 ## ⚖️ Stack Tecnológico Aprobado
 
-Decisión registrada en la Sección 2.1 de [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md) (`20/11/2026`):
-* **Opción A:** HTML5 Semántico + CSS3 (*Design Tokens*) + JavaScript Vanilla ES6+ + Bootstrap 5.3 *(⬜ Descartada)*.
-* **Opción B:** **React + Vite + TypeScript + Bootstrap 5.3 (HTML5 Semántico / CSS3)** *(✅ Aprobado)*.
+Decisión registrada en la Sección 2.1 de [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md) (`22/11/2026`):
+* **Opción A:** **Vite + TypeScript + HTML5 Semántico + CSS3 puro (*Design Tokens*) + Bootstrap 5.3** *(✅ Aprobado)*.
+* **Opción B:** React + Vite + TypeScript + Bootstrap 5.3 *(⬜ Descartada)*.
 * **Opción C:** Angular / Vue 3 + TypeScript *(⬜ Descartada)*.

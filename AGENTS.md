@@ -17,7 +17,7 @@ Toda decisión arquitectónica o funcional debe consultar la fuente autorizada s
 |---|---|---|
 | **Procesos de Negocio y Modelado RUP/UML** | `documentos/Model Soft Proyecto/Informacion del negocio/` (y `ESTADO_PROYECTO.md`) | **7 Casos de Uso de Negocio (`CUN01`–`CUN07`)**, **12 Entidades aprobadas con herencia (`EN01`–`EN12`)**, **42 Reglas de Negocio (`RN-*`)**, Glosario (45 términos), ECUN y Ficha YAML. |
 | **UX/UI, Accesibilidad WCAG 2.1 AA y RE3** | `documentos/Interaccion Humano Com Proyecto/Informacion_IHC/` (y `ESTADO_PROYECTO_IHC.md`) | **5 Hallazgos (`H01`–`H05`)**, **10 RF priorizados**, **10 Historias de Usuario**, **48 Reglas (42 I&O + 6 `RN-ACC-01` a `RN-ACC-06`)**, 6 User Personas, Guía de Estilos (`#0F2043`, `#FFC000`, `#F8FAFC`), Design Sprint (`SUS 88.5`, `SEQ 6.4`, `Éxito 96.4%`) y Rúbrica RE3 (`C3.1`, `C3.2`, `C3.3`). |
-| **Capa de Presentación (`frontend/`)** | `frontend/` y `frontend/docs_ui/` | Prototipos de interfaz, Guía de Estilos WCAG 2.1 AA/AAA, vistas POS/E-commerce/Almacén/Préstamos y Dashboard Okabe-Ito (**Stack aprobado:** `React + Vite + TypeScript + Bootstrap 5.3`). |
+| **Capa de Presentación (`frontend/`)** | `frontend/` y `frontend/docs_ui/` | Prototipos de interfaz, Guía de Estilos WCAG 2.1 AA/AAA, vistas POS/E-commerce/Almacén/Préstamos y Dashboard Okabe-Ito (**Stack aprobado:** `Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3`). |
 | **Capa de Lógica y API (`backend/`)** | `backend/` y `backend/docs_api/` | Contratos de API, control RBAC (5 roles), validación de las 42 reglas de negocio, integraciones tokenizadas PCI-DSS y auditoría (**Stack aprobado:** `Node.js + Express (TypeScript)`). |
 | **Capa de Persistencia (`DB/`)** | `DB/`, `DB/esquemas/` y `DB/seeds/` | Diccionario físico de las 12 entidades con herencia (`Pedido`/`DetallePedido`), restricciones ACID y datos de prueba (**Motor aprobado:** `Microsoft SQL Server (T-SQL)`). |
 
@@ -42,7 +42,7 @@ Toda decisión arquitectónica o funcional debe consultar la fuente autorizada s
 
 ### 3. Regla de Respeto a los Stacks Tecnológicos y Arquitectura Aprobada
 * Los stacks oficiales aprobados el `20/11/2026` en `ESTADO_GLOBAL_PROYECTO.md` son:
-  * **`frontend/`:** `React + Vite + TypeScript + Bootstrap 5.3` (HTML5 Semántico / CSS3).
+  * **`frontend/`:** `Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3`.
   * **`backend/`:** `Node.js + Express (TypeScript)`.
   * **`DB/`:** `Microsoft SQL Server (T-SQL)`.
 * **NO introducir** frameworks, lenguajes o motores distintos (ej. Angular, Vue, Python/Django, Java, PostgreSQL, MySQL) sin aprobación explícita previa de Olver y Josue registrada en `ESTADO_GLOBAL_PROYECTO.md`.
@@ -55,7 +55,7 @@ Todo desarrollo dentro de `backend/` debe seguir obligatoriamente la arquitectur
 3. **5 Mecanismos Transversales Obligatorios (`backend/src/shared/` y `config/`):**
    * **Transacciones ACID y Concurrencia (`withTransaction`):** Descuento atómico de stock (`WHERE stock >= @qty` / `UPDLOCK, ROWLOCK`) en `Pedido` + `DetallePedido` + `Producto` (`RN-VEN-06`) y job `node-cron` cada 1 minuto para liberar carritos expirados a los 15 minutos (`RN-ECO-03`).
    * **Auditoría Atómica (`auditService.log(tx, ...)`):** Toda operación crítica (especialmente la **Constancia Formal de Préstamo emitida por el Almacenero sin gerente en `RN-PRE-01`**, anulaciones `RN-TRI-03` y cierres de planilla `RN-FIN-05`) debe registrar su evento en `dbo.AuditLog` dentro de la **misma transacción SQL** (`RN-SEG-03`).
-   * **Errores Tipados para Accesibilidad (`sqlErrorMapper` + `BusinessRuleError`):** Traducir violaciones de reglas y constraints/triggers de SQL Server a un JSON uniforme (`{ ok: false, ruleCode: "RN-*", error, message, field }`) listo para alertas *Poka-Yoke* y regiones `aria-live` en React.
+   * **Errores Tipados para Accesibilidad (`sqlErrorMapper` + `BusinessRuleError`):** Traducir violaciones de reglas y constraints/triggers de SQL Server a un JSON uniforme (`{ ok: false, ruleCode: "RN-*", error, message, field }`) listo para alertas *Poka-Yoke* y regiones `aria-live` en el frontend.
    * **Precisión Monetaria (`decimal.js`):** Prohibido calcular IGV (`18%`), descuentos ($\le 10\%$) o planilla con punto flotante nativo de JavaScript.
    * **Seguridad RBAC y PCI-DSS:** JWT + `bcryptjs`/`argon2` para los 5 roles internos (`TN01`–`TN05`) y clientes (`AN01`), y webhooks de pago idempotentes almacenando solo `token_pasarela_ref` (cero PAN/CVV, `RN-SEG-02`).
 4. **Construcción Incremental por Fases (No monolito de golpe):** Construir y verificar el backend paso a paso siguiendo las 4 fases de `backend/README.md`:

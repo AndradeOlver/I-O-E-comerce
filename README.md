@@ -11,7 +11,7 @@
 
 Esta carpeta raíz centraliza en un solo lugar dos dimensiones complementarias del proyecto **I&O**:
 1. **Documentación Académica e Ingeniería Previa (`documentos/`):** Dos cursos oficiales de la Universidad Privada del Norte (UPN, ciclo 2026-2) que definen la lógica del negocio, el modelado RUP/UML, la investigación UX/UI, los estándares de accesibilidad **WCAG 2.1 Nivel AA** y la medición de competencia **RE3**.
-2. **Arquitectura de Construcción del Software (`frontend/`, `backend/`, `DB/`):** Esqueleto modular con stacks aprobados en [ESTADO_GLOBAL_PROYECTO.md](ESTADO_GLOBAL_PROYECTO.md): **React + Vite + TypeScript + Bootstrap 5.3** (`frontend/`), **Node.js + Express (TypeScript)** (`backend/`) y **Microsoft SQL Server** (`DB/`).
+2. **Arquitectura de Construcción del Software (`frontend/`, `backend/`, `DB/`):** Esqueleto modular con stacks aprobados en [ESTADO_GLOBAL_PROYECTO.md](ESTADO_GLOBAL_PROYECTO.md): **Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3** (`frontend/`), **Node.js + Express (TypeScript)** (`backend/`) y **Microsoft SQL Server** (`DB/`).
 
 ---
 
@@ -77,7 +77,7 @@ git commit -m "docs: actualizacion de informes y artefactos IHC RE3"
 ```
 
 ### 4. Repositorio de Implementación Técnica (Raíz — `I-O-E-comerce.git`)
-* Con los stacks ya aprobados en `ESTADO_GLOBAL_PROYECTO.md` (`React + Vite + TypeScript + Bootstrap 5.3` / `Node.js + Express` / `Microsoft SQL Server`), el repositorio Git de la raíz (`AndradeOlver/I-O-E-comerce`) versiona exclusivamente código y arquitectura técnica en `frontend/`, `backend/` y `DB/`. Gracias al `.gitignore` raíz, nunca interfiere con `documentos/`.
+* Con los stacks ya aprobados en `ESTADO_GLOBAL_PROYECTO.md` (`Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3` / `Node.js + Express` / `Microsoft SQL Server`), el repositorio Git de la raíz (`AndradeOlver/I-O-E-comerce`) versiona exclusivamente código y arquitectura técnica en `frontend/`, `backend/` y `DB/`. Gracias al `.gitignore` raíz, nunca interfiere con `documentos/`.
 
 ---
 

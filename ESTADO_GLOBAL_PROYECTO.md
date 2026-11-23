@@ -4,8 +4,8 @@
 > **Autores del Proyecto General y del Desarrollo (`frontend/`, `backend/`, `DB/`):**  
 > 1. **ANDRADE CHIRINOS, Olver Daniel** (`N00401718`)  
 > 2. **RAZURI PAREDES, Josue Daniel** (`N00421512`)  
-> **Fase Global Actual:** `02. Stacks y Arquitectura Backend Aprobados — Listo para Construcción Incremental (Fase 0 a Fase 3)`  
-> **Última Actualización:** `22/11/2026` (Documentada arquitectura de Monolito Modular *Feature-Sliced* + `mssql` parametrizado + `Zod` y hoja de ruta en 4 fases para `backend/` en `AGENTS.md`, `backend/README.md` y skill `arquitectura-backend-io`)
+> **Fase Global Actual:** `03. Desarrollo Frontend Iniciado — Vista 01 (Página del Comprador) operativa en Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3`  
+> **Última Actualización:** `22/11/2026` (Actualizado stack Frontend sin React a `Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3` en los 3 repositorios; Vista 01 del Comprador migrada y compilada)
 
 ---
 
@@ -17,7 +17,7 @@ Este tablero maestro conecta la **documentación académica UPN** (en `documento
 |:---:|---|---|---|---|:---:|---|
 | **1.1.1** | `documentos/Model Soft Proyecto/` | Curso MOANSO (`ISOF1301`) — RUP / UML 2.5 | 5 integrantes: Andrade, Arias, Medina, Razuri, Restan | `.git` independiente (`origin/main` → `MoAnSo_G2.git`, ramas `dev-*`) | 🟡 **Artefactos base (`01`–`05`) aprobados; Líneas Amarillas 🟨 y Word en seguimiento** | [ESTADO_PROYECTO.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/documentos/Model%20Soft%20Proyecto/ESTADO_PROYECTO.md) |
 | **1.1.2** | `documentos/Interaccion Humano Com Proyecto/` | Curso IHC — UX/UI, Design Sprint, WCAG 2.1 AA y Rúbrica RE3 (v1.5) | **2 integrantes exclusivos:** Olver Andrade (`N00401718`) y Josue Razuri (`N00421512`) | `.git` independiente (`origin/main` → `IHC_G3.git`, ramas `dev-*`) | ⚠️ **Falta revisión humana** (6 archivos fuente `Informacion_IHC/` y 2 `.docx` compilados) | [ESTADO_PROYECTO_IHC.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/documentos/Interaccion%20Humano%20Com%20Proyecto/ESTADO_PROYECTO_IHC.md) |
-| **1.2** | `frontend/` | Capa de Presentación, UI POS/Web, Dashboard y Accesibilidad Nativa WCAG 2.1 AA | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | ✅ **Stack aprobado: React + Vite + TypeScript + Bootstrap 5.3** (incluye `docs_ui/`) | [frontend/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/frontend/README.md) |
+| **1.2** | `frontend/` | Capa de Presentación, UI POS/Web, Dashboard y Accesibilidad Nativa WCAG 2.1 AA | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | 🟡 **En desarrollo: Vista 01 del Comprador implementada (Vite + TS + HTML5 + CSS3 puro + Bootstrap 5.3)** | [frontend/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/frontend/README.md) |
 | **1.3** | `backend/` | Capa de Lógica de Negocio, APIs, RBAC (5 roles) y 42 Reglas | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | ✅ **Stack y arquitectura aprobados: Node.js + Express (TS) — Monolito Modular + `mssql` + `Zod` (Fases 0–3)** | [backend/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/backend/README.md) |
 | **1.4** | `DB/` | Capa de Persistencia (12 Entidades aprobadas con herencia) | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | ✅ **Microsoft SQL Server — DDL y seeds generados** (`esquemas/01_esquema_io_sqlserver.sql`, `seeds/01_datos_iniciales_io.sql`) | [DB/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/DB/README.md) |
 
@@ -31,11 +31,11 @@ Este tablero maestro conecta la **documentación académica UPN** (en `documento
 ### 2.1. Elección de Stack – `1.2 frontend/`
 | Opción | Stack Tecnológico Propuesto | Ventajas Principales para I&O | Consideraciones / Trade-offs | Estado |
 |:---:|---|---|---|:---:|
-| **Opción A** | **HTML5 Semántico + CSS3 (*Design Tokens*) + JavaScript Vanilla ES6+ + Bootstrap 5.3** | Cero configuración de empaquetado y control directo de ARIA/WCAG 2.1 AA para prototipos estáticos. | Requiere disciplina modular manual conforme crecen las vistas POS, Dashboard y E-commerce. | ⬜ Descartada |
-| **Opción B** | **React + Vite + TypeScript + Bootstrap 5.3 (HTML5 Semántico / CSS3)** | Componentes reutilizables (Selector Daltonismo, Tokens WCAG, POS), grillas *Mobile-First* de Bootstrap 5.3 alineadas con IHC (`SUS 88.5`), tipado estricto para modelos de SKU y estados del pedido, e integración limpia con API Express. | Requiere manejo básico de ecosistema Node/npm y configuración de rutas en cliente. | ✅ Aprobado |
+| **Opción A** | **Vite + TypeScript + HTML5 Semántico + CSS3 puro (*Design Tokens*) + Bootstrap 5.3** | Alineación directa con el prototipo evaluado en IHC (`SUS 88.5`, Bootstrap 5.3), cero sobrecarga de framework virtual DOM, control directo de ARIA/WCAG 2.1 AA, grillas *Mobile-First* y tipado estricto con TypeScript. | Requiere organización modular manual en `src/render/` conforme crecen las vistas POS, Dashboard y E-commerce. | ✅ Aprobado |
+| **Opción B** | **React + Vite + TypeScript + Bootstrap 5.3** | Componentes reutilizables (Selector Daltonismo, Tokens WCAG, POS), tipado estricto e integración con API Express. | Descartada por preferencia del equipo por CSS3 puro + Bootstrap 5.3 sin React. | ⬜ Descartada |
 | **Opción C** | **Angular / Vue 3 + TypeScript** | Arquitectura fuertemente estructurada desde el inicio, reactividad integrada para carrito y dashboard KPI en tiempo real. | Curva más rígida en Angular o menor ecosistema corporativo local según preferencia del equipo. | ⬜ Descartada |
 
-* **Decisión Aprobada Frontend:** `✅ Opción B — React + Vite + TypeScript + Bootstrap 5.3 (HTML5 Semántico / CSS3)` *(Aprobado el 20/11/2026 por Olver Andrade)*
+* **Decisión Aprobada Frontend:** `✅ Opción A — Vite + TypeScript + HTML5 Semántico + CSS3 puro (*Design Tokens*) + Bootstrap 5.3` *(Actualizado el 22/11/2026 por Olver Andrade)*
 
 ---
 
@@ -68,7 +68,7 @@ Con los stacks aprobados, los **8 módulos** integrarán de forma trazable los *
 | Código | Módulo del Sistema I&O | CUN / Base IHC | Reglas y Capacidades Clave a Implementar | Impacto en Capas | Estado |
 |:---:|---|---|---|---|---|
 | **M01** | **Venta en Tienda (POS)** | `CUN01` / `RF02` / `DD-04` | Consulta SKU en vivo, **sugerencia automática de alternativas (`RN-VEN-02`)**, tope de descuento 10% (`RN-VEN-03`), Boleta (DNI) / Factura (RUC) con **IGV 18% (`RN-TRI-01`)**, bloqueo de stock cero (`RN-VEN-06`) y atajos de teclado `F2`–`F8`. | `frontend/` POS + `backend/` Ventas/SUNAT + `DB/` `PedidoCliente`, `ComprobantePago`, `MovimientoFinanciero` | 📋 BD lista; contratos UI/API pendientes |
-| **M02** | **Venta Online E-commerce** | `CUN02` / `RF01`, `RF03` / `DD-01`, `DD-03` | Catálogo SKU (talla + color), **carrito con reserva temporal 15 min (`RN-ECO-03`)**, checkout en 3 pasos, **pasarela tokenizada PCI-DSS (`RN-SEG-02`) con hasta 3 reintentos (`RN-ECO-02`)** y máquina de 6 estados (`RN-ECO-04`). | `frontend/` Tienda Web + `backend/` Carrito/Checkout/Webhook + `DB/` `Producto`, `RegistroCliente`, `PedidoCliente` | 📋 BD lista; contratos UI/API pendientes |
+| **M02** | **Venta Online E-commerce** | `CUN02` / `RF01`, `RF03` / `DD-01`, `DD-03` | Catálogo SKU (talla + color), **carrito con reserva temporal 15 min (`RN-ECO-03`)**, checkout en 3 pasos, **pasarela tokenizada PCI-DSS (`RN-SEG-02`) con hasta 3 reintentos (`RN-ECO-02`)** y máquina de 6 estados (`RN-ECO-04`). | `frontend/` Tienda Web + `backend/` Carrito/Checkout/Webhook + `DB/` `Producto`, `RegistroCliente`, `PedidoCliente` | 🟡 Frontend Vista 01 (catálogo + bolsa 15 min) lista; falta checkout y backend |
 | **M03** | **Envíos y Courier** | `CUN03` / `RF05` | Lista de *picking/packing* solo tras pago confirmado (`RN-ECO-01`), generación en 1 clic de **Guía de Envío con tracking único (`RN-ENV-01`)**, cálculo de flete transparente y **envío gratis > S/ 150 (`RN-ENV-04`)**, y registro de hasta **2 intentos con firma/DNI (`RN-ENV-02`, `RN-ENV-03`)**. | `frontend/` Panel Almacén + `backend/` Logística + `DB/` `GuiaEnvio`, `PedidoCliente` | 📋 BD lista; contratos UI/API pendientes |
 | **M04** | **Compra de Mercadería** | `CUN04` / `RF07` | **Alerta automática de stock $\le 5$ unidades por SKU (`RN-INV-03`)**, evaluación de cotizaciones, emisión de `PedidoProveedor` (`RN-COM-01`), control de calidad físico contra Guía de Remisión (`RN-COM-03`) y bloqueo de pago por inconformidad (`RN-COM-04`). | `frontend/` Compras/Almacén + `backend/` Abastecimiento + `DB/` `RegistroProveedor`, `PedidoProveedor`, `DetallePedidoProveedor` | 📋 BD lista; contratos UI/API pendientes |
 | **M05** | **Marketing y Catálogo** | `CUN05` / `RF08` | Publicación de ofertas con **vigencia temporal y stock máximo obligatorio INDECOPI (`RN-MKT-01`, Ley 29571)**, **baja automática al llegar el stock a 0**, aprobación del Dueño (`RN-MKT-04`) y captura **opt-in explícita sin casillas pre-marcadas (`RN-MKT-03`, Ley 29733)**. | `frontend/` Admin MKT + `backend/` Campañas/Catálogo + `DB/` `Producto`, `Categoria`, `RegistroCliente` | 📋 BD lista; contratos UI/API pendientes |
@@ -83,6 +83,6 @@ Con los stacks aprobados, los **8 módulos** integrarán de forma trazable los *
 1. **Validar Documentación Académica en `documentos/`:**
    * Completar las revisiones humanas pendientes en `documentos/Model Soft Proyecto/` (Líneas Amarillas 🟨) y `documentos/Interaccion Humano Com Proyecto/` (`Informacion_IHC/` y `.docx` RE3).
 2. **Stacks Tecnológicos Aprobados (`✅ Completado el 20/11/2026`):**
-   * Frontend: `React + Vite + TypeScript + Bootstrap 5.3` · Backend: `Node.js + Express (TypeScript)` · BD: `Microsoft SQL Server (T-SQL)`.
+   * Frontend: `Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3` · Backend: `Node.js + Express (TypeScript)` · BD: `Microsoft SQL Server (T-SQL)`.
 3. **Diseñar Contratos e Iniciar Implementación (`M01`–`M08`):**
    * Documentar tokens UI y wireframes en `frontend/docs_ui/`, contratos REST/RBAC en `backend/docs_api/` y validar los scripts DDL/seeds ya generados en `DB/esquemas/` y `DB/seeds/` antes de codificar los módulos.

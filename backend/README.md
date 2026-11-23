@@ -31,7 +31,7 @@ backend/
 │   │   │   ├── auth.middleware.ts     # Verifica JWT (Empleado interno o Cliente externo)
 │   │   │   ├── rbac.middleware.ts     # requireRole('Administrador', 'Almacenero') (RN-SEG-01)
 │   │   │   ├── validate.middleware.ts # Ejecuta esquemas Zod (body, query, params)
-│   │   │   └── error.middleware.ts    # Respuesta JSON uniforme para alertas aria-live en React
+│   │   │   └── error.middleware.ts    # Respuesta JSON uniforme para alertas aria-live en el frontend
 │   │   ├── services/
 │   │   │   └── audit.service.ts       # Inserta en dbo.AuditLog dentro de la MISMA transacción (RN-SEG-03)
 │   │   └── utils/
@@ -76,7 +76,7 @@ backend/
 * Permite control explícito de transacciones ACID y bloqueos de fila (`UPDLOCK, ROWLOCK`) al descontar `Producto.stock`.
 
 ### 3. Contrato Uniforme de Errores de Reglas de Negocio (Soporte *Poka-Yoke* y `aria-live`)
-Todo rechazo por regla de negocio o restricción `CHECK`/`UNIQUE`/`TRIGGER` de SQL Server devuelve una estructura uniforme para que el frontend React anuncie el error con claridad accesible:
+Todo rechazo por regla de negocio o restricción `CHECK`/`UNIQUE`/`TRIGGER` de SQL Server devuelve una estructura uniforme para que el frontend anuncie el error con claridad accesible:
 
 ```json
 {
