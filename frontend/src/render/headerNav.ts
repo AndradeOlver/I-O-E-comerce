@@ -1,5 +1,10 @@
-import { NAV_MENU_ITEMS, NavMenuLink } from '../data/navigationData';
-import { CategorySlug, GenderFilter } from '../types/store.types';
+import {
+  NAV_MENU_ITEMS,
+  NavCategoryNode,
+  NavMenuItem,
+  NavMenuLink,
+} from '../data/navigationData';
+import { CategorySlug, GenderFilter, KidsAgeGroup } from '../types/store.types';
 import { escapeHtml, icons } from '../utils/icons';
 import { renderBrandMark } from './brand';
 
@@ -11,8 +16,13 @@ interface HeaderNavOptions {
   cartCount: number;
   wishlistCount: number;
   isSearchOpen: boolean;
+  openNavKey: string | null;
+  activeMenuAge: KidsAgeGroup | null;
+  activeMenuCategory: string | null;
   isMobileMenuOpen: boolean;
   expandedMobileKey: string | null;
+  mobileAgeKey: KidsAgeGroup | null;
+  mobileCategoryKey: string | null;
   searchQuery: string;
 }
 
@@ -43,6 +53,357 @@ function renderLinkAttributes(link: NavMenuLink): string {
   return attrs.join(' ');
 }
 
+function renderSubcategoryColumn(activeCat: NavCategoryNode, contextLabel?: string): string {
+  const heading = contextLabel
+    ? `${activeCat.label} · ${contextLabel}`
+    : activeCat.label;
+
+  return `
+    <div class="io-cascade-col io-cascade-col--entered" aria-label="Subcategorías de ${escapeHtml(activeCat.label)}">
+      <div class="io-menu-col-heading">${escapeHtml(heading)}</div>
+      <ul class="io-menu-col-list">
+        ${
+          activeCat.viewAllLink
+            ? `
+              <li class="mb-1">
+                <a class="io-menu-link io-menu-link--all" ${renderLinkAttributes(activeCat.viewAllLink)}>
+                  <span>${escapeHtml(activeCat.viewAllLink.label)}</span>
+                  <span aria-hidden="true">→</span>
+                </a>
+              </li>
+            `
+            : ''
+        }
+        ${activeCat.sublinks
+          .map(
+            (sub) => `
+              <li>
+                <a class="io-menu-link" ${renderLinkAttributes(sub)}>
+                  ${escapeHtml(sub.label)}
+                </a>
+              </li>
+            `
+          )
+          .join('')}
+      </ul>
+    </div>
+  `;
+}
+
+function renderDesktopCascadePanel(
+  item: NavMenuItem,
+  isOpen: boolean,
+  activeMenuAge: KidsAgeGroup | null,
+  activeMenuCategory: string | null
+): string {
+  const viewAllRootAttrs = renderLinkAttributes({
+    label: item.viewAllLabel,
+    category: item.category,
+    gender: item.gender,
+    onlyOffers: item.onlyOffers,
+  });
+
+  // Flujo Niños: Nivel 1 (Edad) -> clic -> Nivel 2 (Categoría) -> clic -> Nivel 3 (Subcategoría)
+  if (item.ageNodes && item.ageNodes.length > 0) {
+    const selectedAgeNode =
+      (isOpen && activeMenuAge
+        ? item.ageNodes.find((a) => a.ageKey === activeMenuAge)
+        : null) ?? null;
+
+    const selectedCatNode =
+      (selectedAgeNode && activeMenuCategory
+        ? selectedAgeNode.categories.find((c) => c.key === activeMenuCategory)
+        : null) ?? null;
+
+    const ageColHtml = `
+      <div class="io-cascade-col">
+        <div class="io-menu-col-heading d-flex justify-content-between align-items-center gap-3">
+          <span>1. Selecciona Edad</span>
+          <a class="io-cascade-all-inline" ${viewAllRootAttrs}>${escapeHtml(item.viewAllLabel)} →</a>
+        </div>
+        <ul class="io-cascade-list" role="list">
+          ${item.ageNodes
+            .map((ageNode) => {
+              const isAgeSelected = selectedAgeNode?.ageKey === ageNode.ageKey;
+              return `
+                <li>
+                  <button
+                    type="button"
+                    id="menu-age-${escapeHtml(item.key)}-${escapeHtml(ageNode.ageKey)}"
+                    class="io-cascade-step-btn ${isAgeSelected ? 'is-selected' : ''}"
+                    data-action="select-menu-age"
+                    data-nav-key="${escapeHtml(item.key)}"
+                    data-age-key="${escapeHtml(ageNode.ageKey)}"
+                    aria-expanded="${isAgeSelected}"
+                  >
+                    <span>${escapeHtml(ageNode.label)}</span>
+                    ${icons.chevronRight(16)}
+                  </button>
+                </li>
+              `;
+            })
+            .join('')}
+        </ul>
+      </div>
+    `;
+
+    const catColHtml = selectedAgeNode
+      ? `
+        <div class="io-cascade-col io-cascade-col--entered" aria-label="Categorías para ${escapeHtml(selectedAgeNode.label)}">
+          <div class="io-menu-col-heading d-flex justify-content-between align-items-center gap-3">
+            <span>2. Categorías · ${escapeHtml(selectedAgeNode.label)}</span>
+            <a class="io-cascade-all-inline" ${renderLinkAttributes(selectedAgeNode.viewAllLink)}>Ver todo →</a>
+          </div>
+          <ul class="io-cascade-list" role="list">
+            ${selectedAgeNode.categories
+              .map((catNode) => {
+                const isCatSelected = selectedCatNode?.key === catNode.key;
+                return `
+                  <li>
+                    <button
+                      type="button"
+                      id="menu-cat-${escapeHtml(item.key)}-${escapeHtml(catNode.key)}"
+                      class="io-cascade-step-btn ${isCatSelected ? 'is-selected' : ''}"
+                      data-action="select-menu-cat"
+                      data-nav-key="${escapeHtml(item.key)}"
+                      data-cat-key="${escapeHtml(catNode.key)}"
+                      aria-expanded="${isCatSelected}"
+                    >
+                      <span>${escapeHtml(catNode.label)}</span>
+                      ${icons.chevronRight(16)}
+                    </button>
+                  </li>
+                `;
+              })
+              .join('')}
+          </ul>
+        </div>
+      `
+      : '';
+
+    const subcatColHtml =
+      selectedAgeNode && selectedCatNode
+        ? renderSubcategoryColumn(selectedCatNode, selectedAgeNode.label)
+        : '';
+
+    return `
+      <div class="io-cascade-stage io-cascade-stage--kids">
+        ${ageColHtml}
+        ${catColHtml}
+        ${subcatColHtml}
+      </div>
+    `;
+  }
+
+  // Flujo Hombre, Mujer y Ofertas: Nivel 1 (Categoría) -> clic -> Nivel 2 (Subcategoría)
+  const categories = item.categories ?? [];
+  const selectedCatNode =
+    (isOpen && activeMenuCategory
+      ? categories.find((c) => c.key === activeMenuCategory)
+      : null) ?? null;
+
+  const catColHtml = `
+    <div class="io-cascade-col">
+      <div class="io-menu-col-heading d-flex justify-content-between align-items-center gap-3">
+        <span>${item.onlyOffers ? 'Filtrar Ofertas' : `Categorías · ${item.label}`}</span>
+        <a class="io-cascade-all-inline" ${viewAllRootAttrs}>${escapeHtml(item.viewAllLabel)} →</a>
+      </div>
+      <ul class="io-cascade-list ${categories.length > 5 ? 'io-cascade-list--two-col' : ''}" role="list">
+        ${categories
+          .map((catNode) => {
+            const isCatSelected = selectedCatNode?.key === catNode.key;
+            return `
+              <li>
+                <button
+                  type="button"
+                  id="menu-cat-${escapeHtml(item.key)}-${escapeHtml(catNode.key)}"
+                  class="io-cascade-step-btn ${isCatSelected ? 'is-selected' : ''}"
+                  data-action="select-menu-cat"
+                  data-nav-key="${escapeHtml(item.key)}"
+                  data-cat-key="${escapeHtml(catNode.key)}"
+                  aria-expanded="${isCatSelected}"
+                >
+                  <span>${escapeHtml(catNode.label)}</span>
+                  ${icons.chevronRight(16)}
+                </button>
+              </li>
+            `;
+          })
+          .join('')}
+      </ul>
+    </div>
+  `;
+
+  const subcatColHtml = selectedCatNode
+    ? renderSubcategoryColumn(selectedCatNode)
+    : '';
+
+  return `
+    <div class="io-cascade-stage">
+      ${catColHtml}
+      ${subcatColHtml}
+    </div>
+  `;
+}
+
+function renderMobileDrawerItem(
+  item: NavMenuItem,
+  expandedMobileKey: string | null,
+  mobileAgeKey: KidsAgeGroup | null,
+  mobileCategoryKey: string | null
+): string {
+  const isExpanded = expandedMobileKey === item.key;
+  const viewAllRootAttrs = renderLinkAttributes({
+    label: item.viewAllLabel,
+    category: item.category,
+    gender: item.gender,
+    onlyOffers: item.onlyOffers,
+  });
+
+  let innerLevelsHtml = '';
+
+  if (isExpanded) {
+    if (item.ageNodes && item.ageNodes.length > 0) {
+      // Móvil Niños: Edad -> Categoría -> Subcategoría
+      innerLevelsHtml = item.ageNodes
+        .map((ageNode) => {
+          const isAgeOpen = mobileAgeKey === ageNode.ageKey;
+          return `
+            <div class="io-mobile-nested-group">
+              <button
+                type="button"
+                class="io-mobile-step-btn ${isAgeOpen ? 'is-expanded' : ''}"
+                data-action="toggle-mobile-age"
+                data-age-key="${escapeHtml(ageNode.ageKey)}"
+                aria-expanded="${isAgeOpen}"
+              >
+                <span>${escapeHtml(ageNode.label)}</span>
+                <span class="io-mobile-chevron" aria-hidden="true">${icons.chevronDown(16)}</span>
+              </button>
+              ${
+                isAgeOpen
+                  ? `
+                    <div class="io-mobile-nested-panel">
+                      <a class="io-mobile-sublink io-mobile-sublink--all" ${renderLinkAttributes(ageNode.viewAllLink)}>
+                        ${escapeHtml(ageNode.viewAllLink.label)} →
+                      </a>
+                      ${ageNode.categories
+                        .map((catNode) => {
+                          const isCatOpen = mobileCategoryKey === catNode.key;
+                          return `
+                            <div class="io-mobile-nested-group">
+                              <button
+                                type="button"
+                                class="io-mobile-step-btn io-mobile-step-btn--l2 ${isCatOpen ? 'is-expanded' : ''}"
+                                data-action="toggle-mobile-subcat"
+                                data-cat-key="${escapeHtml(catNode.key)}"
+                                aria-expanded="${isCatOpen}"
+                              >
+                                <span>${escapeHtml(catNode.label)}</span>
+                                <span class="io-mobile-chevron" aria-hidden="true">${icons.chevronDown(15)}</span>
+                              </button>
+                              ${
+                                isCatOpen
+                                  ? `
+                                    <div class="io-mobile-nested-panel ps-3">
+                                      ${
+                                        catNode.viewAllLink
+                                          ? `<a class="io-mobile-sublink io-mobile-sublink--all" ${renderLinkAttributes(catNode.viewAllLink)}>${escapeHtml(catNode.viewAllLink.label)} →</a>`
+                                          : ''
+                                      }
+                                      ${catNode.sublinks
+                                        .map(
+                                          (sub) =>
+                                            `<a class="io-mobile-sublink" ${renderLinkAttributes(sub)}>${escapeHtml(sub.label)}</a>`
+                                        )
+                                        .join('')}
+                                    </div>
+                                  `
+                                  : ''
+                              }
+                            </div>
+                          `;
+                        })
+                        .join('')}
+                    </div>
+                  `
+                  : ''
+              }
+            </div>
+          `;
+        })
+        .join('');
+    } else {
+      // Móvil Hombre, Mujer y Ofertas: Categoría -> Subcategoría
+      innerLevelsHtml = (item.categories ?? [])
+        .map((catNode) => {
+          const isCatOpen = mobileCategoryKey === catNode.key;
+          return `
+            <div class="io-mobile-nested-group">
+              <button
+                type="button"
+                class="io-mobile-step-btn ${isCatOpen ? 'is-expanded' : ''}"
+                data-action="toggle-mobile-subcat"
+                data-cat-key="${escapeHtml(catNode.key)}"
+                aria-expanded="${isCatOpen}"
+              >
+                <span>${escapeHtml(catNode.label)}</span>
+                <span class="io-mobile-chevron" aria-hidden="true">${icons.chevronDown(16)}</span>
+              </button>
+              ${
+                isCatOpen
+                  ? `
+                    <div class="io-mobile-nested-panel">
+                      ${
+                        catNode.viewAllLink
+                          ? `<a class="io-mobile-sublink io-mobile-sublink--all" ${renderLinkAttributes(catNode.viewAllLink)}>${escapeHtml(catNode.viewAllLink.label)} →</a>`
+                          : ''
+                      }
+                      ${catNode.sublinks
+                        .map(
+                          (sub) =>
+                            `<a class="io-mobile-sublink" ${renderLinkAttributes(sub)}>${escapeHtml(sub.label)}</a>`
+                        )
+                        .join('')}
+                    </div>
+                  `
+                  : ''
+              }
+            </div>
+          `;
+        })
+        .join('');
+    }
+  }
+
+  return `
+    <div class="border-bottom border-secondary border-opacity-25">
+      <button
+        type="button"
+        class="io-mobile-drawer-link ${item.isAccent ? 'is-accent' : ''} ${isExpanded ? 'is-expanded' : ''}"
+        data-action="toggle-mobile-cat"
+        data-nav-key="${escapeHtml(item.key)}"
+        aria-expanded="${isExpanded}"
+      >
+        <span class="d-inline-flex align-items-center gap-2">
+          ${item.isAccent ? '<span class="io-nav-indicator-dot" aria-hidden="true"></span>' : ''}
+          <span>${escapeHtml(item.label)}</span>
+        </span>
+        <span class="io-mobile-chevron" aria-hidden="true">
+          ${icons.chevronDown(18)}
+        </span>
+      </button>
+
+      <div class="io-mobile-subpanel ${isExpanded ? 'is-open' : ''}">
+        <a class="io-mobile-sublink io-mobile-sublink--all" ${viewAllRootAttrs}>
+          ${escapeHtml(item.viewAllLabel)} →
+        </a>
+        ${innerLevelsHtml}
+      </div>
+    </div>
+  `;
+}
+
 export function renderHeaderNav({
   selectedGender,
   onlyOffers,
@@ -50,205 +411,55 @@ export function renderHeaderNav({
   cartCount,
   wishlistCount,
   isSearchOpen,
+  openNavKey,
+  activeMenuAge,
+  activeMenuCategory,
   isMobileMenuOpen,
   expandedMobileKey,
+  mobileAgeKey,
+  mobileCategoryKey,
   searchQuery,
 }: HeaderNavOptions): string {
   const navItemsHtml = NAV_MENU_ITEMS.map((item) => {
+    const isOpen = openNavKey === item.key;
     const isActive =
       !isHome &&
       ((item.onlyOffers && onlyOffers) ||
         (!item.onlyOffers && !onlyOffers && item.gender === selectedGender));
 
-    const columnsHtml = item.columns
-      .map((col) => {
-        const headingHtml = col.category
-          ? `<a
-               href="#/categoria/${escapeHtml(col.category)}"
-               class="io-menu-col-heading d-block text-decoration-none"
-               data-action="go-category"
-               data-category="${escapeHtml(col.category)}"
-               ${col.gender ? `data-filter-gender="${escapeHtml(col.gender)}"` : ''}
-               ${col.ageGroup ? `data-filter-age="${escapeHtml(col.ageGroup)}"` : ''}
-               ${col.onlyOffers ? `data-filter-offers="true"` : ''}
-             >${escapeHtml(col.heading)}</a>`
-          : `<div class="io-menu-col-heading">${escapeHtml(col.heading)}</div>`;
-
-        // Caso especial Niños: Edad -> Categoría -> Subcategoría
-        if (col.categoryGroups && col.categoryGroups.length > 0) {
-          const groupsHtml = col.categoryGroups
-            .map(
-              (grp) => `
-                <div class="io-menu-subcat-group mb-2">
-                  <a
-                    href="#/categoria/${escapeHtml(grp.category)}"
-                    class="io-menu-link fw-semibold"
-                    data-action="go-category"
-                    data-category="${escapeHtml(grp.category)}"
-                    data-filter-gender="${escapeHtml(grp.gender)}"
-                    ${grp.ageGroup ? `data-filter-age="${escapeHtml(grp.ageGroup)}"` : ''}
-                  >
-                    ${escapeHtml(grp.categoryLabel)}
-                  </a>
-                  <ul class="io-menu-col-list ps-2 border-start border-secondary border-opacity-25 ms-1">
-                    ${grp.links
-                      .map(
-                        (link) => `
-                          <li>
-                            <a class="io-menu-link" ${renderLinkAttributes(link)}>
-                              ${escapeHtml(link.label)}
-                            </a>
-                          </li>
-                        `
-                      )
-                      .join('')}
-                  </ul>
-                </div>
-              `
-            )
-            .join('');
-
-          return `
-            <div class="io-menu-col">
-              ${headingHtml}
-              <div class="io-kids-groups-wrap">${groupsHtml}</div>
-            </div>
-          `;
-        }
-
-        return `
-          <div class="io-menu-col">
-            ${headingHtml}
-            <ul class="io-menu-col-list">
-              ${col.links
-                .map(
-                  (link) => `
-                    <li>
-                      <a class="io-menu-link" ${renderLinkAttributes(link)}>
-                        ${escapeHtml(link.label)}
-                      </a>
-                    </li>
-                  `
-                )
-                .join('')}
-            </ul>
-          </div>
-        `;
-      })
-      .join('');
-
-    const gridColsClass =
-      item.columns.length >= 4
-        ? 'io-megamenu-grid io-megamenu-grid--4'
-        : 'io-megamenu-grid';
-
     return `
-      <li class="io-nav-item" data-nav-key="${escapeHtml(item.key)}">
-        <a
-          href="#/categoria/${escapeHtml(item.category)}"
+      <li class="io-nav-item ${isOpen ? 'is-open' : ''}" data-nav-key="${escapeHtml(item.key)}">
+        <button
+          type="button"
+          id="nav-trigger-${escapeHtml(item.key)}"
           class="io-nav-trigger ${item.isAccent ? 'is-accent' : ''} ${isActive ? 'is-current' : ''}"
-          data-action="go-category"
-          data-category="${escapeHtml(item.category)}"
-          data-filter-gender="${escapeHtml(item.gender)}"
-          ${item.onlyOffers ? 'data-filter-offers="true"' : ''}
+          data-action="toggle-desktop-nav"
+          data-nav-key="${escapeHtml(item.key)}"
+          aria-expanded="${isOpen}"
+          aria-controls="menu-panel-${escapeHtml(item.key)}"
         >
           ${item.isAccent ? '<span class="io-nav-indicator-dot" aria-hidden="true"></span>' : ''}
           <span>${escapeHtml(item.label)}</span>
-        </a>
-        <div class="io-megamenu-panel" data-menu-panel="${escapeHtml(item.key)}">
-          <div class="container-xl ${gridColsClass}">
-            ${columnsHtml}
+          <span class="io-nav-trigger-chevron" aria-hidden="true">${icons.chevronDown(14)}</span>
+        </button>
+        <div
+          id="menu-panel-${escapeHtml(item.key)}"
+          class="io-megamenu-panel"
+          data-menu-panel="${escapeHtml(item.key)}"
+          role="region"
+          aria-label="Submenú ${escapeHtml(item.label)}"
+        >
+          <div class="container-xl">
+            ${renderDesktopCascadePanel(item, isOpen, activeMenuAge, activeMenuCategory)}
           </div>
         </div>
       </li>
     `;
   }).join('');
 
-  const mobileNavItemsHtml = NAV_MENU_ITEMS.map((item) => {
-    const isExpanded = expandedMobileKey === item.key;
-
-    const mobileSublinksHtml = item.columns
-      .map((col) => {
-        if (col.categoryGroups && col.categoryGroups.length > 0) {
-          return `
-            <div class="px-3 pt-2 pb-1 text-uppercase small opacity-75 fw-semibold">${escapeHtml(col.heading)}</div>
-            ${col.categoryGroups
-              .map(
-                (grp) => `
-                  <a
-                    href="#/categoria/${escapeHtml(grp.category)}"
-                    class="io-mobile-sublink fw-semibold"
-                    data-action="go-category"
-                    data-category="${escapeHtml(grp.category)}"
-                    data-filter-gender="${escapeHtml(grp.gender)}"
-                    ${grp.ageGroup ? `data-filter-age="${escapeHtml(grp.ageGroup)}"` : ''}
-                  >
-                    ${escapeHtml(grp.categoryLabel)}
-                  </a>
-                  ${grp.links
-                    .map(
-                      (l) => `
-                        <a class="io-mobile-sublink ps-4" ${renderLinkAttributes(l)}>
-                          · ${escapeHtml(l.label)}
-                        </a>
-                      `
-                    )
-                    .join('')}
-                `
-              )
-              .join('')}
-          `;
-        }
-
-        return `
-          <div class="px-3 pt-2 pb-1 text-uppercase small opacity-75 fw-semibold">${escapeHtml(col.heading)}</div>
-          ${col.links
-            .map(
-              (l) => `
-                <a class="io-mobile-sublink" ${renderLinkAttributes(l)}>
-                  ${escapeHtml(l.label)}
-                </a>
-              `
-            )
-            .join('')}
-        `;
-      })
-      .join('');
-
-    return `
-      <div class="border-bottom border-secondary border-opacity-25">
-        <button
-          type="button"
-          class="io-mobile-drawer-link ${item.isAccent ? 'is-accent' : ''} ${isExpanded ? 'is-expanded' : ''}"
-          data-action="toggle-mobile-cat"
-          data-nav-key="${escapeHtml(item.key)}"
-          aria-expanded="${isExpanded}"
-        >
-          <span class="d-inline-flex align-items-center gap-2">
-            ${item.isAccent ? '<span class="io-nav-indicator-dot" aria-hidden="true"></span>' : ''}
-            <span>${escapeHtml(item.label)}</span>
-          </span>
-          <span class="io-mobile-chevron" aria-hidden="true">
-            ${icons.chevronDown(18)}
-          </span>
-        </button>
-
-        <div class="io-mobile-subpanel ${isExpanded ? 'is-open' : ''}">
-          <a
-            href="#/categoria/${escapeHtml(item.category)}"
-            class="io-mobile-sublink fw-bold"
-            data-action="go-category"
-            data-category="${escapeHtml(item.category)}"
-            data-filter-gender="${escapeHtml(item.gender)}"
-            ${item.onlyOffers ? 'data-filter-offers="true"' : ''}
-          >
-            Ver todo en ${escapeHtml(item.label)} →
-          </a>
-          ${mobileSublinksHtml}
-        </div>
-      </div>
-    `;
-  }).join('');
+  const mobileNavItemsHtml = NAV_MENU_ITEMS.map((item) =>
+    renderMobileDrawerItem(item, expandedMobileKey, mobileAgeKey, mobileCategoryKey)
+  ).join('');
 
   const bagBadge = `<span class="io-bag-badge ${cartCount === 0 ? 'is-empty' : ''}" aria-hidden="true">${cartCount}</span>`;
 

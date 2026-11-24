@@ -18,6 +18,7 @@ import {
   CategorySlug,
   GenderFilter,
   KidsAgeFilter,
+  KidsAgeGroup,
 } from './types/store.types';
 import { escapeHtml, icons } from './utils/icons';
 
@@ -46,8 +47,13 @@ interface StoreState {
   isLoginOpen: boolean;
   loginFeedback: string;
   isSearchOpen: boolean;
+  openNavKey: string | null;
+  activeMenuAge: KidsAgeGroup | null;
+  activeMenuCategory: string | null;
   isMobileMenuOpen: boolean;
   expandedMobileKey: string | null;
+  mobileAgeKey: KidsAgeGroup | null;
+  mobileCategoryKey: string | null;
   optInMarketing: boolean;
   liveFeedback: string;
 }
@@ -92,8 +98,13 @@ const state: StoreState = {
   isLoginOpen: false,
   loginFeedback: '',
   isSearchOpen: false,
+  openNavKey: null,
+  activeMenuAge: null,
+  activeMenuCategory: null,
   isMobileMenuOpen: false,
   expandedMobileKey: null,
+  mobileAgeKey: null,
+  mobileCategoryKey: null,
   optInMarketing: false,
   liveFeedback: '',
 };
@@ -282,26 +293,28 @@ function animateClose(done: () => void): void {
   window.setTimeout(done, 220);
 }
 
+function resetDesktopMenuState(): void {
+  state.openNavKey = null;
+  state.activeMenuAge = null;
+  state.activeMenuCategory = null;
+}
+
 function closeAllOverlays(): void {
   state.isSearchOpen = false;
   state.isCartOpen = false;
   state.isWishlistOpen = false;
   state.isLoginOpen = false;
+  resetDesktopMenuState();
   state.isMobileMenuOpen = false;
   state.expandedMobileKey = null;
+  state.mobileAgeKey = null;
+  state.mobileCategoryKey = null;
 }
 
 function formatReserveTime(totalSeconds: number): string {
   const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
   const secs = String(totalSeconds % 60).padStart(2, '0');
   return `${mins}:${secs} min`;
-}
-
-function syncHeaderMenuDom(openKey: string | null): void {
-  root.querySelectorAll<HTMLElement>('.io-nav-item[data-nav-key]').forEach((item) => {
-    const isMatch = openKey !== null && item.dataset.navKey === openKey;
-    item.classList.toggle('is-open', isMatch);
-  });
 }
 
 function syncCarouselDom(): void {
@@ -336,7 +349,11 @@ function navigateToHome(): void {
   state.selectedAgeGroup = 'todas';
   state.onlyOffers = false;
   state.selectedSize = 'todas';
+  resetDesktopMenuState();
   state.isMobileMenuOpen = false;
+  state.expandedMobileKey = null;
+  state.mobileAgeKey = null;
+  state.mobileCategoryKey = null;
   if (window.location.hash !== '#/' && window.location.hash !== '') {
     window.location.hash = '#/';
   }
@@ -364,8 +381,11 @@ function navigateToCategory(
   state.selectedSubcategory = filters.subcategory ?? 'todas';
   state.onlyOffers = filters.onlyOffers ?? false;
   state.selectedSize = filters.sizeFilter ?? 'todas';
+  resetDesktopMenuState();
   state.isMobileMenuOpen = false;
-  syncHeaderMenuDom(null);
+  state.expandedMobileKey = null;
+  state.mobileAgeKey = null;
+  state.mobileCategoryKey = null;
   const targetHash = `#/categoria/${slug}`;
   if (window.location.hash !== targetHash) {
     window.location.hash = targetHash;
@@ -431,8 +451,13 @@ function renderApp(): void {
         cartCount,
         wishlistCount: state.wishlistCount,
         isSearchOpen: state.isSearchOpen,
+        openNavKey: state.openNavKey,
+        activeMenuAge: state.activeMenuAge,
+        activeMenuCategory: state.activeMenuCategory,
         isMobileMenuOpen: state.isMobileMenuOpen,
         expandedMobileKey: state.expandedMobileKey,
+        mobileAgeKey: state.mobileAgeKey,
+        mobileCategoryKey: state.mobileCategoryKey,
         searchQuery: state.searchQuery,
       })}
 
@@ -514,6 +539,12 @@ function renderApp(): void {
         input.setSelectionRange(selectionStart, selectionStart);
       }
     }
+  } else if (
+    restoreFocusId.startsWith('nav-trigger-') ||
+    restoreFocusId.startsWith('menu-age-') ||
+    restoreFocusId.startsWith('menu-cat-')
+  ) {
+    document.getElementById(restoreFocusId)?.focus();
   }
 }
 
@@ -522,33 +553,21 @@ window.addEventListener('hashchange', () => {
   const route = parseRouteFromHash();
   state.view = route.view;
   state.selectedCategory = route.category;
+  resetDesktopMenuState();
   renderApp();
   window.scrollTo({ top: 0 });
 });
 
-// Mega-menú y dropdown dinámico en desktop (hover + foco + Escape)
-root.addEventListener('mouseover', (event) => {
-  const navItem = (event.target as HTMLElement | null)?.closest<HTMLElement>('.io-nav-item[data-nav-key]');
-  if (navItem) {
-    syncHeaderMenuDom(navItem.dataset.navKey ?? null);
-    return;
-  }
-  const inHeader = (event.target as HTMLElement | null)?.closest('#io-site-header');
-  if (!inHeader) {
-    syncHeaderMenuDom(null);
-  }
-});
-
-root.addEventListener('focusin', (event) => {
-  const navItem = (event.target as HTMLElement | null)?.closest<HTMLElement>('.io-nav-item[data-nav-key]');
-  if (navItem) {
-    syncHeaderMenuDom(navItem.dataset.navKey ?? null);
-  }
-});
-
+// Cerrar menú desplegable del header con Escape o clic fuera del header
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    syncHeaderMenuDom(null);
+    if (state.openNavKey !== null) {
+      const triggerId = `nav-trigger-${state.openNavKey}`;
+      resetDesktopMenuState();
+      renderApp();
+      document.getElementById(triggerId)?.focus();
+      return;
+    }
     if (state.isSearchOpen || state.isCartOpen || state.isWishlistOpen || state.isLoginOpen || state.isMobileMenuOpen) {
       animateClose(() => {
         closeAllOverlays();
@@ -560,7 +579,13 @@ document.addEventListener('keydown', (event) => {
 
 // Delegación global de clics
 root.addEventListener('click', (event) => {
-  const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-action]');
+  const rawTarget = event.target as HTMLElement | null;
+  if (state.openNavKey !== null && !rawTarget?.closest('#io-site-header')) {
+    resetDesktopMenuState();
+    renderApp();
+  }
+
+  const target = rawTarget?.closest<HTMLElement>('[data-action]');
   if (!target) return;
 
   const action = target.dataset.action;
@@ -628,17 +653,50 @@ root.addEventListener('click', (event) => {
       state.isSearchOpen = false;
       renderApp();
       break;
+    case 'toggle-desktop-nav': {
+      const key = target.dataset.navKey ?? null;
+      if (state.openNavKey === key) {
+        resetDesktopMenuState();
+      } else {
+        state.openNavKey = key;
+        state.activeMenuAge = null;
+        state.activeMenuCategory = null;
+      }
+      renderApp();
+      break;
+    }
+    case 'select-menu-age': {
+      const navKey = target.dataset.navKey ?? null;
+      const ageKey = (target.dataset.ageKey as KidsAgeGroup | undefined) ?? null;
+      if (navKey) state.openNavKey = navKey;
+      state.activeMenuAge = state.activeMenuAge === ageKey ? null : ageKey;
+      state.activeMenuCategory = null;
+      renderApp();
+      break;
+    }
+    case 'select-menu-cat': {
+      const navKey = target.dataset.navKey ?? null;
+      const catKey = target.dataset.catKey ?? null;
+      if (navKey) state.openNavKey = navKey;
+      state.activeMenuCategory = state.activeMenuCategory === catKey ? null : catKey;
+      renderApp();
+      break;
+    }
     case 'open-mobile-menu':
     case 'toggle-mobile-menu':
       overlayOpenerAction = 'toggle-mobile-menu';
       state.isMobileMenuOpen = true;
       state.expandedMobileKey = null;
+      state.mobileAgeKey = null;
+      state.mobileCategoryKey = null;
       renderApp();
       break;
     case 'close-mobile-menu':
       animateClose(() => {
         state.isMobileMenuOpen = false;
         state.expandedMobileKey = null;
+        state.mobileAgeKey = null;
+        state.mobileCategoryKey = null;
         renderApp();
       });
       break;
@@ -646,6 +704,21 @@ root.addEventListener('click', (event) => {
     case 'toggle-mobile-cat': {
       const key = target.dataset.navKey ?? null;
       state.expandedMobileKey = state.expandedMobileKey === key ? null : key;
+      state.mobileAgeKey = null;
+      state.mobileCategoryKey = null;
+      renderApp();
+      break;
+    }
+    case 'toggle-mobile-age': {
+      const ageKey = (target.dataset.ageKey as KidsAgeGroup | undefined) ?? null;
+      state.mobileAgeKey = state.mobileAgeKey === ageKey ? null : ageKey;
+      state.mobileCategoryKey = null;
+      renderApp();
+      break;
+    }
+    case 'toggle-mobile-subcat': {
+      const catKey = target.dataset.catKey ?? null;
+      state.mobileCategoryKey = state.mobileCategoryKey === catKey ? null : catKey;
       renderApp();
       break;
     }

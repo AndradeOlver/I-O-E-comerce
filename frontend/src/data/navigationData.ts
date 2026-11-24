@@ -16,38 +16,36 @@ export interface NavMenuLink {
   sizeFilter?: string;
 }
 
-export interface NavCategoryGroup {
-  categoryLabel: string;
-  category: CategorySlug;
-  gender: GenderFilter;
-  ageGroup?: KidsAgeFilter;
-  links: NavMenuLink[];
+export interface NavCategoryNode {
+  key: string;
+  label: string;
+  viewAllLink?: NavMenuLink;
+  sublinks: NavMenuLink[];
 }
 
-export interface NavMenuColumn {
-  heading: string;
-  category?: CategorySlug;
-  gender?: GenderFilter;
-  ageGroup?: KidsAgeFilter;
-  onlyOffers?: boolean;
-  links: NavMenuLink[];
-  /** Usado en Niños para respetar la jerarquía Edad -> Categoría -> Subcategoría */
-  categoryGroups?: NavCategoryGroup[];
+export interface NavAgeNode {
+  ageKey: KidsAgeGroup;
+  label: string;
+  viewAllLink: NavMenuLink;
+  categories: NavCategoryNode[];
 }
 
 export interface NavMenuItem {
   key: string;
   label: string;
+  viewAllLabel: string;
   category: CategorySlug;
   gender: GenderFilter;
   onlyOffers?: boolean;
-  layout: 'mega' | 'dropdown';
   isAccent?: boolean;
-  columns: NavMenuColumn[];
+  /** Nivel 1 -> Nivel 2 para Hombre, Mujer y Ofertas (Categoría -> Subcategoría) */
+  categories?: NavCategoryNode[];
+  /** Nivel 1 -> Nivel 2 -> Nivel 3 exclusivo para Niños (Edad -> Categoría -> Subcategoría) */
+  ageNodes?: NavAgeNode[];
 }
 
-function buildGenderColumns(gender: 'hombre' | 'mujer'): NavMenuColumn[] {
-  const columns: NavMenuColumn[] = [];
+function buildGenderCategoryNodes(gender: 'hombre' | 'mujer'): NavCategoryNode[] {
+  const nodes: NavCategoryNode[] = [];
 
   for (const cat of CATEGORIAS_TIENDA) {
     const subcats = SUBCATEGORIAS_TIENDA.filter(
@@ -58,37 +56,33 @@ function buildGenderColumns(gender: 'hombre' | 'mujer'): NavMenuColumn[] {
 
     if (subcats.length === 0) continue;
 
-    columns.push({
-      heading: cat.nombre,
-      category: cat.slug,
-      gender,
-      links: [
-        {
-          label: `Todo ${cat.nombre}`,
-          category: cat.slug,
-          gender,
-        },
-        ...subcats.map((sub) => ({
-          label: sub.nombre,
-          category: cat.slug,
-          subcategory: sub.slug,
-          gender,
-        })),
-      ],
+    nodes.push({
+      key: cat.slug,
+      label: cat.nombre,
+      viewAllLink: {
+        label: `Ver todo en ${cat.nombre}`,
+        category: cat.slug,
+        gender,
+      },
+      sublinks: subcats.map((sub) => ({
+        label: sub.nombre,
+        category: cat.slug,
+        subcategory: sub.slug,
+        gender,
+      })),
     });
   }
 
-  return columns;
+  return nodes;
 }
 
-function buildKidsColumns(): NavMenuColumn[] {
+function buildKidsAgeNodes(): NavAgeNode[] {
   const ageGroups: KidsAgeGroup[] = ['bebes', 'infantil', 'junior'];
 
   return ageGroups.map((age) => {
-    const categoryGroups: NavCategoryGroup[] = [];
+    const categories: NavCategoryNode[] = [];
 
     for (const cat of CATEGORIAS_TIENDA) {
-      // Para bebés (0-24m) omitimos subcategorías exclusivas de adultos/noche
       const subcats = SUBCATEGORIAS_TIENDA.filter((s) => {
         if (s.categorySlug !== cat.slug || !s.aplicaNinos) return false;
         if (age === 'bebes' && s.slug === 'vestidos-midi') return false;
@@ -97,12 +91,16 @@ function buildKidsColumns(): NavMenuColumn[] {
 
       if (subcats.length === 0) continue;
 
-      categoryGroups.push({
-        categoryLabel: cat.nombre,
-        category: cat.slug,
-        gender: 'ninos',
-        ageGroup: age,
-        links: subcats.map((sub) => ({
+      categories.push({
+        key: cat.slug,
+        label: cat.nombre,
+        viewAllLink: {
+          label: `Ver todo en ${cat.nombre}`,
+          category: cat.slug,
+          gender: 'ninos',
+          ageGroup: age,
+        },
+        sublinks: subcats.map((sub) => ({
           label: sub.nombre,
           category: cat.slug,
           subcategory: sub.slug,
@@ -113,12 +111,15 @@ function buildKidsColumns(): NavMenuColumn[] {
     }
 
     return {
-      heading: KIDS_AGE_LABELS[age],
-      category: 'todas',
-      gender: 'ninos',
-      ageGroup: age,
-      links: [],
-      categoryGroups,
+      ageKey: age,
+      label: KIDS_AGE_LABELS[age],
+      viewAllLink: {
+        label: `Ver todo en ${KIDS_AGE_LABELS[age]}`,
+        category: 'todas',
+        gender: 'ninos',
+        ageGroup: age,
+      },
+      categories,
     };
   });
 }
@@ -127,40 +128,40 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
   {
     key: 'hombre',
     label: 'HOMBRE',
+    viewAllLabel: 'Ver todo Hombre',
     category: 'todas',
     gender: 'hombre',
-    layout: 'mega',
-    columns: buildGenderColumns('hombre'),
+    categories: buildGenderCategoryNodes('hombre'),
   },
   {
     key: 'mujer',
     label: 'MUJER',
+    viewAllLabel: 'Ver todo Mujer',
     category: 'todas',
     gender: 'mujer',
-    layout: 'mega',
-    columns: buildGenderColumns('mujer'),
+    categories: buildGenderCategoryNodes('mujer'),
   },
   {
     key: 'ninos',
     label: 'NIÑOS',
+    viewAllLabel: 'Ver todo Niños',
     category: 'todas',
     gender: 'ninos',
-    layout: 'mega',
-    columns: buildKidsColumns(),
+    ageNodes: buildKidsAgeNodes(),
   },
   {
     key: 'ofertas',
     label: 'OFERTAS',
+    viewAllLabel: 'Ver todas las Ofertas',
     category: 'todas',
     gender: 'todos',
     onlyOffers: true,
-    layout: 'mega',
     isAccent: true,
-    columns: [
+    categories: [
       {
-        heading: 'POR GÉNERO Y EDAD',
-        links: [
-          { label: 'Todas las Ofertas', category: 'todas', gender: 'todos', onlyOffers: true },
+        key: 'ofertas-publico',
+        label: 'Por Género y Edad',
+        sublinks: [
           { label: 'Ofertas Hombre', category: 'todas', gender: 'hombre', onlyOffers: true },
           { label: 'Ofertas Mujer', category: 'todas', gender: 'mujer', onlyOffers: true },
           { label: 'Ofertas Niños · Bebés', category: 'todas', gender: 'ninos', ageGroup: 'bebes', onlyOffers: true },
@@ -169,8 +170,9 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
         ],
       },
       {
-        heading: 'POR CATEGORÍA',
-        links: CATEGORIAS_TIENDA.map((cat) => ({
+        key: 'ofertas-categoria',
+        label: 'Por Categoría',
+        sublinks: CATEGORIAS_TIENDA.map((cat) => ({
           label: `${cat.nombre} en Oferta`,
           category: cat.slug,
           gender: 'todos',
@@ -178,8 +180,9 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
         })),
       },
       {
-        heading: 'POR TALLA',
-        links: [
+        key: 'ofertas-talla',
+        label: 'Por Talla',
+        sublinks: [
           { label: 'Small (S)', category: 'todas', gender: 'todos', onlyOffers: true, sizeFilter: 'S' },
           { label: 'Medium (M)', category: 'todas', gender: 'todos', onlyOffers: true, sizeFilter: 'M' },
           { label: 'Large (L)', category: 'todas', gender: 'todos', onlyOffers: true, sizeFilter: 'L' },
