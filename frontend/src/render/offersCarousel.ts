@@ -15,7 +15,6 @@ export function renderOffersCarousel(
   if (validOffers.length === 0) return '';
 
   const safeIndex = ((activeIndex % validOffers.length) + validOffers.length) % validOffers.length;
-  const totalFormatted = String(validOffers.length).padStart(2, '0');
 
   const slidesHtml = validOffers
     .map((offer, idx) => {
@@ -23,9 +22,7 @@ export function renderOffersCarousel(
       const mainTitle = offer.portadaTexto ?? offer.titulo;
       const italicLine = offer.tituloItalico ?? '';
       const kicker = offer.kicker ?? 'COLECCIÓN DE TEMPORADA · LIMA';
-      const ctaText = offer.ctaLabel ?? 'Descubrir colección';
       const remainingUnits = Math.max(0, offer.stock_maximo - offer.stock_consumido);
-      const slideNum = String(idx + 1).padStart(2, '0');
 
       const daltonismMetaHtml = colorblindMode
         ? `
@@ -73,16 +70,6 @@ export function renderOffersCarousel(
                 : ''
             }
 
-            <div class="io-carousel-price-pill">
-              <span class="io-carousel-price-label">Desde</span>
-              <strong class="io-carousel-price-now">S/ ${offer.precio_promocional.toFixed(2)}</strong>
-              ${
-                offer.precio_regular > offer.precio_promocional
-                  ? `<del class="io-carousel-price-old">S/ ${offer.precio_regular.toFixed(2)}</del>`
-                  : ''
-              }
-            </div>
-
             ${daltonismMetaHtml}
 
             <div class="io-carousel-actions">
@@ -92,22 +79,12 @@ export function renderOffersCarousel(
                 data-action="go-category"
                 data-category="${escapeHtml(offer.categoriaTarget)}"
                 ${offer.generoTarget && offer.generoTarget !== 'todos' ? `data-filter-gender="${escapeHtml(offer.generoTarget)}"` : ''}
+                aria-label="Ver detalles de ${escapeHtml(offer.titulo)}"
               >
-                <span>${escapeHtml(ctaText)}</span>
-                ${icons.chevronRight(18)}
-              </a>
-
-              <a
-                href="#/categoria/todas"
-                class="io-carousel-secondary-cta"
-                data-action="go-category"
-                data-category="todas"
-              >
-                <span>Explorar todo</span>
+                <span>Ver detalles</span>
+                ${icons.chevronRight(17)}
               </a>
             </div>
-
-            <span class="io-carousel-index-tag" aria-hidden="true">${slideNum} / ${totalFormatted}</span>
           </div>
         </div>
       `;
