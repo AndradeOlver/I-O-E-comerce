@@ -1,6 +1,6 @@
 # 🎨 Frontend – Sistema Omnicanal I&O (`1.2 frontend/`)
 
-> **Estado Actual:** 🟢 **En desarrollo activo — Stack: Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3** — Actualizado el `23/11/2026` en [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md)  
+> **Estado Actual:** 🟢 **En desarrollo activo — Stack: Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3** — Actualizado el `24/11/2026` en [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md)  
 > **Identidad Visual Oficial Vigente:** **Espresso & Piedra (Propuesta 5)** con cumplimiento estricto **W3C WCAG 2.1 Nivel AA**.  
 > **Autores Exclusivos:** **ANDRADE CHIRINOS, Olver Daniel (`N00401718`)** y **RAZURI PAREDES, Josue Daniel (`N00421512`)**  
 > **Documentación UI Aprobada:** [docs_ui/guia_estilos_espresso_piedra.md](docs_ui/guia_estilos_espresso_piedra.md)

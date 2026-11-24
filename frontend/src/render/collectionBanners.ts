@@ -17,6 +17,7 @@ export function renderCollectionBanners(banners: CollectionBanner[]): string {
       if (banner.onlyOffers) filterAttrs.push(`data-filter-offers="true"`);
 
       const hasMedia = hasImageSlotSrc(banner.imageSlotKey);
+      const romanIdx = String(idx + 1).padStart(2, '0');
       const mediaHtml = hasMedia
         ? `
           <div class="io-collection-media" aria-hidden="true">
@@ -29,7 +30,7 @@ export function renderCollectionBanners(banners: CollectionBanner[]): string {
           </div>
           <div class="io-collection-scrim" aria-hidden="true"></div>
         `
-        : '';
+        : `<div class="io-collection-architectural-bg" aria-hidden="true"><span>${romanIdx}</span></div>`;
 
       return `
         <article class="io-collection-card ${hasMedia ? '' : 'io-collection-card--typographic'} io-reveal" style="--i: ${idx}">
@@ -49,10 +50,10 @@ export function renderCollectionBanners(banners: CollectionBanner[]): string {
     .join('');
 
   return `
-    <section id="seccion-colecciones" aria-labelledby="heading-colecciones" class="mb-5 pt-2">
+    <section id="seccion-colecciones" aria-labelledby="heading-colecciones" class="io-home-section">
       <div class="io-section-head">
         <div>
-          <span class="io-eyebrow">Estilos &amp; Públicos</span>
+          <span class="io-eyebrow">Universos &amp; Estilo</span>
           <h2 id="heading-colecciones" class="io-display io-section-title">Colecciones de Temporada</h2>
         </div>
       </div>

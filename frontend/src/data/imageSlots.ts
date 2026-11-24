@@ -14,9 +14,7 @@ export interface ImageSlotConfig {
 }
 
 export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
-  // Logo institucional sobre el header espresso (#261E1B): subir la versión CLARA/marfil.
-  // Archivo esperado: frontend/public/img/brand/logo-io.svg (o logo-io.png si no hay SVG).
-  // Mientras no exista ninguno, el header muestra el texto simple "I&O".
+  // Logo institucional sobre el header espresso (#261E1B) y respaldo en tarjetas de producto
   'brand-logo': {
     src: '/img/brand/logo-io.svg',
     fallbackSrc: '/img/brand/logo-io.png',
@@ -25,83 +23,91 @@ export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
     slotLabel: 'Logo',
   },
 
-  // Carrusel de ofertas (2 imágenes: PC panorámica + Celular)
+  // Carrusel hero editorial (conecta las fotografías reales disponibles en public/img/ofertas/)
   'oferta-01': {
-    src: '',
+    src: '/img/ofertas/oferta-01.WebP',
     mobileSrc: '/img/ofertas/oferta-01.WebP',
-    recommendedPath: 'public/img/ofertas/oferta-01-pc.WebP',
+    recommendedPath: 'public/img/ofertas/oferta-01.WebP',
     mobileRecommendedPath: 'public/img/ofertas/oferta-01.WebP',
-    dimensions: '1920 x 600 px (PC)',
-    slotLabel: 'Oferta 1 (PC)',
+    dimensions: '1920 x 800 px',
+    slotLabel: 'Cápsula Algodón Pima',
   },
   'oferta-02': {
-    src: '',
+    src: '/img/ofertas/oferta-02.WebP',
     mobileSrc: '/img/ofertas/oferta-02.WebP',
-    recommendedPath: 'public/img/ofertas/oferta-02-pc.WebP',
+    recommendedPath: 'public/img/ofertas/oferta-02.WebP',
     mobileRecommendedPath: 'public/img/ofertas/oferta-02.WebP',
-    dimensions: '1920 x 600 px (PC)',
-    slotLabel: 'Oferta 2 (PC)',
+    dimensions: '1920 x 800 px',
+    slotLabel: 'Vestidos de Autor',
   },
   'oferta-03': {
-    src: '',
+    src: '/img/ofertas/oferta-03.WebP',
     mobileSrc: '/img/ofertas/oferta-03.WebP',
-    recommendedPath: 'public/img/ofertas/oferta-03-pc.WebP',
+    recommendedPath: 'public/img/ofertas/oferta-03.WebP',
     mobileRecommendedPath: 'public/img/ofertas/oferta-03.WebP',
-    dimensions: '1920 x 600 px (PC)',
-    slotLabel: 'Oferta 3 (PC)',
+    dimensions: '1920 x 800 px',
+    slotLabel: 'Bombers & Sneakers',
+  },
+  'oferta-04': {
+    src: '/img/ofertas/oferta-04.png',
+    mobileSrc: '/img/ofertas/oferta-04.png',
+    recommendedPath: 'public/img/ofertas/oferta-04.png',
+    mobileRecommendedPath: 'public/img/ofertas/oferta-04.png',
+    dimensions: '1920 x 800 px',
+    slotLabel: 'Archivo Streetwear',
   },
 
   // Categorías
   'cat-vestidos': {
     src: '/img/categorias/vestidos.WebP',
     recommendedPath: 'public/img/categorias/vestidos.WebP',
-    dimensions: '400 x 300 px',
-    slotLabel: 'Vestidos',
+    dimensions: '400 x 500 px',
+    slotLabel: 'Vestidos de Autor',
   },
   'cat-prendas-superiores': {
     src: '/img/categorias/prendas-superiores.WebP',
     recommendedPath: 'public/img/categorias/prendas-superiores.WebP',
-    dimensions: '400 x 300 px',
-    slotLabel: 'Prendas Superiores',
+    dimensions: '400 x 500 px',
+    slotLabel: 'Tops & Esenciales Pima',
   },
   'cat-pantalones': {
     src: '/img/categorias/pantalones.WebP',
     recommendedPath: 'public/img/categorias/pantalones.WebP',
-    dimensions: '400 x 300 px',
-    slotLabel: 'Pantalones',
+    dimensions: '400 x 500 px',
+    slotLabel: 'Denim & Cortes Cargo',
   },
   'cat-casacas': {
     src: '/img/categorias/casacas.WebP',
     recommendedPath: 'public/img/categorias/casacas.WebP',
-    dimensions: '400 x 300 px',
-    slotLabel: 'Casacas',
+    dimensions: '400 x 500 px',
+    slotLabel: 'Bombers & Capas Urbanas',
   },
   'cat-conjuntos': {
     src: '/img/categorias/conjuntos.WebP',
     recommendedPath: 'public/img/categorias/conjuntos.WebP',
-    dimensions: '400 x 300 px',
-    slotLabel: 'Conjuntos',
+    dimensions: '400 x 500 px',
+    slotLabel: 'Total Looks & Sets',
   },
   'cat-calzado': {
     src: '/img/categorias/calzado.WebP',
     recommendedPath: 'public/img/categorias/calzado.WebP',
-    dimensions: '400 x 300 px',
-    slotLabel: 'Calzado',
+    dimensions: '400 x 500 px',
+    slotLabel: 'Sneakers & Pisada Urbana',
   },
   'cat-accesorios': {
     src: '/img/categorias/accesorios.WebP',
     recommendedPath: 'public/img/categorias/accesorios.WebP',
-    dimensions: '400 x 300 px',
-    slotLabel: 'Accesorios',
+    dimensions: '400 x 500 px',
+    slotLabel: 'Acentos & Marroquinería',
   },
   'cat-sports': {
     src: '/img/categorias/sports.WebP',
     recommendedPath: 'public/img/categorias/sports.WebP',
-    dimensions: '400 x 300 px',
-    slotLabel: 'Sports',
+    dimensions: '400 x 500 px',
+    slotLabel: 'Active & Movimiento',
   },
 
-  // Banners de colecciones por estilo o público (sin imagen hasta contar con archivos propios)
+  // Banners de colecciones por estilo o público
   'col-hombre': {
     src: '',
     recommendedPath: 'public/img/colecciones/coleccion-hombre.WebP',
@@ -124,10 +130,10 @@ export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
     src: '',
     recommendedPath: 'public/img/colecciones/coleccion-sports.WebP',
     dimensions: '960 x 640 px',
-    slotLabel: 'Esenciales Sports',
+    slotLabel: 'Active & Movimiento',
   },
 
-  // Productos de vitrina (sin imagen hasta subir fotografía propia de cada prenda)
+  // Productos de vitrina (cuando src está vacío, la tarjeta muestra automáticamente el logo de I&O)
   'prod-polo-pima': {
     src: '',
     recommendedPath: 'public/img/productos/polo-oversize-pima.WebP',

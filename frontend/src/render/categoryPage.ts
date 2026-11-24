@@ -1,4 +1,4 @@
-import { KIDS_AGE_LABELS, SUBCATEGORIAS_TIENDA } from '../data/catalogData';
+import { KIDS_AGE_LABELS, MARCAS_TIENDA, SUBCATEGORIAS_TIENDA } from '../data/catalogData';
 import {
   Categoria,
   CategorySlug,
@@ -17,6 +17,7 @@ interface CategoryPageOptions {
   selectedSubcategory: string;
   selectedGender: GenderFilter;
   selectedAgeGroup: KidsAgeFilter;
+  selectedBrand: string;
   onlyOffers: boolean;
   products: ProductGroup[];
   totalCatalogCount: number;
@@ -25,6 +26,7 @@ interface CategoryPageOptions {
   availableSizes: string[];
   selectedVariants: Record<string, number>;
   colorblindMode: boolean;
+  wishlistGroups: Set<string>;
 }
 
 const GENDER_LABELS: Record<GenderFilter, string> = {
@@ -41,6 +43,7 @@ export function renderCategoryPage({
   selectedSubcategory,
   selectedGender,
   selectedAgeGroup,
+  selectedBrand,
   onlyOffers,
   products,
   totalCatalogCount,
@@ -49,23 +52,27 @@ export function renderCategoryPage({
   availableSizes,
   selectedVariants,
   colorblindMode,
+  wishlistGroups,
 }: CategoryPageOptions): string {
   const eyebrowParts = ['Tienda'];
   if (onlyOffers) eyebrowParts.push('Ofertas');
+  if (selectedBrand !== 'todas') eyebrowParts.push(selectedBrand);
   if (selectedGender !== 'todos') eyebrowParts.push(GENDER_LABELS[selectedGender]);
   if (selectedGender === 'ninos' && selectedAgeGroup !== 'todas') {
     eyebrowParts.push(KIDS_AGE_LABELS[selectedAgeGroup]);
   }
 
-  const pageTitle = currentCategory
-    ? currentCategory.nombre
-    : onlyOffers
-      ? 'Ofertas y Campañas Activas'
-      : selectedGender !== 'todos'
-        ? `Colección ${GENDER_LABELS[selectedGender]}`
-        : 'Todas las categorías';
+  const pageTitle =
+    selectedBrand !== 'todas' && !currentCategory
+      ? `Marca · ${selectedBrand}`
+      : currentCategory
+        ? currentCategory.nombre
+        : onlyOffers
+          ? 'Ofertas y Campañas Activas'
+          : selectedGender !== 'todos'
+            ? `Colección ${GENDER_LABELS[selectedGender]}`
+            : 'Catálogo Completo';
 
-  // Excluir categorías sin subcategorías aplicables al género (ej. Vestidos en Hombre)
   const visibleCategories = categories.filter((cat) => {
     if (selectedGender === 'hombre' && cat.slug === 'vestidos') return false;
     return true;
@@ -96,6 +103,22 @@ export function renderCategoryPage({
       `
     )
     .join('');
+
+  const brandChipsHtml = [
+    `<button type="button" class="io-cat-chip ${selectedBrand === 'todas' ? 'is-active' : ''}" data-action="clear-brand-filter">Todas las marcas</button>`,
+    ...MARCAS_TIENDA.map(
+      (b) => `
+        <button
+          type="button"
+          class="io-cat-chip ${selectedBrand === b.nombre ? 'is-active' : ''}"
+          data-action="filter-brand"
+          data-brand="${escapeHtml(b.nombre)}"
+        >
+          ${escapeHtml(b.nombre)}
+        </button>
+      `
+    ),
+  ].join('');
 
   const ageChipsHtml =
     selectedGender === 'ninos'
@@ -215,6 +238,10 @@ export function renderCategoryPage({
           ${categoryChipsHtml}
         </nav>
         ${subcatChipsHtml}
+
+        <nav aria-label="Filtrar por marca" class="d-flex flex-wrap gap-2 mt-2">
+          ${brandChipsHtml}
+        </nav>
       </header>
 
       ${renderProductCatalog(
@@ -225,7 +252,9 @@ export function renderCategoryPage({
         sortBy,
         availableSizes,
         selectedVariants,
-        colorblindMode
+        colorblindMode,
+        wishlistGroups,
+        selectedBrand
       )}
     </div>
   `;

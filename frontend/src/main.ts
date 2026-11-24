@@ -5,23 +5,25 @@ import {
   CATALOGO_PRODUCTOS,
   CATEGORIAS_TIENDA,
   COLECCIONES_BANNERS,
+  MARCAS_TIENDA,
   OFERTAS_CARRUSEL,
 } from './data/catalogData';
 import { renderLoginModal, renderWishlistDrawer } from './render/accountPanels';
+import { bindBrandLogo } from './render/brand';
+import { renderBrandsSection } from './render/brandsSection';
 import { renderCartDrawer } from './render/cartDrawer';
 import { renderCategoryGrid } from './render/categoryGrid';
 import { renderCategoryPage } from './render/categoryPage';
 import { renderCollectionBanners } from './render/collectionBanners';
 import { FooterInfoTopic, renderFooter, renderFooterInfoModal } from './render/footer';
 import { renderHeaderNav } from './render/headerNav';
-import { renderHomeShowcase } from './render/homeShowcase';
-import { bindBrandLogo } from './render/brand';
+import { renderFeaturedSection, renderNewArrivalsSection } from './render/homeShowcase';
 import { renderOffersCarousel } from './render/offersCarousel';
+import { renderProductDetailModal } from './render/productDetailModal';
 import {
   CartItem,
   CategorySlug,
   GenderFilter,
-  HomeShowcaseTab,
   KidsAgeFilter,
   KidsAgeGroup,
 } from './types/store.types';
@@ -38,19 +40,21 @@ interface StoreState {
   selectedSubcategory: string;
   selectedGender: GenderFilter;
   selectedAgeGroup: KidsAgeFilter;
+  selectedBrand: string;
   onlyOffers: boolean;
   selectedSize: string;
-  showcaseTab: HomeShowcaseTab;
   sortBy: 'relevancia' | 'precio-asc' | 'precio-desc';
   carouselIndex: number;
   carouselPaused: boolean;
   selectedVariants: Record<string, number>;
   cart: CartItem[];
-  wishlistCount: number;
+  wishlistGroups: Set<string>;
   secondsRemaining: number;
   isCartOpen: boolean;
   isWishlistOpen: boolean;
   isLoginOpen: boolean;
+  activeDetailGroupId: string | null;
+  detailFeedback: string;
   loginFeedback: string;
   footerInfoTopic: FooterInfoTopic | null;
   isSearchOpen: boolean;
@@ -100,19 +104,21 @@ const state: StoreState = {
   selectedSubcategory: 'todas',
   selectedGender: 'todos',
   selectedAgeGroup: 'todas',
+  selectedBrand: 'todas',
   onlyOffers: false,
   selectedSize: 'todas',
-  showcaseTab: 'destacados',
   sortBy: 'relevancia',
   carouselIndex: 0,
   carouselPaused: false,
   selectedVariants: {},
   cart: [],
-  wishlistCount: 0,
+  wishlistGroups: new Set<string>(),
   secondsRemaining: RESERVE_DURATION_SECONDS,
   isCartOpen: false,
   isWishlistOpen: false,
   isLoginOpen: false,
+  activeDetailGroupId: null,
+  detailFeedback: '',
   loginFeedback: '',
   footerInfoTopic: null,
   isSearchOpen: false,
@@ -208,6 +214,13 @@ function getFilteredProducts() {
       return false;
     }
 
+    if (
+      state.selectedBrand !== 'todas' &&
+      product.marca.toLowerCase() !== state.selectedBrand.toLowerCase()
+    ) {
+      return false;
+    }
+
     if (state.onlyOffers && activeOfferIds && activeOfferCats) {
       const matchesProductOffer = product.variants.some((v) =>
         activeOfferIds.has(v.producto_id)
@@ -268,7 +281,40 @@ function attachImageFallbacks(): void {
     );
   });
 
+  // Respaldo de imagen de producto hacia el logo de la empresa I&O
+  root.querySelectorAll<HTMLImageElement>('img[data-product-photo]').forEach((img) => {
+    img.addEventListener(
+      'error',
+      () => {
+        const mediaParent = img.parentElement;
+        const tpl = mediaParent?.querySelector('[data-product-fallback-tpl]');
+        if (mediaParent && tpl) {
+          mediaParent.innerHTML = tpl.innerHTML;
+          attachFallbackLogoHandlers(mediaParent);
+        }
+      },
+      { once: true }
+    );
+  });
+
+  attachFallbackLogoHandlers(root);
   bindBrandLogo(root);
+}
+
+function attachFallbackLogoHandlers(scope: ParentNode): void {
+  scope.querySelectorAll<HTMLImageElement>('img[data-fallback-logo]').forEach((logoImg) => {
+    logoImg.addEventListener(
+      'error',
+      () => {
+        const monogram = logoImg.parentElement?.querySelector<HTMLElement>(
+          '[data-fallback-monogram]'
+        );
+        logoImg.hidden = true;
+        if (monogram) monogram.hidden = false;
+      },
+      { once: true }
+    );
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -285,13 +331,13 @@ function prefersReducedMotion(): boolean {
 
 function syncHeaderScroll(): void {
   const y = window.scrollY;
-  // Histéresis para evitar parpadeo cerca del umbral
   if (!headerScrolled && y > 24) headerScrolled = true;
   else if (headerScrolled && y < 8) headerScrolled = false;
   root.querySelector('.io-header')?.classList.toggle('is-scrolled', headerScrolled);
 }
 
 function getOverlayKey(): string {
+  if (state.activeDetailGroupId !== null) return `detail:${state.activeDetailGroupId}`;
   if (state.isCartOpen) return 'cart';
   if (state.isWishlistOpen) return 'wishlist';
   if (state.isLoginOpen) return 'login';
@@ -300,7 +346,6 @@ function getOverlayKey(): string {
   return 'none';
 }
 
-/** Anima el cierre de drawers/modales antes de desmontarlos. */
 function animateClose(done: () => void): void {
   const targets = root.querySelectorAll<HTMLElement>(
     '.io-drawer-backdrop, .io-drawer-panel, .io-modal, .io-mobile-nav-drawer'
@@ -324,6 +369,8 @@ function closeAllOverlays(): void {
   state.isCartOpen = false;
   state.isWishlistOpen = false;
   state.isLoginOpen = false;
+  state.activeDetailGroupId = null;
+  state.detailFeedback = '';
   state.footerInfoTopic = null;
   resetDesktopMenuState();
   state.isMobileMenuOpen = false;
@@ -368,6 +415,7 @@ function navigateToHome(): void {
   state.selectedSubcategory = 'todas';
   state.selectedGender = 'todos';
   state.selectedAgeGroup = 'todas';
+  state.selectedBrand = 'todas';
   state.onlyOffers = false;
   state.selectedSize = 'todas';
   resetDesktopMenuState();
@@ -386,6 +434,7 @@ interface NavigateCategoryFilters {
   gender?: GenderFilter;
   ageGroup?: KidsAgeFilter;
   subcategory?: string;
+  brand?: string;
   onlyOffers?: boolean;
   sizeFilter?: string;
 }
@@ -400,6 +449,7 @@ function navigateToCategory(
   state.selectedAgeGroup =
     state.selectedGender === 'ninos' ? (filters.ageGroup ?? 'todas') : 'todas';
   state.selectedSubcategory = filters.subcategory ?? 'todas';
+  state.selectedBrand = filters.brand ?? 'todas';
   state.onlyOffers = filters.onlyOffers ?? false;
   state.selectedSize = filters.sizeFilter ?? 'todas';
   resetDesktopMenuState();
@@ -426,12 +476,48 @@ function renderApp(): void {
   const currentCategoryObj =
     CATEGORIAS_TIENDA.find((c) => c.slug === state.selectedCategory) ?? null;
 
+  const activeDetailProduct = state.activeDetailGroupId
+    ? (CATALOGO_PRODUCTOS.find((p) => p.groupId === state.activeDetailGroupId) ?? null)
+    : null;
+
+  const wishlistedProducts = CATALOGO_PRODUCTOS.filter((p) =>
+    state.wishlistGroups.has(p.groupId)
+  );
+
+  const daltonismStatusBannerHtml = state.colorblindMode
+    ? `
+      <div class="io-daltonism-global-banner" role="region" aria-label="Estado de accesibilidad para daltonismo">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="io-daltonism-banner-icon" aria-hidden="true">${icons.eye(18)}</span>
+            <div>
+              <strong>Modo Daltonismo y Accesibilidad Universal Activo (WCAG 2.1 AA · RN-ACC-01 a RN-ACC-06)</strong>
+              <span class="d-block small" style="color: var(--color-ink-muted)">
+                Tramas geométricas SVG en cada círculo de color, etiquetas explícitas de textura, alertas no cromáticas de stock (≤ 5 uds) y trazabilidad normativa habilitadas.
+              </span>
+            </div>
+          </div>
+          <button type="button" class="io-btn-outline" data-action="toggle-colorblind-mode">
+            <span>Volver a vista estética estándar</span>
+          </button>
+        </div>
+      </div>
+    `
+    : '';
+
   const mainContentHtml =
     state.view === 'home'
       ? `
-        ${renderOffersCarousel(OFERTAS_CARRUSEL, state.carouselIndex, state.carouselPaused)}
+        ${renderOffersCarousel(
+          OFERTAS_CARRUSEL,
+          state.carouselIndex,
+          state.carouselPaused,
+          state.colorblindMode
+        )}
 
-        <div class="container-xl pt-5 pb-2">
+        <div class="container-xl pt-4 pb-2">
+          ${daltonismStatusBannerHtml}
+
           ${
             state.liveFeedback
               ? `
@@ -445,23 +531,47 @@ function renderApp(): void {
 
           ${renderCategoryGrid(CATEGORIAS_TIENDA, CATALOGO_PRODUCTOS, state.selectedCategory)}
 
-          ${renderHomeShowcase({
+          ${renderNewArrivalsSection({
             products: CATALOGO_PRODUCTOS,
-            activeTab: state.showcaseTab,
             selectedVariants: state.selectedVariants,
             colorblindMode: state.colorblindMode,
+            wishlistGroups: state.wishlistGroups,
+          })}
+
+          ${renderBrandsSection(MARCAS_TIENDA)}
+
+          ${renderFeaturedSection({
+            products: CATALOGO_PRODUCTOS,
+            selectedVariants: state.selectedVariants,
+            colorblindMode: state.colorblindMode,
+            wishlistGroups: state.wishlistGroups,
           })}
 
           ${renderCollectionBanners(COLECCIONES_BANNERS)}
         </div>
       `
-      : renderCategoryPage({
+      : `
+        <div class="container-xl pt-3">
+          ${daltonismStatusBannerHtml}
+          ${
+            state.liveFeedback
+              ? `
+                <div class="io-alert mt-2" role="status" aria-live="polite">
+                  <span>${escapeHtml(state.liveFeedback)}</span>
+                  <button type="button" class="btn-close" data-action="dismiss-feedback" aria-label="Ocultar notificación"></button>
+                </div>
+              `
+              : ''
+          }
+        </div>
+        ${renderCategoryPage({
           categories: CATEGORIAS_TIENDA,
           currentCategory: currentCategoryObj,
           selectedCategory: state.selectedCategory,
           selectedSubcategory: state.selectedSubcategory,
           selectedGender: state.selectedGender,
           selectedAgeGroup: state.selectedAgeGroup,
+          selectedBrand: state.selectedBrand,
           onlyOffers: state.onlyOffers,
           products: filteredProducts,
           totalCatalogCount: CATALOGO_PRODUCTOS.length,
@@ -470,17 +580,19 @@ function renderApp(): void {
           availableSizes: getAvailableSizes(),
           selectedVariants: state.selectedVariants,
           colorblindMode: state.colorblindMode,
-        });
+          wishlistGroups: state.wishlistGroups,
+        })}
+      `;
 
   root.innerHTML = `
-    <div class="d-flex flex-column min-vh-100">
+    <div class="d-flex flex-column min-vh-100 ${state.colorblindMode ? 'io-mode-colorblind' : ''}">
       ${renderHeaderNav({
         selectedCategory: state.selectedCategory,
         selectedGender: state.selectedGender,
         onlyOffers: state.onlyOffers,
         isHome: state.view === 'home',
         cartCount,
-        wishlistCount: state.wishlistCount,
+        wishlistCount: state.wishlistGroups.size,
         isSearchOpen: state.isSearchOpen,
         openNavKey: state.openNavKey,
         activeMenuAge: state.activeMenuAge,
@@ -514,16 +626,29 @@ function renderApp(): void {
         </button>
       </nav>
 
-      ${renderCartDrawer(state.isCartOpen, state.cart, state.secondsRemaining, state.optInMarketing, state.colorblindMode)}
-      ${renderWishlistDrawer(state.isWishlistOpen)}
+      ${renderCartDrawer(
+        state.isCartOpen,
+        state.cart,
+        state.secondsRemaining,
+        state.optInMarketing,
+        state.colorblindMode
+      )}
+      ${renderWishlistDrawer(state.isWishlistOpen, wishlistedProducts)}
       ${renderLoginModal(state.isLoginOpen, state.loginFeedback)}
       ${renderFooterInfoModal(state.footerInfoTopic)}
+      ${renderProductDetailModal({
+        product: activeDetailProduct,
+        selectedVariantId: activeDetailProduct
+          ? state.selectedVariants[activeDetailProduct.groupId]
+          : undefined,
+        colorblindMode: state.colorblindMode,
+        detailFeedback: state.detailFeedback,
+      })}
     </div>
   `;
 
   attachImageFallbacks();
 
-  // Las animaciones de entrada solo corren al cambiar de vista u overlay, no en re-renders menores
   const overlayKey = getOverlayKey();
   const viewKey = `${state.view}:${state.selectedCategory}`;
   root.classList.toggle('io-steady-overlay', overlayKey !== 'none' && overlayKey === lastOverlayKey);
@@ -531,14 +656,12 @@ function renderApp(): void {
   document.body.classList.toggle('io-scroll-lock', overlayKey !== 'none');
 
   if (overlayKey !== 'none' && overlayKey !== lastOverlayKey) {
-    // Foco al botón de cierre del panel recién abierto
     root
       .querySelector<HTMLElement>(
         '.io-drawer-panel [data-action^="close"], .io-modal [data-action^="close"], .io-mobile-nav-drawer [data-action^="close"]'
       )
       ?.focus();
   } else if (overlayKey === 'none' && lastOverlayKey !== 'none' && overlayOpenerAction) {
-    // Devuelve el foco al control que abrió el panel
     const opener = Array.from(
       root.querySelectorAll<HTMLElement>(`[data-action="${overlayOpenerAction}"]`)
     ).find((el) => el.offsetParent !== null);
@@ -550,7 +673,6 @@ function renderApp(): void {
   lastViewKey = viewKey;
   syncHeaderScroll();
 
-  // Zoom lento del hero: se activa tras el primer frame para que la transición arranque en escala 1
   if (state.view === 'home') {
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
@@ -577,7 +699,6 @@ function renderApp(): void {
   }
 }
 
-// Sincronizar navegación Atrás/Adelante del navegador
 window.addEventListener('hashchange', () => {
   const route = parseRouteFromHash();
   state.view = route.view;
@@ -587,7 +708,6 @@ window.addEventListener('hashchange', () => {
   window.scrollTo({ top: 0 });
 });
 
-// Cerrar menú desplegable del header con Escape o clic fuera del header
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     if (state.openNavKey !== null) {
@@ -597,7 +717,15 @@ document.addEventListener('keydown', (event) => {
       document.getElementById(triggerId)?.focus();
       return;
     }
-    if (state.isSearchOpen || state.isCartOpen || state.isWishlistOpen || state.isLoginOpen || state.footerInfoTopic !== null || state.isMobileMenuOpen) {
+    if (
+      state.activeDetailGroupId !== null ||
+      state.isSearchOpen ||
+      state.isCartOpen ||
+      state.isWishlistOpen ||
+      state.isLoginOpen ||
+      state.footerInfoTopic !== null ||
+      state.isMobileMenuOpen
+    ) {
       animateClose(() => {
         closeAllOverlays();
         renderApp();
@@ -606,7 +734,6 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-// Delegación global de clics
 root.addEventListener('click', (event) => {
   const rawTarget = event.target as HTMLElement | null;
   if (state.openNavKey !== null && !rawTarget?.closest('#io-site-header')) {
@@ -639,9 +766,25 @@ root.addEventListener('click', (event) => {
         gender,
         ageGroup,
         subcategory,
+        brand: state.selectedBrand,
         onlyOffers,
         sizeFilter,
       });
+      break;
+    }
+    case 'filter-brand': {
+      const brandName = target.dataset.brand ?? 'todas';
+      if (state.view === 'home') {
+        navigateToCategory('todas', { brand: brandName });
+      } else {
+        state.selectedBrand = brandName;
+        renderApp();
+      }
+      break;
+    }
+    case 'clear-brand-filter': {
+      state.selectedBrand = 'todas';
+      renderApp();
       break;
     }
     case 'filter-gender': {
@@ -751,6 +894,20 @@ root.addEventListener('click', (event) => {
       renderApp();
       break;
     }
+    case 'toggle-wishlist-item': {
+      const groupId = target.dataset.group ?? '';
+      const product = CATALOGO_PRODUCTOS.find((p) => p.groupId === groupId);
+      if (!product) break;
+      if (state.wishlistGroups.has(groupId)) {
+        state.wishlistGroups.delete(groupId);
+        state.liveFeedback = `${product.nombre} eliminado de tus favoritos.`;
+      } else {
+        state.wishlistGroups.add(groupId);
+        state.liveFeedback = `${product.nombre} guardado en tus favoritos.`;
+      }
+      renderApp();
+      break;
+    }
     case 'open-wishlist':
       overlayOpenerAction = 'open-wishlist';
       state.isWishlistOpen = true;
@@ -761,6 +918,35 @@ root.addEventListener('click', (event) => {
         state.isWishlistOpen = false;
         renderApp();
       });
+      break;
+    case 'open-product-detail': {
+      const groupId = target.dataset.group ?? null;
+      if (!groupId) break;
+      overlayOpenerAction = 'open-product-detail';
+      state.isWishlistOpen = false;
+      state.activeDetailGroupId = groupId;
+      state.detailFeedback = '';
+      renderApp();
+      break;
+    }
+    case 'close-product-detail':
+      animateClose(() => {
+        state.activeDetailGroupId = null;
+        state.detailFeedback = '';
+        renderApp();
+      });
+      break;
+    case 'open-size-guide-from-detail':
+      state.activeDetailGroupId = null;
+      state.detailFeedback = '';
+      state.footerInfoTopic = 'guia-tallas';
+      renderApp();
+      break;
+    case 'open-cart-from-detail':
+      state.activeDetailGroupId = null;
+      state.detailFeedback = '';
+      state.isCartOpen = true;
+      renderApp();
       break;
     case 'open-login':
       overlayOpenerAction = 'open-login';
@@ -783,14 +969,8 @@ root.addEventListener('click', (event) => {
         // Ignorar si localStorage está restringido
       }
       state.liveFeedback = state.colorblindMode
-        ? 'Modo Daltonismo activado: texturas y tramas visibles en los selectores de color.'
-        : 'Modo Daltonismo desactivado: vista de colores estándar.';
-      renderApp();
-      break;
-    }
-    case 'switch-showcase-tab': {
-      const tab = (target.dataset.tab as HomeShowcaseTab | undefined) ?? 'destacados';
-      state.showcaseTab = tab;
+        ? 'Modo Daltonismo activado: tramas geométricas, nombres de textura y requisitos accesibles visibles.'
+        : 'Vista estética estándar activada.';
       renderApp();
       break;
     }
@@ -842,6 +1022,7 @@ root.addEventListener('click', (event) => {
       state.selectedSubcategory = 'todas';
       state.selectedGender = 'todos';
       state.selectedAgeGroup = 'todas';
+      state.selectedBrand = 'todas';
       state.onlyOffers = false;
       state.selectedSize = 'todas';
       state.sortBy = 'relevancia';
@@ -856,6 +1037,7 @@ root.addEventListener('click', (event) => {
       const chosen = matching.find((v) => v.stock > 0) ?? matching[0];
       if (chosen) {
         state.selectedVariants[groupId] = chosen.producto_id;
+        state.detailFeedback = '';
         renderApp();
       }
       break;
@@ -865,6 +1047,7 @@ root.addEventListener('click', (event) => {
       const groupId = target.dataset.group ?? '';
       const variantId = Number(target.dataset.variantId ?? 0);
       state.selectedVariants[groupId] = variantId;
+      state.detailFeedback = '';
       renderApp();
       break;
     }
@@ -893,7 +1076,12 @@ root.addEventListener('click', (event) => {
         });
       }
       state.secondsRemaining = RESERVE_DURATION_SECONDS;
-      state.liveFeedback = `${product.nombre} talla ${variant.talla} (${variant.color}) agregado a la bolsa.`;
+      const msg = `${product.nombre} · Talla ${variant.talla} (${variant.color}) agregado a tu bolsa.`;
+      if (state.activeDetailGroupId === groupId) {
+        state.detailFeedback = msg;
+      } else {
+        state.liveFeedback = msg;
+      }
       renderApp();
       break;
     }
@@ -941,7 +1129,6 @@ root.addEventListener('click', (event) => {
   }
 });
 
-// Delegación de inputs, selects y formularios
 root.addEventListener('input', (event) => {
   const target = event.target as HTMLElement;
   if (target.id === 'buscador-catalogo') {
@@ -974,7 +1161,7 @@ root.addEventListener('submit', (event) => {
     event.preventDefault();
   } else if (form.id === 'form-login') {
     event.preventDefault();
-    state.loginFeedback = 'Inicio de sesión disponible al conectar el backend.';
+    state.loginFeedback = 'Inicio de sesión disponible al conectar el servidor.';
     renderApp();
   }
 });
@@ -1000,13 +1187,12 @@ function resetCarouselTimer(): void {
 
 resetCarouselTimer();
 
-// Temporizador de reserva de carrito de 15 min (RN-ECO-03)
 window.setInterval(() => {
   if (state.cart.length === 0) return;
   if (state.secondsRemaining <= 1) {
     state.cart = [];
     state.secondsRemaining = RESERVE_DURATION_SECONDS;
-    state.liveFeedback = 'Tu reserva temporal de 15 minutos expiró y el stock fue liberado.';
+    state.liveFeedback = 'Tu reserva temporal de 15 minutos expiró y las prendas volvieron al catálogo.';
     renderApp();
   } else {
     state.secondsRemaining -= 1;
@@ -1019,7 +1205,6 @@ window.setInterval(() => {
 
 renderApp();
 
-// Header dinámico: se compacta y se vuelve translúcido al hacer scroll
 let scrollTicking = false;
 window.addEventListener(
   'scroll',

@@ -1,110 +1,130 @@
-import { HomeShowcaseTab, ProductGroup } from '../types/store.types';
-import { escapeHtml, icons } from '../utils/icons';
+import { ProductGroup } from '../types/store.types';
+import { icons } from '../utils/icons';
 import { renderProductCard } from './productCatalog';
 
-interface HomeShowcaseOptions {
+interface ShowcaseSectionOptions {
   products: ProductGroup[];
-  activeTab: HomeShowcaseTab;
   selectedVariants: Record<string, number>;
   colorblindMode: boolean;
+  wishlistGroups?: Set<string>;
 }
 
-export function renderHomeShowcase({
+/**
+ * Sección independiente 1: Recién Llegados
+ */
+export function renderNewArrivalsSection({
   products,
-  activeTab,
   selectedVariants,
   colorblindMode,
-}: HomeShowcaseOptions): string {
-  const featured = products.filter((p) => p.destacado);
+  wishlistGroups = new Set(),
+}: ShowcaseSectionOptions): string {
   const arrivals = products.filter((p) => p.recienLlegado);
+  const visible = arrivals.length > 0 ? arrivals : products.slice(0, 4);
 
-  const visibleProducts =
-    activeTab === 'destacados'
-      ? featured.length > 0
-        ? featured
-        : products.slice(0, 4)
-      : arrivals.length > 0
-        ? arrivals
-        : products.slice(0, 4);
-
-  const cardsHtml =
-    visibleProducts.length === 0
-      ? `
-        <div class="io-empty io-empty--panel" role="status" aria-live="polite">
-          <span class="io-empty-icon">${icons.bag(30)}</span>
-          <p class="io-empty-title">Sin prendas disponibles en esta selección</p>
-          <p class="small mb-0">Pronto sumaremos nuevas piezas de temporada.</p>
-        </div>
-      `
-      : `
-        <div class="row g-4 io-product-grid" id="panel-vitrina-${escapeHtml(activeTab)}" role="tabpanel" aria-labelledby="tab-vitrina-${escapeHtml(activeTab)}">
-          ${visibleProducts
-            .map((product) =>
-              renderProductCard(
-                product,
-                selectedVariants[product.groupId] ??
-                  product.variants.find((v) => v.stock > 0)?.producto_id ??
-                  product.variants[0].producto_id,
-                colorblindMode
-              )
-            )
-            .join('')}
-        </div>
-      `;
+  if (visible.length === 0) return '';
 
   return `
-    <section id="seccion-vitrina" aria-labelledby="heading-vitrina" class="mb-5 pt-2">
+    <section
+      id="seccion-recien-llegados"
+      aria-labelledby="heading-recien-llegados"
+      class="io-home-section"
+    >
       <div class="io-section-head">
         <div>
-          <span class="io-eyebrow">Selección I&amp;O</span>
-          <h2 id="heading-vitrina" class="io-display io-section-title">
-            ${activeTab === 'destacados' ? 'Productos Destacados' : 'Recién Llegados'}
+          <span class="io-eyebrow">Nuevos Ingresos · Edición Reciente</span>
+          <h2 id="heading-recien-llegados" class="io-display io-section-title">
+            Recién Llegados
           </h2>
+          <p class="io-section-lead mb-0">
+            Las últimas siluetas incorporadas esta semana a nuestro archivo contemporáneo en Lima.
+          </p>
         </div>
 
-        <div class="d-flex flex-wrap align-items-center gap-3">
-          <div class="io-showcase-tabs" role="tablist" aria-label="Alternar entre destacados y recién llegados">
-            <button
-              type="button"
-              id="tab-vitrina-destacados"
-              role="tab"
-              aria-selected="${activeTab === 'destacados'}"
-              aria-controls="panel-vitrina-destacados"
-              class="io-showcase-tab ${activeTab === 'destacados' ? 'is-active' : ''}"
-              data-action="switch-showcase-tab"
-              data-tab="destacados"
-            >
-              <span>Destacados</span>
-              <span class="io-showcase-count">(${featured.length})</span>
-            </button>
-            <button
-              type="button"
-              id="tab-vitrina-recien-llegados"
-              role="tab"
-              aria-selected="${activeTab === 'recien-llegados'}"
-              aria-controls="panel-vitrina-recien-llegados"
-              class="io-showcase-tab ${activeTab === 'recien-llegados' ? 'is-active' : ''}"
-              data-action="switch-showcase-tab"
-              data-tab="recien-llegados"
-            >
-              <span>Recién llegados</span>
-              <span class="io-showcase-count">(${arrivals.length})</span>
-            </button>
-          </div>
-
-          <a
-            href="#/categoria/todas"
-            class="io-btn-outline text-decoration-none"
-            data-action="go-category"
-            data-category="todas"
-          >
-            <span>Ver catálogo</span>
-            ${icons.chevronRight(16)}
-          </a>
-        </div>
+        <a
+          href="#/categoria/todas"
+          class="io-btn-outline text-decoration-none"
+          data-action="go-category"
+          data-category="todas"
+        >
+          <span>Ver novedades</span>
+          ${icons.chevronRight(16)}
+        </a>
       </div>
 
-      ${cardsHtml}
+      <div class="row g-4 io-product-grid">
+        ${visible
+          .map((product) =>
+            renderProductCard(
+              product,
+              selectedVariants[product.groupId] ??
+                product.variants.find((v) => v.stock > 0)?.producto_id ??
+                product.variants[0].producto_id,
+              colorblindMode,
+              wishlistGroups.has(product.groupId)
+            )
+          )
+          .join('')}
+      </div>
+    </section>
+  `;
+}
+
+/**
+ * Sección independiente 2: Lo Más Destacado
+ */
+export function renderFeaturedSection({
+  products,
+  selectedVariants,
+  colorblindMode,
+  wishlistGroups = new Set(),
+}: ShowcaseSectionOptions): string {
+  const featured = products.filter((p) => p.destacado);
+  const visible = featured.length > 0 ? featured : products.slice(0, 4);
+
+  if (visible.length === 0) return '';
+
+  return `
+    <section
+      id="seccion-destacados"
+      aria-labelledby="heading-destacados"
+      class="io-home-section io-featured-band"
+    >
+      <div class="io-section-head">
+        <div>
+          <span class="io-eyebrow">Favoritos de la Casa · Íconos I&amp;O</span>
+          <h2 id="heading-destacados" class="io-display io-section-title">
+            Lo Más Destacado
+          </h2>
+          <p class="io-section-lead mb-0">
+            Las piezas más elegidas por su corte impecable, caída textil y versatilidad diaria.
+          </p>
+        </div>
+
+        <a
+          href="#/categoria/todas"
+          class="io-btn-outline text-decoration-none"
+          data-action="go-category"
+          data-category="todas"
+        >
+          <span>Explorar favoritos</span>
+          ${icons.chevronRight(16)}
+        </a>
+      </div>
+
+      <div class="row g-4 io-product-grid">
+        ${visible
+          .map((product) =>
+            renderProductCard(
+              product,
+              selectedVariants[product.groupId] ??
+                product.variants.find((v) => v.stock > 0)?.producto_id ??
+                product.variants[0].producto_id,
+              colorblindMode,
+              wishlistGroups.has(product.groupId)
+            )
+          )
+          .join('')}
+      </div>
     </section>
   `;
 }

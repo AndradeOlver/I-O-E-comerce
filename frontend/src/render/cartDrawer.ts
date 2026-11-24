@@ -116,8 +116,8 @@ export function renderCartDrawer(
                 <div class="small mt-2" style="color: var(--color-ink-muted)" role="status" aria-live="polite">
                   ${
                     qualifiesFreeShipping
-                      ? '✓ ¡Tienes envío gratis incluido!'
-                      : `Agrega S/ ${remainingForFree.toFixed(2)} más para envío gratis (RN-ENV-04).`
+                      ? `✓ ¡Tienes envío de cortesía incluido!${colorblindMode ? ' (RN-ENV-04)' : ''}`
+                      : `Agrega S/ ${remainingForFree.toFixed(2)} más para envío gratis${colorblindMode ? ' (RN-ENV-04)' : ''}.`
                   }
                 </div>
               </div>
@@ -165,7 +165,7 @@ export function renderCartDrawer(
                   ${optInMarketing ? 'checked' : ''}
                 />
                 <label class="form-check-label small" for="opt-in-marketing" style="color: var(--color-ink-muted)">
-                  Acepto recibir novedades y promociones exclusivas de I&O (Consentimiento explícito RN-MKT-03).
+                  Deseo recibir preventas, lanzamientos y novedades exclusivas de I&amp;O${colorblindMode ? ' (Consentimiento explícito RN-MKT-03)' : ''}.
                 </label>
               </div>
 

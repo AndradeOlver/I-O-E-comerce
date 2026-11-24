@@ -508,20 +508,24 @@ export function renderHeaderNav({
   return `
     <div class="io-top-strip">
       <div class="container-xl io-top-strip-inner">
-        <p class="m-0">
-          ${icons.truck(16)}
-          <span><strong>Envío GRATIS</strong> en compras mayores a S/ 150</span>
-        </p>
+        <div class="d-flex align-items-center gap-3">
+          <p class="m-0">
+            ${icons.truck(15)}
+            <span><strong>Envío de cortesía</strong> en pedidos mayores a S/ 150</span>
+          </p>
+          <span class="io-top-strip-dot d-none d-lg-inline-block" aria-hidden="true"></span>
+          <span class="d-none d-lg-inline-block" style="opacity: 0.82">Algodón Pima Peruano · Atelier Lima</span>
+        </div>
 
         <button
           type="button"
           id="switch-daltonismo-top"
           role="switch"
           aria-checked="${colorblindMode}"
-          class="io-a11y-switch d-none d-md-inline-flex ${colorblindMode ? 'is-active' : ''}"
+          class="io-a11y-switch ${colorblindMode ? 'is-active' : ''}"
           data-action="toggle-colorblind-mode"
         >
-          ${icons.eye(15)}
+          ${icons.eye(14)}
           <span>Modo Daltonismo: <strong>${colorblindMode ? 'Activo' : 'Inactivo'}</strong></span>
         </button>
       </div>

@@ -253,7 +253,13 @@ export function renderFooter(
 
         <div class="io-footer-bottom">
           <strong class="io-footer-bottom-brand">I&amp;O · Lima, Perú</strong>
-          <span class="io-footer-meta">Precios con IGV incluido (18% — RN-TRI-01) · RUC: 10458796321</span>
+          <span class="io-footer-meta">
+            ${
+              colorblindMode
+                ? 'Modo Daltonismo Activo (RN-ACC-01 a RN-ACC-06) · Precios con IGV 18% (RN-TRI-01) · RUC: 10458796321'
+                : 'Todos los precios incluyen IGV · Atelier &amp; Tienda Oficial Lima · RUC 10458796321'
+            }
+          </span>
         </div>
       </div>
     </footer>

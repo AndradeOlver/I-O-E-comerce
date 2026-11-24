@@ -1,3 +1,4 @@
+import { IMAGE_SLOTS } from '../data/imageSlots';
 import {
   CategorySlug,
   ProductGroup,
@@ -5,12 +6,12 @@ import {
   TexturePatternId,
 } from '../types/store.types';
 import { escapeHtml, icons } from '../utils/icons';
-import { hasImageSlotSrc, renderImageSlot } from './imageSlot';
 
-function renderTextureSwatchSvg(
+export function renderTextureSwatchSvg(
   colorHex: string,
   patternId: TexturePatternId,
-  uid: string
+  uid: string,
+  circular = false
 ): string {
   const pid = `pattern-${patternId}-${uid}`;
   let patternDef = '';
@@ -19,58 +20,109 @@ function renderTextureSwatchSvg(
     patternDef = `
       <pattern id="${pid}" width="6" height="6" patternUnits="userSpaceOnUse">
         <rect width="6" height="6" fill="${colorHex}"/>
-        <circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.48)"/>
-        <circle cx="5" cy="5" r="0.8" fill="rgba(0,0,0,0.3)"/>
+        <circle cx="2" cy="2" r="1.1" fill="rgba(255,255,255,0.55)"/>
+        <circle cx="5" cy="5" r="0.9" fill="rgba(0,0,0,0.35)"/>
       </pattern>
     `;
   } else if (patternId === 'raya-fina') {
     patternDef = `
       <pattern id="${pid}" width="5" height="5" patternUnits="userSpaceOnUse">
         <rect width="5" height="5" fill="${colorHex}"/>
-        <line x1="0" y1="0" x2="0" y2="5" stroke="rgba(255,255,255,0.55)" stroke-width="1.4"/>
+        <line x1="0" y1="0" x2="0" y2="5" stroke="rgba(255,255,255,0.62)" stroke-width="1.5"/>
       </pattern>
     `;
   } else if (patternId === 'diagonal') {
     patternDef = `
       <pattern id="${pid}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
         <rect width="6" height="6" fill="${colorHex}"/>
-        <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.45)" stroke-width="1.6"/>
+        <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7"/>
       </pattern>
     `;
   } else if (patternId === 'punteado') {
     patternDef = `
       <pattern id="${pid}" width="6" height="6" patternUnits="userSpaceOnUse">
         <rect width="6" height="6" fill="${colorHex}"/>
-        <circle cx="3" cy="3" r="1.2" fill="rgba(38,30,27,0.55)"/>
+        <circle cx="3" cy="3" r="1.3" fill="rgba(26,21,18,0.62)"/>
       </pattern>
     `;
   } else if (patternId === 'cuadricula') {
     patternDef = `
       <pattern id="${pid}" width="7" height="7" patternUnits="userSpaceOnUse">
         <rect width="7" height="7" fill="${colorHex}"/>
-        <path d="M 7 0 L 0 0 0 7" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+        <path d="M 7 0 L 0 0 0 7" fill="none" stroke="rgba(255,255,255,0.58)" stroke-width="1.1"/>
       </pattern>
+    `;
+  }
+
+  const fillVal = patternId === 'solido' ? colorHex : `url(#${pid})`;
+
+  if (circular) {
+    return `
+      <svg class="io-circle-pattern-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        ${patternDef ? `<defs>${patternDef}</defs>` : ''}
+        <circle cx="12" cy="12" r="12" fill="${fillVal}"/>
+      </svg>
     `;
   }
 
   return `
     <svg class="io-color-swatch" viewBox="0 0 28 28" aria-hidden="true" focusable="false">
       ${patternDef ? `<defs>${patternDef}</defs>` : ''}
-      <rect width="28" height="28" fill="${patternId === 'solido' ? colorHex : `url(#${pid})`}"/>
+      <rect width="28" height="28" fill="${fillVal}"/>
     </svg>
   `;
 }
 
-export function renderProductCard(
+export function renderProductVisualContent(
   product: ProductGroup,
-  selectedVariantId: number,
-  colorblindMode = false
+  activeVariant: ProductVariant
 ): string {
-  const activeVariant =
-    product.variants.find((v) => v.producto_id === selectedVariantId) ??
-    product.variants.find((v) => v.stock > 0) ??
-    product.variants[0];
+  const slot = IMAGE_SLOTS[activeVariant.imageSlotKey];
+  const imgSrc = slot?.src?.trim() ?? '';
 
+  const logoFallbackHtml = `
+    <div
+      class="io-product-logo-fallback"
+      style="--garment-tint: ${escapeHtml(activeVariant.colorHex)}"
+      role="img"
+      aria-label="Imagen de respaldo con logo institucional I&O para ${escapeHtml(product.nombre)} en tono ${escapeHtml(activeVariant.color)}"
+    >
+      <div class="io-product-logo-aura" aria-hidden="true"></div>
+      <div class="io-product-logo-frame">
+        <img
+          src="/img/brand/logo-io.png"
+          alt="Logo I&O"
+          class="io-product-fallback-logo"
+          data-fallback-logo
+        />
+        <span class="io-product-fallback-monogram" data-fallback-monogram hidden>I&amp;O</span>
+      </div>
+      <span class="io-product-tone-chip" aria-hidden="true">
+        <span class="io-product-tone-dot" style="background-color: ${escapeHtml(activeVariant.colorHex)}"></span>
+        <span>${escapeHtml(activeVariant.color)}</span>
+      </span>
+    </div>
+  `;
+
+  if (!imgSrc) {
+    return logoFallbackHtml;
+  }
+
+  return `
+    <img
+      src="${escapeHtml(imgSrc)}"
+      alt="${escapeHtml(activeVariant.alt_text)}"
+      class="io-product-photo"
+      loading="lazy"
+      data-product-photo
+    />
+    <div class="d-none" data-product-fallback-tpl>
+      ${logoFallbackHtml}
+    </div>
+  `;
+}
+
+export function getUniqueProductColors(product: ProductGroup): ProductVariant[] {
   const uniqueColors: ProductVariant[] = [];
   const seenColors = new Set<string>();
   for (const v of product.variants) {
@@ -79,140 +131,186 @@ export function renderProductCard(
       uniqueColors.push(v);
     }
   }
+  return uniqueColors;
+}
 
-  const variantsForColor = product.variants.filter(
-    (v) => v.color === activeVariant.color
-  );
+function renderColorCircleButton(
+  product: ProductGroup,
+  colorOpt: ProductVariant,
+  activeColor: string,
+  colorblindMode: boolean,
+  isCompactExtra = false
+): string {
+  const isSelected = colorOpt.color === activeColor;
+  const innerVisual = colorblindMode
+    ? renderTextureSwatchSvg(
+        colorOpt.colorHex,
+        colorOpt.patternId,
+        `card-${product.groupId}-${colorOpt.producto_id}-${isCompactExtra ? 'x' : 'm'}`,
+        true
+      )
+    : `<span class="io-color-circle-fill" style="background-color: ${escapeHtml(colorOpt.colorHex)}" aria-hidden="true"></span>`;
 
-  // Si no existe imagen propia cargada para la prenda, no se renderiza contenedor ni imagen reusada
-  const hasMedia = hasImageSlotSrc(activeVariant.imageSlotKey);
-  const mediaHtml = hasMedia
+  return `
+    <button
+      type="button"
+      class="io-color-circle-btn ${isCompactExtra ? 'is-extra' : ''} ${isSelected ? 'is-selected' : ''}"
+      data-action="select-color"
+      data-group="${escapeHtml(product.groupId)}"
+      data-color="${escapeHtml(colorOpt.color)}"
+      aria-label="Seleccionar color ${escapeHtml(colorOpt.color)}${colorblindMode ? ` (${escapeHtml(colorOpt.color_textura)})` : ''}"
+      aria-pressed="${isSelected}"
+      title="${escapeHtml(colorOpt.color)}${colorblindMode ? ` · ${escapeHtml(colorOpt.color_textura)}` : ''}"
+    >
+      ${innerVisual}
+    </button>
+  `;
+}
+
+export function renderProductCard(
+  product: ProductGroup,
+  selectedVariantId: number,
+  colorblindMode = false,
+  isWishlisted = false
+): string {
+  const activeVariant =
+    product.variants.find((v) => v.producto_id === selectedVariantId) ??
+    product.variants.find((v) => v.stock > 0) ??
+    product.variants[0];
+
+  const uniqueColors = getUniqueProductColors(product);
+  const primaryColors = uniqueColors.slice(0, 2);
+  const extraColors = uniqueColors.slice(2);
+
+  const badgeText =
+    product.badgeLabel ??
+    (product.recienLlegado ? 'Nuevo' : product.destacado ? 'Destacado' : '');
+
+  const daltonismPanelHtml = colorblindMode
     ? `
-      <div class="io-product-media">
-        ${renderImageSlot({
-          slotKey: activeVariant.imageSlotKey,
-          alt: activeVariant.alt_text,
-          aspectRatio: '3 / 4',
-        })}
+      <div class="io-daltonism-card-panel" role="status" aria-live="polite">
+        <div class="d-flex align-items-center gap-2">
+          ${renderTextureSwatchSvg(
+            activeVariant.colorHex,
+            activeVariant.patternId,
+            `readout-${product.groupId}-${activeVariant.producto_id}`
+          )}
+          <div class="io-daltonism-card-text">
+            <strong>${escapeHtml(activeVariant.color)}</strong>
+            <span>${escapeHtml(activeVariant.color_textura)} · RN-ACC-02</span>
+          </div>
+        </div>
+        <div class="io-daltonism-stock-line ${activeVariant.stock === 0 ? 'is-out' : activeVariant.stock <= activeVariant.stock_minimo ? 'is-low' : 'is-ok'}">
+          ${
+            activeVariant.stock === 0
+              ? `${icons.xCircle(14)} <span>Agotado en talla ${escapeHtml(activeVariant.talla)}</span>`
+              : activeVariant.stock <= activeVariant.stock_minimo
+                ? `${icons.alertTriangle(14)} <span>Últimas ${activeVariant.stock} uds (RN-INV-03)</span>`
+                : `${icons.checkCircle(14)} <span>Disponible (${activeVariant.stock} uds)</span>`
+          }
+        </div>
       </div>
     `
     : '';
 
-  const colorSelectorHtml = colorblindMode
-    ? `
-      <div class="mb-3">
-        <div class="d-flex flex-column gap-2" role="group" aria-label="Colores y texturas para ${escapeHtml(product.nombre)}">
-          ${uniqueColors
-            .map((colorOpt) => {
-              const isSelected = colorOpt.color === activeVariant.color;
-              return `
-                <button
-                  type="button"
-                  class="io-color-option ${isSelected ? 'is-selected' : ''}"
-                  data-action="select-color"
-                  data-group="${escapeHtml(product.groupId)}"
-                  data-color="${escapeHtml(colorOpt.color)}"
-                  aria-pressed="${isSelected}"
-                >
-                  ${renderTextureSwatchSvg(
-                    colorOpt.colorHex,
-                    colorOpt.patternId,
-                    `${product.groupId}-${colorOpt.producto_id}`
-                  )}
-                  <span class="small" style="line-height: 1.2">
-                    <strong class="d-block" style="color: var(--color-ink)">${escapeHtml(colorOpt.color)}</strong>
-                    <span style="color: var(--color-ink-muted)">${escapeHtml(colorOpt.color_textura)}</span>
-                  </span>
-                </button>
-              `;
-            })
-            .join('')}
+  const extraColorsHtml =
+    extraColors.length > 0
+      ? `
+        <div class="io-color-more-wrap">
+          <span class="io-more-colors-label">+colores</span>
+          <div class="io-color-circles-extra" role="group" aria-label="Más colores de ${escapeHtml(product.nombre)}">
+            ${extraColors
+              .map((c) =>
+                renderColorCircleButton(product, c, activeVariant.color, colorblindMode, true)
+              )
+              .join('')}
+          </div>
         </div>
-      </div>
-    `
-    : `
-      <div class="mb-3">
-        <div class="small mb-1" style="color: var(--color-ink-muted)">
-          Color: <strong style="color: var(--color-ink)">${escapeHtml(activeVariant.color)}</strong>
-        </div>
-        <div class="d-flex flex-wrap gap-2" role="group" aria-label="Colores para ${escapeHtml(product.nombre)}">
-          ${uniqueColors
-            .map((colorOpt) => {
-              const isSelected = colorOpt.color === activeVariant.color;
-              return `
-                <button
-                  type="button"
-                  class="io-color-dot-btn ${isSelected ? 'is-selected' : ''}"
-                  data-action="select-color"
-                  data-group="${escapeHtml(product.groupId)}"
-                  data-color="${escapeHtml(colorOpt.color)}"
-                  aria-label="Color ${escapeHtml(colorOpt.color)}"
-                  aria-pressed="${isSelected}"
-                  title="${escapeHtml(colorOpt.color)}"
-                >
-                  <span class="io-color-dot-fill" style="background-color: ${escapeHtml(colorOpt.colorHex)}" aria-hidden="true"></span>
-                </button>
-              `;
-            })
-            .join('')}
-        </div>
-      </div>
-    `;
-
-  const sizeButtonsHtml = variantsForColor
-    .map((variant) => {
-      const isSelected = variant.producto_id === activeVariant.producto_id;
-      const isOut = variant.stock === 0;
-
-      return `
-        <button
-          type="button"
-          class="io-size-btn ${isSelected ? 'is-selected' : ''}"
-          data-action="select-size-variant"
-          data-group="${escapeHtml(product.groupId)}"
-          data-variant-id="${variant.producto_id}"
-          aria-pressed="${isSelected}"
-          aria-disabled="${isOut}"
-        >
-          ${escapeHtml(variant.talla)}
-        </button>
-      `;
-    })
-    .join('');
+      `
+      : '';
 
   return `
     <div class="col-12 col-sm-6 col-lg-4 col-xl-3 io-reveal">
-      <article class="io-product-card">
-        ${mediaHtml}
-
-        <span class="io-product-brand">${escapeHtml(product.marca)}</span>
-        <h3 class="io-product-title">${escapeHtml(product.nombre)}</h3>
-
-        <div class="mb-3">
-          <span class="io-product-price">
-            S/ ${activeVariant.precio_venta.toFixed(2)}
-          </span>
-        </div>
-
-        ${colorSelectorHtml}
-
-        <div class="mb-3">
-          <div class="d-flex flex-wrap gap-2" role="group" aria-label="Tallas para ${escapeHtml(product.nombre)}">
-            ${sizeButtonsHtml}
-          </div>
-        </div>
-
-        <div class="mt-auto pt-2">
+      <article class="io-product-card ${colorblindMode ? 'is-colorblind' : ''}">
+        <div class="io-product-media-wrap">
           <button
             type="button"
-            class="io-btn-primary w-100"
-            data-action="add-to-cart"
+            class="io-product-media"
+            data-action="open-product-detail"
             data-group="${escapeHtml(product.groupId)}"
-            data-variant-id="${activeVariant.producto_id}"
-            ${activeVariant.stock === 0 ? 'disabled aria-disabled="true"' : ''}
+            aria-label="Ver imagen y detalles de ${escapeHtml(product.nombre)}"
           >
-            ${icons.bag(18)}
-            <span>${activeVariant.stock === 0 ? 'Agotado' : 'Agregar a la bolsa'}</span>
+            ${renderProductVisualContent(product, activeVariant)}
+          </button>
+
+          ${
+            badgeText
+              ? `<span class="io-product-floating-badge">${escapeHtml(badgeText)}</span>`
+              : ''
+          }
+
+          <button
+            type="button"
+            class="io-product-wish-btn ${isWishlisted ? 'is-active' : ''}"
+            data-action="toggle-wishlist-item"
+            data-group="${escapeHtml(product.groupId)}"
+            aria-label="${isWishlisted ? 'Quitar de favoritos' : 'Guardar en favoritos'}: ${escapeHtml(product.nombre)}"
+            aria-pressed="${isWishlisted}"
+          >
+            ${icons.heart(16)}
+          </button>
+        </div>
+
+        <div class="io-product-body">
+          <div class="io-product-meta-row">
+            <span class="io-product-brand">${escapeHtml(product.marca)}</span>
+            <div class="io-product-price-wrap">
+              ${
+                product.precio_regular && product.precio_regular > activeVariant.precio_venta
+                  ? `<del class="io-product-price-old">S/ ${product.precio_regular.toFixed(2)}</del>`
+                  : ''
+              }
+              <span class="io-product-price">S/ ${activeVariant.precio_venta.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <h3 class="io-product-title">
+            <button
+              type="button"
+              class="io-product-title-btn"
+              data-action="open-product-detail"
+              data-group="${escapeHtml(product.groupId)}"
+            >
+              ${escapeHtml(product.nombre)}
+            </button>
+          </h3>
+
+          <p class="io-product-desc">${escapeHtml(product.descripcion)}</p>
+        </div>
+
+        ${daltonismPanelHtml}
+
+        <div class="io-product-footer-bar">
+          <div class="io-color-box" role="group" aria-label="Selector de colores para ${escapeHtml(product.nombre)}">
+            <div class="io-color-circles-main">
+              ${primaryColors
+                .map((c) =>
+                  renderColorCircleButton(product, c, activeVariant.color, colorblindMode, false)
+                )
+                .join('')}
+            </div>
+            ${extraColorsHtml}
+          </div>
+
+          <button
+            type="button"
+            class="io-btn-ver-detalles"
+            data-action="open-product-detail"
+            data-group="${escapeHtml(product.groupId)}"
+            aria-label="Ver detalles de ${escapeHtml(product.nombre)}"
+          >
+            <span>Ver detalles</span>
+            ${icons.chevronRight(14)}
           </button>
         </div>
       </article>
@@ -228,7 +326,9 @@ export function renderProductCatalog(
   sortBy: 'relevancia' | 'precio-asc' | 'precio-desc',
   availableSizes: string[],
   selectedVariants: Record<string, number>,
-  colorblindMode = false
+  colorblindMode = false,
+  wishlistGroups: Set<string> = new Set(),
+  selectedBrand = 'todas'
 ): string {
   if (totalCatalogCount === 0) {
     return `
@@ -239,13 +339,14 @@ export function renderProductCatalog(
         <div class="io-empty io-empty--panel" role="status" aria-live="polite">
           <span class="io-empty-icon">${icons.bag(30)}</span>
           <p class="io-empty-title">Sin productos cargados aún</p>
-          <p class="small mb-0">Se mostrarán aquí al conectar la base de datos.</p>
+          <p class="small mb-0">Pronto incorporaremos nuevas piezas de estación.</p>
         </div>
       </section>
     `;
   }
 
-  const hasActiveFilters = selectedCategory !== 'todas' || selectedSize !== 'todas';
+  const hasActiveFilters =
+    selectedCategory !== 'todas' || selectedSize !== 'todas' || selectedBrand !== 'todas';
 
   const sizeOptionsHtml = availableSizes
     .map(
@@ -259,11 +360,11 @@ export function renderProductCatalog(
       ? `
         <div class="io-empty io-empty--panel" role="status" aria-live="polite">
           <span class="io-empty-icon">${icons.search(30)}</span>
-          <p class="io-empty-title">Sin resultados</p>
-          <p class="small mb-3">Prueba con otra categoría, talla o palabra clave.</p>
+          <p class="io-empty-title">No encontramos coincidencias</p>
+          <p class="small mb-3">Prueba explorando otra categoría, marca, talla o palabra clave.</p>
           <button type="button" class="io-btn-primary" data-action="reset-filters">
             ${icons.filterX(18)}
-            <span>Ver todo</span>
+            <span>Restablecer filtros</span>
           </button>
         </div>
       `
@@ -276,7 +377,8 @@ export function renderProductCatalog(
                 selectedVariants[product.groupId] ??
                   product.variants.find((v) => v.stock > 0)?.producto_id ??
                   product.variants[0].producto_id,
-                colorblindMode
+                colorblindMode,
+                wishlistGroups.has(product.groupId)
               )
             )
             .join('')}
@@ -286,7 +388,21 @@ export function renderProductCatalog(
   return `
     <section id="seccion-catalogo" aria-labelledby="heading-catalogo" class="mb-5">
       <div class="io-filterbar">
-        <h2 id="heading-catalogo" class="io-display" style="font-size: 1.6rem; margin: 0">Catálogo <span class="fw-normal" style="color: var(--color-ink-muted)">(${products.length})</span></h2>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <h2 id="heading-catalogo" class="io-display" style="font-size: 1.65rem; margin: 0">
+            Piezas seleccionadas <span class="fw-normal" style="color: var(--color-ink-muted)">(${products.length})</span>
+          </h2>
+          ${
+            selectedBrand !== 'todas'
+              ? `
+                <button type="button" class="io-cat-chip is-active ms-1" data-action="clear-brand-filter" aria-label="Quitar filtro de marca ${escapeHtml(selectedBrand)}">
+                  <span>Marca: ${escapeHtml(selectedBrand)}</span>
+                  <span class="ms-2" aria-hidden="true">×</span>
+                </button>
+              `
+              : ''
+          }
+        </div>
 
         <div class="d-flex flex-wrap align-items-center gap-2">
           <select
@@ -303,9 +419,9 @@ export function renderProductCatalog(
             id="orden-catalogo"
             aria-label="Ordenar catálogo"
             class="form-select"
-            style="min-width: 155px"
+            style="min-width: 160px"
           >
-            <option value="relevancia" ${sortBy === 'relevancia' ? 'selected' : ''}>Destacados</option>
+            <option value="relevancia" ${sortBy === 'relevancia' ? 'selected' : ''}>Curaduría I&amp;O</option>
             <option value="precio-asc" ${sortBy === 'precio-asc' ? 'selected' : ''}>Menor precio</option>
             <option value="precio-desc" ${sortBy === 'precio-desc' ? 'selected' : ''}>Mayor precio</option>
           </select>

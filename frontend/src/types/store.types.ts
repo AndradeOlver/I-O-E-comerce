@@ -21,7 +21,15 @@ export type GenderContext = 'hombre' | 'mujer' | 'ninos';
 export type GenderFilter = GenderContext | 'todos';
 export type KidsAgeGroup = 'bebes' | 'infantil' | 'junior';
 export type KidsAgeFilter = KidsAgeGroup | 'todas';
-export type HomeShowcaseTab = 'destacados' | 'recien-llegados';
+
+export interface MarcaTienda {
+  id: string;
+  nombre: string;
+  monograma: string;
+  especialidad: string;
+  tagline: string;
+  categoryTarget?: CategorySlug;
+}
 
 export interface CollectionBanner {
   id: string;
@@ -41,6 +49,7 @@ export interface Categoria {
   categoria_id: number;
   slug: Exclude<CategorySlug, 'todas'>;
   nombre: string;
+  subtitulo?: string;
   descripcion: string;
   imageSlotKey: string;
 }
@@ -81,6 +90,9 @@ export interface ProductGroup {
   rango_edad?: KidsAgeGroup;
   destacado?: boolean;
   recienLlegado?: boolean;
+  badgeLabel?: string;
+  precio_regular?: number;
+  materialDetalle?: string;
   nombre: string;
   descripcion: string;
   marca: string;
@@ -89,10 +101,13 @@ export interface ProductGroup {
 
 export interface CampanaOferta {
   campana_id: number;
+  kicker?: string;
   titulo: string;
   portadaTexto?: string;
+  tituloItalico?: string;
   subtitulo: string;
   badgeTexto: string;
+  ctaLabel?: string;
   categoriaTarget: CategorySlug;
   generoTarget?: GenderFilter;
   rangoEdadTarget?: KidsAgeGroup;
