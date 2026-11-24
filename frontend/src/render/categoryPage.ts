@@ -24,6 +24,7 @@ interface CategoryPageOptions {
   sortBy: 'relevancia' | 'precio-asc' | 'precio-desc';
   availableSizes: string[];
   selectedVariants: Record<string, number>;
+  colorblindMode: boolean;
 }
 
 const GENDER_LABELS: Record<GenderFilter, string> = {
@@ -47,6 +48,7 @@ export function renderCategoryPage({
   sortBy,
   availableSizes,
   selectedVariants,
+  colorblindMode,
 }: CategoryPageOptions): string {
   const eyebrowParts = ['Tienda'];
   if (onlyOffers) eyebrowParts.push('Ofertas');
@@ -222,7 +224,8 @@ export function renderCategoryPage({
         selectedSize,
         sortBy,
         availableSizes,
-        selectedVariants
+        selectedVariants,
+        colorblindMode
       )}
     </div>
   `;

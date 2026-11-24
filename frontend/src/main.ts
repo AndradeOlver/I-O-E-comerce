@@ -61,6 +61,7 @@ interface StoreState {
   expandedMobileKey: string | null;
   mobileAgeKey: KidsAgeGroup | null;
   mobileCategoryKey: string | null;
+  colorblindMode: boolean;
   optInMarketing: boolean;
   liveFeedback: string;
 }
@@ -83,6 +84,14 @@ function parseRouteFromHash(): { view: AppView; category: CategorySlug } {
 }
 
 const initialRoute = parseRouteFromHash();
+
+function loadSavedColorblindMode(): boolean {
+  try {
+    return window.localStorage.getItem('io_colorblind_mode') === '1';
+  } catch {
+    return false;
+  }
+}
 
 const state: StoreState = {
   view: initialRoute.view,
@@ -114,6 +123,7 @@ const state: StoreState = {
   expandedMobileKey: null,
   mobileAgeKey: null,
   mobileCategoryKey: null,
+  colorblindMode: loadSavedColorblindMode(),
   optInMarketing: false,
   liveFeedback: '',
 };
@@ -439,6 +449,7 @@ function renderApp(): void {
             products: CATALOGO_PRODUCTOS,
             activeTab: state.showcaseTab,
             selectedVariants: state.selectedVariants,
+            colorblindMode: state.colorblindMode,
           })}
 
           ${renderCollectionBanners(COLECCIONES_BANNERS)}
@@ -458,6 +469,7 @@ function renderApp(): void {
           sortBy: state.sortBy,
           availableSizes: getAvailableSizes(),
           selectedVariants: state.selectedVariants,
+          colorblindMode: state.colorblindMode,
         });
 
   root.innerHTML = `
@@ -478,13 +490,14 @@ function renderApp(): void {
         mobileAgeKey: state.mobileAgeKey,
         mobileCategoryKey: state.mobileCategoryKey,
         searchQuery: state.searchQuery,
+        colorblindMode: state.colorblindMode,
       })}
 
       <main id="contenido-principal" class="flex-grow-1">
         ${mainContentHtml}
       </main>
 
-      ${renderFooter(CATEGORIAS_TIENDA)}
+      ${renderFooter(CATEGORIAS_TIENDA, state.colorblindMode)}
 
       <nav class="io-mobile-bottom-nav d-md-none" aria-label="Navegación rápida móvil">
         <a href="#/" class="io-mobile-nav-btn text-decoration-none" data-action="go-home">
@@ -501,7 +514,7 @@ function renderApp(): void {
         </button>
       </nav>
 
-      ${renderCartDrawer(state.isCartOpen, state.cart, state.secondsRemaining, state.optInMarketing)}
+      ${renderCartDrawer(state.isCartOpen, state.cart, state.secondsRemaining, state.optInMarketing, state.colorblindMode)}
       ${renderWishlistDrawer(state.isWishlistOpen)}
       ${renderLoginModal(state.isLoginOpen, state.loginFeedback)}
       ${renderFooterInfoModal(state.footerInfoTopic)}
@@ -557,7 +570,8 @@ function renderApp(): void {
   } else if (
     restoreFocusId.startsWith('nav-trigger-') ||
     restoreFocusId.startsWith('menu-age-') ||
-    restoreFocusId.startsWith('menu-cat-')
+    restoreFocusId.startsWith('menu-cat-') ||
+    restoreFocusId.startsWith('switch-daltonismo-')
   ) {
     document.getElementById(restoreFocusId)?.focus();
   }
@@ -761,6 +775,19 @@ root.addEventListener('click', (event) => {
         renderApp();
       });
       break;
+    case 'toggle-colorblind-mode': {
+      state.colorblindMode = !state.colorblindMode;
+      try {
+        window.localStorage.setItem('io_colorblind_mode', state.colorblindMode ? '1' : '0');
+      } catch {
+        // Ignorar si localStorage está restringido
+      }
+      state.liveFeedback = state.colorblindMode
+        ? 'Modo Daltonismo activado: texturas y tramas visibles en los selectores de color.'
+        : 'Modo Daltonismo desactivado: vista de colores estándar.';
+      renderApp();
+      break;
+    }
     case 'switch-showcase-tab': {
       const tab = (target.dataset.tab as HomeShowcaseTab | undefined) ?? 'destacados';
       state.showcaseTab = tab;

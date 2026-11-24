@@ -1,6 +1,6 @@
 import { CollectionBanner } from '../types/store.types';
 import { escapeHtml, icons } from '../utils/icons';
-import { renderImageSlot } from './imageSlot';
+import { hasImageSlotSrc, renderImageSlot } from './imageSlot';
 
 export function renderCollectionBanners(banners: CollectionBanner[]): string {
   if (banners.length === 0) return '';
@@ -16,8 +16,9 @@ export function renderCollectionBanners(banners: CollectionBanner[]): string {
       if (banner.ageGroup) filterAttrs.push(`data-filter-age="${escapeHtml(banner.ageGroup)}"`);
       if (banner.onlyOffers) filterAttrs.push(`data-filter-offers="true"`);
 
-      return `
-        <article class="io-collection-card io-reveal" style="--i: ${idx}">
+      const hasMedia = hasImageSlotSrc(banner.imageSlotKey);
+      const mediaHtml = hasMedia
+        ? `
           <div class="io-collection-media" aria-hidden="true">
             ${renderImageSlot({
               slotKey: banner.imageSlotKey,
@@ -27,6 +28,12 @@ export function renderCollectionBanners(banners: CollectionBanner[]): string {
             })}
           </div>
           <div class="io-collection-scrim" aria-hidden="true"></div>
+        `
+        : '';
+
+      return `
+        <article class="io-collection-card ${hasMedia ? '' : 'io-collection-card--typographic'} io-reveal" style="--i: ${idx}">
+          ${mediaHtml}
           <div class="io-collection-content">
             <span class="io-collection-eyebrow">${escapeHtml(banner.eyebrow)}</span>
             <h3 class="io-display io-collection-title">${escapeHtml(banner.titulo)}</h3>

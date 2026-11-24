@@ -8,7 +8,8 @@ export function renderCartDrawer(
   isOpen: boolean,
   items: CartItem[],
   secondsRemaining: number,
-  optInMarketing: boolean
+  optInMarketing: boolean,
+  colorblindMode = false
 ): string {
   if (!isOpen) return '';
 
@@ -30,7 +31,7 @@ export function renderCartDrawer(
             <div>
               <div class="fw-bold" style="color: var(--color-ink)">${escapeHtml(item.nombre)}</div>
               <div class="small" style="color: var(--color-ink-muted)">
-                ${escapeHtml(item.talla)} · ${escapeHtml(item.color)}
+                ${escapeHtml(item.talla)} · ${escapeHtml(item.color)}${colorblindMode ? ` (${escapeHtml(item.color_textura)})` : ''}
               </div>
             </div>
             <button

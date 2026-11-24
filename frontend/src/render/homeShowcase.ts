@@ -6,12 +6,14 @@ interface HomeShowcaseOptions {
   products: ProductGroup[];
   activeTab: HomeShowcaseTab;
   selectedVariants: Record<string, number>;
+  colorblindMode: boolean;
 }
 
 export function renderHomeShowcase({
   products,
   activeTab,
   selectedVariants,
+  colorblindMode,
 }: HomeShowcaseOptions): string {
   const featured = products.filter((p) => p.destacado);
   const arrivals = products.filter((p) => p.recienLlegado);
@@ -42,7 +44,8 @@ export function renderHomeShowcase({
                 product,
                 selectedVariants[product.groupId] ??
                   product.variants.find((v) => v.stock > 0)?.producto_id ??
-                  product.variants[0].producto_id
+                  product.variants[0].producto_id,
+                colorblindMode
               )
             )
             .join('')}

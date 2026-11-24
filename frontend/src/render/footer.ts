@@ -89,7 +89,10 @@ const FOOTER_TOPIC_CONTENT: Record<
   },
 };
 
-export function renderFooter(categories: Categoria[]): string {
+export function renderFooter(
+  categories: Categoria[],
+  colorblindMode = false
+): string {
   const categoryLinksHtml = categories
     .map(
       (cat) => `
@@ -209,6 +212,28 @@ export function renderFooter(categories: Categoria[]): string {
                 </button>
               </li>
             </ul>
+
+            <div class="io-a11y-zone-card mb-2" role="region" aria-label="Zona de accesibilidad visual">
+              <div class="d-flex align-items-center justify-content-between gap-2">
+                <span class="d-inline-flex align-items-center gap-2">
+                  <span class="io-reclamaciones-icon" aria-hidden="true">${icons.eye(18)}</span>
+                  <span>
+                    <strong class="d-block" style="font-size: 0.85rem">Modo Daltonismo</strong>
+                    <span class="io-reclamaciones-sub">Texturas y tramas en colores</span>
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  id="switch-daltonismo-footer"
+                  role="switch"
+                  aria-checked="${colorblindMode}"
+                  class="io-a11y-pill ${colorblindMode ? 'is-active' : ''}"
+                  data-action="toggle-colorblind-mode"
+                >
+                  ${colorblindMode ? 'Activo' : 'Activar'}
+                </button>
+              </div>
+            </div>
 
             <button
               type="button"

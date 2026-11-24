@@ -10,6 +10,16 @@ interface ImageSlotOptions {
   ambientBackdrop?: boolean;
 }
 
+export function hasImageSlotSrc(
+  slotKey: string,
+  responsivePicture = false
+): boolean {
+  const config = IMAGE_SLOTS[slotKey];
+  const desktopSrc = config?.src?.trim() ?? '';
+  const mobileSrc = config?.mobileSrc?.trim() ?? '';
+  return Boolean(desktopSrc || (responsivePicture && mobileSrc));
+}
+
 export function renderImageSlot({
   slotKey,
   alt,

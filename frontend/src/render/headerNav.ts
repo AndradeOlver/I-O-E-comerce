@@ -24,6 +24,7 @@ interface HeaderNavOptions {
   mobileAgeKey: KidsAgeGroup | null;
   mobileCategoryKey: string | null;
   searchQuery: string;
+  colorblindMode: boolean;
 }
 
 function renderBrandLogo(): string {
@@ -459,6 +460,7 @@ export function renderHeaderNav({
   mobileAgeKey,
   mobileCategoryKey,
   searchQuery,
+  colorblindMode,
 }: HeaderNavOptions): string {
   const navItemsHtml = NAV_MENU_ITEMS.map((item) => {
     const isOpen = openNavKey === item.key;
@@ -505,10 +507,24 @@ export function renderHeaderNav({
 
   return `
     <div class="io-top-strip">
-      <p>
-        ${icons.truck(16)}
-        <span><strong>Envío GRATIS</strong> en compras mayores a S/ 150</span>
-      </p>
+      <div class="container-xl io-top-strip-inner">
+        <p class="m-0">
+          ${icons.truck(16)}
+          <span><strong>Envío GRATIS</strong> en compras mayores a S/ 150</span>
+        </p>
+
+        <button
+          type="button"
+          id="switch-daltonismo-top"
+          role="switch"
+          aria-checked="${colorblindMode}"
+          class="io-a11y-switch d-none d-md-inline-flex ${colorblindMode ? 'is-active' : ''}"
+          data-action="toggle-colorblind-mode"
+        >
+          ${icons.eye(15)}
+          <span>Modo Daltonismo: <strong>${colorblindMode ? 'Activo' : 'Inactivo'}</strong></span>
+        </button>
+      </div>
     </div>
 
     <header class="io-header" id="io-site-header" role="banner">
@@ -628,7 +644,20 @@ export function renderHeaderNav({
             <div class="overflow-auto flex-grow-1 p-2">
               ${mobileNavItemsHtml}
             </div>
-            <div class="p-3 border-top border-secondary border-opacity-25">
+            <div class="p-3 border-top border-secondary border-opacity-25 d-flex flex-column gap-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked="${colorblindMode}"
+                class="io-a11y-switch w-100 justify-content-between ${colorblindMode ? 'is-active' : ''}"
+                data-action="toggle-colorblind-mode"
+              >
+                <span class="d-inline-flex align-items-center gap-2">
+                  ${icons.eye(16)}
+                  <span>Modo Daltonismo</span>
+                </span>
+                <strong>${colorblindMode ? 'Activo' : 'Inactivo'}</strong>
+              </button>
               <button
                 type="button"
                 class="io-btn-primary w-100"
