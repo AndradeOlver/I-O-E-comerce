@@ -4,19 +4,24 @@ import './styles/storefront.css';
 import {
   CATALOGO_PRODUCTOS,
   CATEGORIAS_TIENDA,
+  COLECCIONES_BANNERS,
   OFERTAS_CARRUSEL,
 } from './data/catalogData';
 import { renderLoginModal, renderWishlistDrawer } from './render/accountPanels';
 import { renderCartDrawer } from './render/cartDrawer';
 import { renderCategoryGrid } from './render/categoryGrid';
 import { renderCategoryPage } from './render/categoryPage';
+import { renderCollectionBanners } from './render/collectionBanners';
+import { FooterInfoTopic, renderFooter, renderFooterInfoModal } from './render/footer';
 import { renderHeaderNav } from './render/headerNav';
+import { renderHomeShowcase } from './render/homeShowcase';
 import { bindBrandLogo } from './render/brand';
 import { renderOffersCarousel } from './render/offersCarousel';
 import {
   CartItem,
   CategorySlug,
   GenderFilter,
+  HomeShowcaseTab,
   KidsAgeFilter,
   KidsAgeGroup,
 } from './types/store.types';
@@ -35,6 +40,7 @@ interface StoreState {
   selectedAgeGroup: KidsAgeFilter;
   onlyOffers: boolean;
   selectedSize: string;
+  showcaseTab: HomeShowcaseTab;
   sortBy: 'relevancia' | 'precio-asc' | 'precio-desc';
   carouselIndex: number;
   carouselPaused: boolean;
@@ -46,6 +52,7 @@ interface StoreState {
   isWishlistOpen: boolean;
   isLoginOpen: boolean;
   loginFeedback: string;
+  footerInfoTopic: FooterInfoTopic | null;
   isSearchOpen: boolean;
   openNavKey: string | null;
   activeMenuAge: KidsAgeGroup | null;
@@ -86,6 +93,7 @@ const state: StoreState = {
   selectedAgeGroup: 'todas',
   onlyOffers: false,
   selectedSize: 'todas',
+  showcaseTab: 'destacados',
   sortBy: 'relevancia',
   carouselIndex: 0,
   carouselPaused: false,
@@ -97,6 +105,7 @@ const state: StoreState = {
   isWishlistOpen: false,
   isLoginOpen: false,
   loginFeedback: '',
+  footerInfoTopic: null,
   isSearchOpen: false,
   openNavKey: null,
   activeMenuAge: null,
@@ -276,6 +285,7 @@ function getOverlayKey(): string {
   if (state.isCartOpen) return 'cart';
   if (state.isWishlistOpen) return 'wishlist';
   if (state.isLoginOpen) return 'login';
+  if (state.footerInfoTopic !== null) return 'footer-info';
   if (state.isMobileMenuOpen) return 'mobile';
   return 'none';
 }
@@ -304,6 +314,7 @@ function closeAllOverlays(): void {
   state.isCartOpen = false;
   state.isWishlistOpen = false;
   state.isLoginOpen = false;
+  state.footerInfoTopic = null;
   resetDesktopMenuState();
   state.isMobileMenuOpen = false;
   state.expandedMobileKey = null;
@@ -423,6 +434,14 @@ function renderApp(): void {
           }
 
           ${renderCategoryGrid(CATEGORIAS_TIENDA, CATALOGO_PRODUCTOS, state.selectedCategory)}
+
+          ${renderHomeShowcase({
+            products: CATALOGO_PRODUCTOS,
+            activeTab: state.showcaseTab,
+            selectedVariants: state.selectedVariants,
+          })}
+
+          ${renderCollectionBanners(COLECCIONES_BANNERS)}
         </div>
       `
       : renderCategoryPage({
@@ -465,12 +484,7 @@ function renderApp(): void {
         ${mainContentHtml}
       </main>
 
-      <footer class="io-footer">
-        <div class="container-xl d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <strong class="io-footer-brand">I&amp;O · Lima, Perú</strong>
-          <span class="io-footer-meta">Precios con IGV incluido (18% — RN-TRI-01) · RUC: 10458796321</span>
-        </div>
-      </footer>
+      ${renderFooter(CATEGORIAS_TIENDA)}
 
       <nav class="io-mobile-bottom-nav d-md-none" aria-label="Navegación rápida móvil">
         <a href="#/" class="io-mobile-nav-btn text-decoration-none" data-action="go-home">
@@ -490,6 +504,7 @@ function renderApp(): void {
       ${renderCartDrawer(state.isCartOpen, state.cart, state.secondsRemaining, state.optInMarketing)}
       ${renderWishlistDrawer(state.isWishlistOpen)}
       ${renderLoginModal(state.isLoginOpen, state.loginFeedback)}
+      ${renderFooterInfoModal(state.footerInfoTopic)}
     </div>
   `;
 
@@ -568,7 +583,7 @@ document.addEventListener('keydown', (event) => {
       document.getElementById(triggerId)?.focus();
       return;
     }
-    if (state.isSearchOpen || state.isCartOpen || state.isWishlistOpen || state.isLoginOpen || state.isMobileMenuOpen) {
+    if (state.isSearchOpen || state.isCartOpen || state.isWishlistOpen || state.isLoginOpen || state.footerInfoTopic !== null || state.isMobileMenuOpen) {
       animateClose(() => {
         closeAllOverlays();
         renderApp();
@@ -743,6 +758,26 @@ root.addEventListener('click', (event) => {
     case 'close-login':
       animateClose(() => {
         state.isLoginOpen = false;
+        renderApp();
+      });
+      break;
+    case 'switch-showcase-tab': {
+      const tab = (target.dataset.tab as HomeShowcaseTab | undefined) ?? 'destacados';
+      state.showcaseTab = tab;
+      renderApp();
+      break;
+    }
+    case 'open-footer-info': {
+      const topic = (target.dataset.topic as FooterInfoTopic | undefined) ?? null;
+      if (topic) {
+        state.footerInfoTopic = topic;
+        renderApp();
+      }
+      break;
+    }
+    case 'close-footer-info':
+      animateClose(() => {
+        state.footerInfoTopic = null;
         renderApp();
       });
       break;

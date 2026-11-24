@@ -100,4 +100,80 @@ export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
     dimensions: '400 x 300 px',
     slotLabel: 'Sports',
   },
+
+  // Banners de colecciones por estilo o público
+  'col-hombre': {
+    src: '/img/colecciones/coleccion-hombre.WebP',
+    recommendedPath: 'public/img/colecciones/coleccion-hombre.WebP',
+    dimensions: '960 x 640 px',
+    slotLabel: 'Colección Hombre',
+  },
+  'col-mujer': {
+    src: '/img/colecciones/coleccion-mujer.WebP',
+    recommendedPath: 'public/img/colecciones/coleccion-mujer.WebP',
+    dimensions: '960 x 640 px',
+    slotLabel: 'Colección Mujer',
+  },
+  'col-ninos': {
+    src: '/img/colecciones/coleccion-ninos.WebP',
+    recommendedPath: 'public/img/colecciones/coleccion-ninos.WebP',
+    dimensions: '960 x 640 px',
+    slotLabel: 'Moda Infantil',
+  },
+  'col-sports': {
+    src: '/img/colecciones/coleccion-sports.WebP',
+    recommendedPath: 'public/img/colecciones/coleccion-sports.WebP',
+    dimensions: '960 x 640 px',
+    slotLabel: 'Esenciales Sports',
+  },
+
+  // Productos de vitrina (fallback limpio hasta subir fotos individuales en public/img/productos/)
+  'prod-polo-pima': {
+    src: '/img/categorias/prendas-superiores.WebP',
+    recommendedPath: 'public/img/productos/polo-oversize-pima.WebP',
+    dimensions: '600 x 800 px',
+    slotLabel: 'Polo Oversize Pima',
+  },
+  'prod-jean-cargo': {
+    src: '/img/categorias/pantalones.WebP',
+    recommendedPath: 'public/img/productos/jean-cargo-urbano.WebP',
+    dimensions: '600 x 800 px',
+    slotLabel: 'Jean Cargo Urbano',
+  },
+  'prod-vestido-midi': {
+    src: '/img/categorias/vestidos.WebP',
+    recommendedPath: 'public/img/productos/vestido-midi-satinado.WebP',
+    dimensions: '600 x 800 px',
+    slotLabel: 'Vestido Midi Satinado',
+  },
+  'prod-casaca-bomber': {
+    src: '/img/categorias/casacas.WebP',
+    recommendedPath: 'public/img/productos/casaca-bomber-urbana.WebP',
+    dimensions: '600 x 800 px',
+    slotLabel: 'Casaca Bomber Urbana',
+  },
+  'prod-conjunto-urbano': {
+    src: '/img/categorias/conjuntos.WebP',
+    recommendedPath: 'public/img/productos/conjunto-urbano-lino.WebP',
+    dimensions: '600 x 800 px',
+    slotLabel: 'Conjunto Urbano Lino',
+  },
+  'prod-polo-dryfit': {
+    src: '/img/categorias/sports.WebP',
+    recommendedPath: 'public/img/productos/polo-dryfit-training.WebP',
+    dimensions: '600 x 800 px',
+    slotLabel: 'Polo Dry-Fit Training',
+  },
+  'prod-zapatilla-urbana': {
+    src: '/img/categorias/calzado.WebP',
+    recommendedPath: 'public/img/productos/zapatilla-cuero-urbana.WebP',
+    dimensions: '600 x 800 px',
+    slotLabel: 'Zapatilla Urbana',
+  },
+  'prod-set-infantil': {
+    src: '/img/categorias/conjuntos.WebP',
+    recommendedPath: 'public/img/productos/set-infantil-algodon.WebP',
+    dimensions: '600 x 800 px',
+    slotLabel: 'Set Infantil Algodón',
+  },
 };

@@ -61,7 +61,7 @@ function renderTextureSwatchSvg(
   `;
 }
 
-function renderProductCard(
+export function renderProductCard(
   product: ProductGroup,
   selectedVariantId: number
 ): string {

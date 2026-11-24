@@ -21,6 +21,21 @@ export type GenderContext = 'hombre' | 'mujer' | 'ninos';
 export type GenderFilter = GenderContext | 'todos';
 export type KidsAgeGroup = 'bebes' | 'infantil' | 'junior';
 export type KidsAgeFilter = KidsAgeGroup | 'todas';
+export type HomeShowcaseTab = 'destacados' | 'recien-llegados';
+
+export interface CollectionBanner {
+  id: string;
+  eyebrow: string;
+  titulo: string;
+  descripcion: string;
+  ctaLabel: string;
+  imageSlotKey: string;
+  alt_text: string;
+  category: CategorySlug;
+  gender?: GenderFilter;
+  ageGroup?: KidsAgeFilter;
+  onlyOffers?: boolean;
+}
 
 export interface Categoria {
   categoria_id: number;
@@ -64,6 +79,8 @@ export interface ProductGroup {
   subcategorySlug?: string;
   genero: GenderContext | 'unisex';
   rango_edad?: KidsAgeGroup;
+  destacado?: boolean;
+  recienLlegado?: boolean;
   nombre: string;
   descripcion: string;
   marca: string;

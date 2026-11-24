@@ -5,7 +5,7 @@
 > 1. **ANDRADE CHIRINOS, Olver Daniel** (`N00401718`)  
 > 2. **RAZURI PAREDES, Josue Daniel** (`N00421512`)  
 > **Fase Global Actual:** `03. Desarrollo Frontend Iniciado — Migración visual completa a Espresso & Piedra (Propuesta 5) bajo Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3 (WCAG 2.1 AA)`  
-> **Última Actualización:** `23/11/2026` (Taxonomía omnicanal v2.2: 8 categorías principales incluyendo `Sports`, subcategorías, navegación por contextos `Hombre` / `Mujer` / `Niños` [Edad → Categoría → Subcategoría] / `Ofertas`, y extensión SQL Server `02_extension_catalogo_taxonomia.sql`)
+> **Última Actualización:** `23/11/2026` (Portada ampliada v2.3: vitrina interactiva Destacados/Recién llegados con selector multimodal y bolsa 15 min, banners de colecciones por público/estilo y pie de página de 4 columnas con Libro de Reclamaciones; taxonomía de 8 categorías + SQL Server `02_extension_catalogo_taxonomia.sql`)
 
 ---
 
