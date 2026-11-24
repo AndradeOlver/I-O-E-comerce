@@ -195,7 +195,35 @@ function renderDesktopCascadePanel(
     `;
   }
 
-  // Flujo Hombre, Mujer y Ofertas: Nivel 1 (Categoría) -> clic -> Nivel 2 (Subcategoría)
+  // Flujo directo sin subcategorías (Ofertas: solo la lista de ofertas activas)
+  if (item.directLinks) {
+    return `
+      <div class="io-cascade-stage io-cascade-stage--single">
+        <div class="io-cascade-col">
+          <div class="io-menu-col-heading d-flex justify-content-between align-items-center gap-3">
+            <span>Ofertas Activas</span>
+            <a class="io-cascade-all-inline" ${viewAllRootAttrs}>${escapeHtml(item.viewAllLabel)} →</a>
+          </div>
+          <ul class="io-menu-col-list" role="list">
+            ${item.directLinks
+              .map(
+                (offer) => `
+                  <li>
+                    <a class="io-menu-link io-offer-menu-link" ${renderLinkAttributes(offer)}>
+                      <span>${escapeHtml(offer.label)}</span>
+                      ${offer.priceBadge ? `<span class="io-offer-menu-price">${escapeHtml(offer.priceBadge)}</span>` : ''}
+                    </a>
+                  </li>
+                `
+              )
+              .join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+
+  // Flujo Hombre y Mujer: Nivel 1 (Categoría) -> clic -> Nivel 2 (Subcategoría)
   const categories = item.categories ?? [];
   const selectedCatNode =
     (isOpen && activeMenuCategory
@@ -333,8 +361,20 @@ function renderMobileDrawerItem(
           `;
         })
         .join('');
+    } else if (item.directLinks) {
+      // Móvil Ofertas: lista directa de ofertas sin subcategorías
+      innerLevelsHtml = item.directLinks
+        .map(
+          (offer) => `
+            <a class="io-mobile-sublink d-flex justify-content-between align-items-center gap-2" ${renderLinkAttributes(offer)}>
+              <span>${escapeHtml(offer.label)}</span>
+              ${offer.priceBadge ? `<span class="io-offer-menu-price">${escapeHtml(offer.priceBadge)}</span>` : ''}
+            </a>
+          `
+        )
+        .join('');
     } else {
-      // Móvil Hombre, Mujer y Ofertas: Categoría -> Subcategoría
+      // Móvil Hombre y Mujer: Categoría -> Subcategoría
       innerLevelsHtml = (item.categories ?? [])
         .map((catNode) => {
           const isCatOpen = mobileCategoryKey === catNode.key;

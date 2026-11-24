@@ -325,6 +325,26 @@
   grid-template-columns: minmax(240px, 300px) minmax(240px, 300px) minmax(220px, 300px);
 }
 
+.io-cascade-stage--single {
+  grid-template-columns: minmax(280px, 440px);
+}
+
+.io-offer-menu-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: var(--touch-min);
+  padding: 0.4rem 0.25rem;
+}
+
+.io-offer-menu-price {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-accent-terracotta);
+  white-space: nowrap;
+}
+
 .io-cascade-col {
   min-width: 0;
 }

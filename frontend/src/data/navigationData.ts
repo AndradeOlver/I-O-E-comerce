@@ -1,4 +1,9 @@
-import { CATEGORIAS_TIENDA, KIDS_AGE_LABELS, SUBCATEGORIAS_TIENDA } from './catalogData';
+import {
+  CATEGORIAS_TIENDA,
+  KIDS_AGE_LABELS,
+  OFERTAS_CARRUSEL,
+  SUBCATEGORIAS_TIENDA,
+} from './catalogData';
 import {
   CategorySlug,
   GenderFilter,
@@ -8,6 +13,7 @@ import {
 
 export interface NavMenuLink {
   label: string;
+  priceBadge?: string;
   category: CategorySlug;
   subcategory?: string;
   gender?: GenderFilter;
@@ -38,7 +44,9 @@ export interface NavMenuItem {
   gender: GenderFilter;
   onlyOffers?: boolean;
   isAccent?: boolean;
-  /** Nivel 1 -> Nivel 2 para Hombre, Mujer y Ofertas (Categoría -> Subcategoría) */
+  /** Lista plana directa sin subcategorías (usado en Ofertas) */
+  directLinks?: NavMenuLink[];
+  /** Nivel 1 -> Nivel 2 para Hombre y Mujer (Categoría -> Subcategoría) */
   categories?: NavCategoryNode[];
   /** Nivel 1 -> Nivel 2 -> Nivel 3 exclusivo para Niños (Edad -> Categoría -> Subcategoría) */
   ageNodes?: NavAgeNode[];
@@ -124,6 +132,19 @@ function buildKidsAgeNodes(): NavAgeNode[] {
   });
 }
 
+function buildActiveOfferLinks(): NavMenuLink[] {
+  return OFERTAS_CARRUSEL.filter(
+    (o) => o.activa && o.aprobada_dueno && o.stock_consumido < o.stock_maximo
+  ).map((o) => ({
+    label: o.titulo,
+    priceBadge: `S/ ${o.precio_promocional.toFixed(2)}`,
+    category: o.categoriaTarget,
+    gender: o.generoTarget ?? 'todos',
+    ageGroup: o.rangoEdadTarget,
+    onlyOffers: true,
+  }));
+}
+
 export const NAV_MENU_ITEMS: NavMenuItem[] = [
   {
     key: 'hombre',
@@ -157,37 +178,6 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
     gender: 'todos',
     onlyOffers: true,
     isAccent: true,
-    categories: [
-      {
-        key: 'ofertas-publico',
-        label: 'Por Género y Edad',
-        sublinks: [
-          { label: 'Ofertas Hombre', category: 'todas', gender: 'hombre', onlyOffers: true },
-          { label: 'Ofertas Mujer', category: 'todas', gender: 'mujer', onlyOffers: true },
-          { label: 'Ofertas Niños · Bebés', category: 'todas', gender: 'ninos', ageGroup: 'bebes', onlyOffers: true },
-          { label: 'Ofertas Niños · Infantil', category: 'todas', gender: 'ninos', ageGroup: 'infantil', onlyOffers: true },
-          { label: 'Ofertas Niños · Junior', category: 'todas', gender: 'ninos', ageGroup: 'junior', onlyOffers: true },
-        ],
-      },
-      {
-        key: 'ofertas-categoria',
-        label: 'Por Categoría',
-        sublinks: CATEGORIAS_TIENDA.map((cat) => ({
-          label: `${cat.nombre} en Oferta`,
-          category: cat.slug,
-          gender: 'todos',
-          onlyOffers: true,
-        })),
-      },
-      {
-        key: 'ofertas-talla',
-        label: 'Por Talla',
-        sublinks: [
-          { label: 'Small (S)', category: 'todas', gender: 'todos', onlyOffers: true, sizeFilter: 'S' },
-          { label: 'Medium (M)', category: 'todas', gender: 'todos', onlyOffers: true, sizeFilter: 'M' },
-          { label: 'Large (L)', category: 'todas', gender: 'todos', onlyOffers: true, sizeFilter: 'L' },
-        ],
-      },
-    ],
+    directLinks: buildActiveOfferLinks(),
   },
 ];
