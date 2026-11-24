@@ -21,14 +21,13 @@ export function renderOffersCarousel(
       const isActive = idx === safeIndex;
       const mainTitle = offer.portadaTexto ?? offer.titulo;
       const italicLine = offer.tituloItalico ?? '';
-      const kicker = offer.kicker ?? 'COLECCIÓN DE TEMPORADA · LIMA';
       const remainingUnits = Math.max(0, offer.stock_maximo - offer.stock_consumido);
 
       const daltonismMetaHtml = colorblindMode
         ? `
           <div class="io-carousel-a11y-meta">
             ${icons.checkCircle(14)}
-            <span>Stock promocional verificado: <strong>${remainingUnits} de ${offer.stock_maximo} uds</strong> · Vigente hasta ${escapeHtml(offer.fecha_fin)} (RN-MKT-01)</span>
+            <span>Stock: <strong>${remainingUnits}/${offer.stock_maximo} uds</strong> · Hasta ${escapeHtml(offer.fecha_fin)}</span>
           </div>
         `
         : '';
@@ -50,25 +49,20 @@ export function renderOffersCarousel(
           <div class="io-carousel-scrim" aria-hidden="true"></div>
 
           <div class="io-carousel-overlay">
-            <div class="io-carousel-meta-top">
-              <span class="io-carousel-kicker">${escapeHtml(kicker)}</span>
-              ${
-                offer.badgeTexto
-                  ? `<span class="io-carousel-badge">${escapeHtml(offer.badgeTexto)}</span>`
-                  : ''
-              }
-            </div>
+            ${
+              offer.badgeTexto
+                ? `
+                  <div class="io-carousel-meta-top">
+                    <span class="io-carousel-badge">${escapeHtml(offer.badgeTexto)}</span>
+                  </div>
+                `
+                : ''
+            }
 
             <h2 class="io-carousel-title">
               <span>${escapeHtml(mainTitle)}</span>
               ${italicLine ? `<em class="io-carousel-title-italic">${escapeHtml(italicLine)}</em>` : ''}
             </h2>
-
-            ${
-              offer.subtitulo
-                ? `<p class="io-carousel-subtitle">${escapeHtml(offer.subtitulo)}</p>`
-                : ''
-            }
 
             ${daltonismMetaHtml}
 
