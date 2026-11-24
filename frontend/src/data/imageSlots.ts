@@ -94,4 +94,10 @@ export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
     dimensions: '400 x 300 px',
     slotLabel: 'Accesorios',
   },
+  'cat-sports': {
+    src: '/img/categorias/sports.WebP',
+    recommendedPath: 'public/img/categorias/sports.WebP',
+    dimensions: '400 x 300 px',
+    slotLabel: 'Sports',
+  },
 };

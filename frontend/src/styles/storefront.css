@@ -299,8 +299,21 @@
 
 .io-megamenu-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(180px, 240px));
-  gap: 2.5rem;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 2rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.io-megamenu-grid--4 {
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 1.75rem 2rem;
+}
+
+.io-kids-groups-wrap {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 0.75rem 1.25rem;
 }
 
 /* Dropdown compacto */

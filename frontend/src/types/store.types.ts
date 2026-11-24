@@ -8,13 +8,19 @@ export type TexturePatternId =
 
 export type CategorySlug =
   | 'todas'
-  | 'vestidos'
   | 'prendas-superiores'
   | 'pantalones'
+  | 'vestidos'
   | 'casacas'
   | 'conjuntos'
+  | 'accesorios'
   | 'calzado'
-  | 'accesorios';
+  | 'sports';
+
+export type GenderContext = 'hombre' | 'mujer' | 'ninos';
+export type GenderFilter = GenderContext | 'todos';
+export type KidsAgeGroup = 'bebes' | 'infantil' | 'junior';
+export type KidsAgeFilter = KidsAgeGroup | 'todas';
 
 export interface Categoria {
   categoria_id: number;
@@ -22,6 +28,17 @@ export interface Categoria {
   nombre: string;
   descripcion: string;
   imageSlotKey: string;
+}
+
+export interface Subcategoria {
+  subcategoria_id: number;
+  categoria_id: number;
+  categorySlug: Exclude<CategorySlug, 'todas'>;
+  slug: string;
+  nombre: string;
+  aplicaHombre: boolean;
+  aplicaMujer: boolean;
+  aplicaNinos: boolean;
 }
 
 export interface ProductVariant {
@@ -43,6 +60,10 @@ export interface ProductGroup {
   groupId: string;
   categoria_id: number;
   categorySlug: Exclude<CategorySlug, 'todas'>;
+  subcategoria_id?: number;
+  subcategorySlug?: string;
+  genero: GenderContext | 'unisex';
+  rango_edad?: KidsAgeGroup;
   nombre: string;
   descripcion: string;
   marca: string;
@@ -56,6 +77,9 @@ export interface CampanaOferta {
   subtitulo: string;
   badgeTexto: string;
   categoriaTarget: CategorySlug;
+  generoTarget?: GenderFilter;
+  rangoEdadTarget?: KidsAgeGroup;
+  productoIds?: number[];
   precio_regular: number;
   precio_promocional: number;
   stock_maximo: number;

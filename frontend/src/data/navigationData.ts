@@ -1,225 +1,188 @@
-import { CategorySlug } from '../types/store.types';
+import { CATEGORIAS_TIENDA, KIDS_AGE_LABELS, SUBCATEGORIAS_TIENDA } from './catalogData';
+import {
+  CategorySlug,
+  GenderFilter,
+  KidsAgeFilter,
+  KidsAgeGroup,
+} from '../types/store.types';
 
 export interface NavMenuLink {
   label: string;
   category: CategorySlug;
+  subcategory?: string;
+  gender?: GenderFilter;
+  ageGroup?: KidsAgeFilter;
+  onlyOffers?: boolean;
   sizeFilter?: string;
+}
+
+export interface NavCategoryGroup {
+  categoryLabel: string;
+  category: CategorySlug;
+  gender: GenderFilter;
+  ageGroup?: KidsAgeFilter;
+  links: NavMenuLink[];
 }
 
 export interface NavMenuColumn {
   heading: string;
+  category?: CategorySlug;
+  gender?: GenderFilter;
+  ageGroup?: KidsAgeFilter;
+  onlyOffers?: boolean;
   links: NavMenuLink[];
+  /** Usado en Niños para respetar la jerarquía Edad -> Categoría -> Subcategoría */
+  categoryGroups?: NavCategoryGroup[];
 }
 
 export interface NavMenuItem {
   key: string;
   label: string;
   category: CategorySlug;
+  gender: GenderFilter;
+  onlyOffers?: boolean;
   layout: 'mega' | 'dropdown';
   isAccent?: boolean;
   columns: NavMenuColumn[];
 }
 
-const STANDARD_SIZES: NavMenuLink[] = [
-  { label: 'Small (S)', category: 'todas', sizeFilter: 'S' },
-  { label: 'Medium (M)', category: 'todas', sizeFilter: 'M' },
-  { label: 'Large (L)', category: 'todas', sizeFilter: 'L' },
-];
+function buildGenderColumns(gender: 'hombre' | 'mujer'): NavMenuColumn[] {
+  const columns: NavMenuColumn[] = [];
 
-const STANDARD_COLORS = (cat: CategorySlug): NavMenuLink[] => [
-  { label: 'Azul Marino', category: cat },
-  { label: 'Beige Arena', category: cat },
-  { label: 'Blanco', category: cat },
-  { label: 'Negro Carbón', category: cat },
-  { label: 'Rojo Vino', category: cat },
-  { label: 'Verde Olivo', category: cat },
-];
+  for (const cat of CATEGORIAS_TIENDA) {
+    const subcats = SUBCATEGORIAS_TIENDA.filter(
+      (s) =>
+        s.categorySlug === cat.slug &&
+        (gender === 'hombre' ? s.aplicaHombre : s.aplicaMujer)
+    );
+
+    if (subcats.length === 0) continue;
+
+    columns.push({
+      heading: cat.nombre,
+      category: cat.slug,
+      gender,
+      links: [
+        {
+          label: `Todo ${cat.nombre}`,
+          category: cat.slug,
+          gender,
+        },
+        ...subcats.map((sub) => ({
+          label: sub.nombre,
+          category: cat.slug,
+          subcategory: sub.slug,
+          gender,
+        })),
+      ],
+    });
+  }
+
+  return columns;
+}
+
+function buildKidsColumns(): NavMenuColumn[] {
+  const ageGroups: KidsAgeGroup[] = ['bebes', 'infantil', 'junior'];
+
+  return ageGroups.map((age) => {
+    const categoryGroups: NavCategoryGroup[] = [];
+
+    for (const cat of CATEGORIAS_TIENDA) {
+      // Para bebés (0-24m) omitimos subcategorías exclusivas de adultos/noche
+      const subcats = SUBCATEGORIAS_TIENDA.filter((s) => {
+        if (s.categorySlug !== cat.slug || !s.aplicaNinos) return false;
+        if (age === 'bebes' && s.slug === 'vestidos-midi') return false;
+        return true;
+      });
+
+      if (subcats.length === 0) continue;
+
+      categoryGroups.push({
+        categoryLabel: cat.nombre,
+        category: cat.slug,
+        gender: 'ninos',
+        ageGroup: age,
+        links: subcats.map((sub) => ({
+          label: sub.nombre,
+          category: cat.slug,
+          subcategory: sub.slug,
+          gender: 'ninos',
+          ageGroup: age,
+        })),
+      });
+    }
+
+    return {
+      heading: KIDS_AGE_LABELS[age],
+      category: 'todas',
+      gender: 'ninos',
+      ageGroup: age,
+      links: [],
+      categoryGroups,
+    };
+  });
+}
 
 export const NAV_MENU_ITEMS: NavMenuItem[] = [
   {
-    key: 'vestidos',
-    label: 'VESTIDOS',
-    category: 'vestidos',
+    key: 'hombre',
+    label: 'HOMBRE',
+    category: 'todas',
+    gender: 'hombre',
     layout: 'mega',
-    columns: [
-      {
-        heading: 'TODO VESTIDOS',
-        links: [
-          { label: 'Nueva Colección', category: 'vestidos' },
-          { label: 'Destacados', category: 'vestidos' },
-          { label: 'Vestidos Midi', category: 'vestidos' },
-          { label: 'Vestidos de Noche', category: 'vestidos' },
-        ],
-      },
-      {
-        heading: 'POR TALLAS',
-        links: STANDARD_SIZES.map((s) => ({ ...s, category: 'vestidos' })),
-      },
-      {
-        heading: 'POR COLOR',
-        links: STANDARD_COLORS('vestidos'),
-      },
-    ],
+    columns: buildGenderColumns('hombre'),
   },
   {
-    key: 'prendas-superiores',
-    label: 'PRENDAS SUPERIORES',
-    category: 'prendas-superiores',
+    key: 'mujer',
+    label: 'MUJER',
+    category: 'todas',
+    gender: 'mujer',
     layout: 'mega',
-    columns: [
-      {
-        heading: 'TODO PRENDAS SUPERIORES',
-        links: [
-          { label: 'Nueva Colección', category: 'prendas-superiores' },
-          { label: 'Destacados', category: 'prendas-superiores' },
-          { label: 'Polos Pima', category: 'prendas-superiores' },
-          { label: 'Camisas & Blusas', category: 'prendas-superiores' },
-        ],
-      },
-      {
-        heading: 'POR TALLAS',
-        links: STANDARD_SIZES.map((s) => ({ ...s, category: 'prendas-superiores' })),
-      },
-      {
-        heading: 'POR COLOR',
-        links: STANDARD_COLORS('prendas-superiores'),
-      },
-    ],
+    columns: buildGenderColumns('mujer'),
   },
   {
-    key: 'pantalones',
-    label: 'PANTALONES',
-    category: 'pantalones',
+    key: 'ninos',
+    label: 'NIÑOS',
+    category: 'todas',
+    gender: 'ninos',
     layout: 'mega',
-    columns: [
-      {
-        heading: 'TODO PANTALONES',
-        links: [
-          { label: 'Nueva Colección', category: 'pantalones' },
-          { label: 'Destacados', category: 'pantalones' },
-          { label: 'Jeans Cargo', category: 'pantalones' },
-          { label: 'Joggers & Rectos', category: 'pantalones' },
-        ],
-      },
-      {
-        heading: 'POR TALLAS',
-        links: [
-          { label: 'Talla 28', category: 'pantalones', sizeFilter: '28' },
-          { label: 'Talla 30', category: 'pantalones', sizeFilter: '30' },
-          { label: 'Talla 32', category: 'pantalones', sizeFilter: '32' },
-          { label: 'Talla 34', category: 'pantalones', sizeFilter: '34' },
-        ],
-      },
-      {
-        heading: 'POR COLOR',
-        links: STANDARD_COLORS('pantalones'),
-      },
-    ],
-  },
-  {
-    key: 'casacas',
-    label: 'CASACAS',
-    category: 'casacas',
-    layout: 'mega',
-    columns: [
-      {
-        heading: 'TODO CASACAS',
-        links: [
-          { label: 'Nueva Colección', category: 'casacas' },
-          { label: 'Destacados', category: 'casacas' },
-          { label: 'Bomber Urbanas', category: 'casacas' },
-          { label: 'Denim & Abrigos', category: 'casacas' },
-        ],
-      },
-      {
-        heading: 'POR TALLAS',
-        links: STANDARD_SIZES.map((s) => ({ ...s, category: 'casacas' })),
-      },
-      {
-        heading: 'POR COLOR',
-        links: STANDARD_COLORS('casacas'),
-      },
-    ],
-  },
-  {
-    key: 'conjuntos',
-    label: 'CONJUNTOS',
-    category: 'conjuntos',
-    layout: 'dropdown',
-    columns: [
-      {
-        heading: 'CONJUNTOS',
-        links: [
-          { label: 'Nueva Colección', category: 'conjuntos' },
-          { label: 'Destacados', category: 'conjuntos' },
-          { label: 'Sets Urbanos', category: 'conjuntos' },
-          { label: 'Sets Casuales', category: 'conjuntos' },
-        ],
-      },
-    ],
-  },
-  {
-    key: 'calzado',
-    label: 'CALZADO',
-    category: 'calzado',
-    layout: 'dropdown',
-    columns: [
-      {
-        heading: 'CALZADO',
-        links: [
-          { label: 'Nueva Colección', category: 'calzado' },
-          { label: 'Destacados', category: 'calzado' },
-          { label: 'Zapatillas', category: 'calzado' },
-          { label: 'Botines', category: 'calzado' },
-          { label: 'Casuales', category: 'calzado' },
-        ],
-      },
-    ],
-  },
-  {
-    key: 'accesorios',
-    label: 'ACCESORIOS',
-    category: 'accesorios',
-    layout: 'dropdown',
-    columns: [
-      {
-        heading: 'ACCESORIOS',
-        links: [
-          { label: 'Nueva Colección', category: 'accesorios' },
-          { label: 'Destacados', category: 'accesorios' },
-          { label: 'Gorras', category: 'accesorios' },
-          { label: 'Correas', category: 'accesorios' },
-          { label: 'Complementos', category: 'accesorios' },
-        ],
-      },
-    ],
+    columns: buildKidsColumns(),
   },
   {
     key: 'ofertas',
     label: 'OFERTAS',
     category: 'todas',
+    gender: 'todos',
+    onlyOffers: true,
     layout: 'mega',
     isAccent: true,
     columns: [
       {
-        heading: 'TODO OFERTAS',
+        heading: 'POR GÉNERO Y EDAD',
         links: [
-          { label: 'Todas las Ofertas', category: 'todas' },
-          { label: 'Vestidos en Oferta', category: 'vestidos' },
-          { label: 'Prendas Superiores', category: 'prendas-superiores' },
-          { label: 'Casacas & Calzado', category: 'casacas' },
+          { label: 'Todas las Ofertas', category: 'todas', gender: 'todos', onlyOffers: true },
+          { label: 'Ofertas Hombre', category: 'todas', gender: 'hombre', onlyOffers: true },
+          { label: 'Ofertas Mujer', category: 'todas', gender: 'mujer', onlyOffers: true },
+          { label: 'Ofertas Niños · Bebés', category: 'todas', gender: 'ninos', ageGroup: 'bebes', onlyOffers: true },
+          { label: 'Ofertas Niños · Infantil', category: 'todas', gender: 'ninos', ageGroup: 'infantil', onlyOffers: true },
+          { label: 'Ofertas Niños · Junior', category: 'todas', gender: 'ninos', ageGroup: 'junior', onlyOffers: true },
         ],
       },
       {
-        heading: 'POR TALLA',
-        links: STANDARD_SIZES,
+        heading: 'POR CATEGORÍA',
+        links: CATEGORIAS_TIENDA.map((cat) => ({
+          label: `${cat.nombre} en Oferta`,
+          category: cat.slug,
+          gender: 'todos',
+          onlyOffers: true,
+        })),
       },
       {
-        heading: 'POR PRECIO',
+        heading: 'POR TALLA',
         links: [
-          { label: 'Menos de S/ 200', category: 'todas' },
-          { label: 'Menos de S/ 100', category: 'todas' },
-          { label: 'Menos de S/ 60', category: 'todas' },
+          { label: 'Small (S)', category: 'todas', gender: 'todos', onlyOffers: true, sizeFilter: 'S' },
+          { label: 'Medium (M)', category: 'todas', gender: 'todos', onlyOffers: true, sizeFilter: 'M' },
+          { label: 'Large (L)', category: 'todas', gender: 'todos', onlyOffers: true, sizeFilter: 'L' },
         ],
       },
     ],

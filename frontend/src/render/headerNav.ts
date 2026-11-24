@@ -1,10 +1,12 @@
-import { NAV_MENU_ITEMS } from '../data/navigationData';
-import { CategorySlug } from '../types/store.types';
+import { NAV_MENU_ITEMS, NavMenuLink } from '../data/navigationData';
+import { CategorySlug, GenderFilter } from '../types/store.types';
 import { escapeHtml, icons } from '../utils/icons';
 import { renderBrandMark } from './brand';
 
 interface HeaderNavOptions {
   selectedCategory: CategorySlug;
+  selectedGender: GenderFilter;
+  onlyOffers: boolean;
   isHome: boolean;
   cartCount: number;
   wishlistCount: number;
@@ -27,8 +29,23 @@ function renderBrandLogo(): string {
   `;
 }
 
+function renderLinkAttributes(link: NavMenuLink): string {
+  const attrs = [
+    `href="#/categoria/${escapeHtml(link.category)}"`,
+    `data-action="go-category"`,
+    `data-category="${escapeHtml(link.category)}"`,
+  ];
+  if (link.gender) attrs.push(`data-filter-gender="${escapeHtml(link.gender)}"`);
+  if (link.ageGroup) attrs.push(`data-filter-age="${escapeHtml(link.ageGroup)}"`);
+  if (link.subcategory) attrs.push(`data-filter-subcategory="${escapeHtml(link.subcategory)}"`);
+  if (link.onlyOffers) attrs.push(`data-filter-offers="true"`);
+  if (link.sizeFilter) attrs.push(`data-filter-size="${escapeHtml(link.sizeFilter)}"`);
+  return attrs.join(' ');
+}
+
 export function renderHeaderNav({
-  selectedCategory,
+  selectedGender,
+  onlyOffers,
   isHome,
   cartCount,
   wishlistCount,
@@ -38,24 +55,76 @@ export function renderHeaderNav({
   searchQuery,
 }: HeaderNavOptions): string {
   const navItemsHtml = NAV_MENU_ITEMS.map((item) => {
-    const isActive = !isHome && item.category === selectedCategory && !item.isAccent;
+    const isActive =
+      !isHome &&
+      ((item.onlyOffers && onlyOffers) ||
+        (!item.onlyOffers && !onlyOffers && item.gender === selectedGender));
+
     const columnsHtml = item.columns
-      .map(
-        (col) => `
+      .map((col) => {
+        const headingHtml = col.category
+          ? `<a
+               href="#/categoria/${escapeHtml(col.category)}"
+               class="io-menu-col-heading d-block text-decoration-none"
+               data-action="go-category"
+               data-category="${escapeHtml(col.category)}"
+               ${col.gender ? `data-filter-gender="${escapeHtml(col.gender)}"` : ''}
+               ${col.ageGroup ? `data-filter-age="${escapeHtml(col.ageGroup)}"` : ''}
+               ${col.onlyOffers ? `data-filter-offers="true"` : ''}
+             >${escapeHtml(col.heading)}</a>`
+          : `<div class="io-menu-col-heading">${escapeHtml(col.heading)}</div>`;
+
+        // Caso especial Niños: Edad -> Categoría -> Subcategoría
+        if (col.categoryGroups && col.categoryGroups.length > 0) {
+          const groupsHtml = col.categoryGroups
+            .map(
+              (grp) => `
+                <div class="io-menu-subcat-group mb-2">
+                  <a
+                    href="#/categoria/${escapeHtml(grp.category)}"
+                    class="io-menu-link fw-semibold"
+                    data-action="go-category"
+                    data-category="${escapeHtml(grp.category)}"
+                    data-filter-gender="${escapeHtml(grp.gender)}"
+                    ${grp.ageGroup ? `data-filter-age="${escapeHtml(grp.ageGroup)}"` : ''}
+                  >
+                    ${escapeHtml(grp.categoryLabel)}
+                  </a>
+                  <ul class="io-menu-col-list ps-2 border-start border-secondary border-opacity-25 ms-1">
+                    ${grp.links
+                      .map(
+                        (link) => `
+                          <li>
+                            <a class="io-menu-link" ${renderLinkAttributes(link)}>
+                              ${escapeHtml(link.label)}
+                            </a>
+                          </li>
+                        `
+                      )
+                      .join('')}
+                  </ul>
+                </div>
+              `
+            )
+            .join('');
+
+          return `
+            <div class="io-menu-col">
+              ${headingHtml}
+              <div class="io-kids-groups-wrap">${groupsHtml}</div>
+            </div>
+          `;
+        }
+
+        return `
           <div class="io-menu-col">
-            <div class="io-menu-col-heading">${escapeHtml(col.heading)}</div>
+            ${headingHtml}
             <ul class="io-menu-col-list">
               ${col.links
                 .map(
                   (link) => `
                     <li>
-                      <a
-                        href="#/categoria/${escapeHtml(link.category)}"
-                        class="io-menu-link"
-                        data-action="go-category"
-                        data-category="${escapeHtml(link.category)}"
-                        ${link.sizeFilter ? `data-filter-size="${escapeHtml(link.sizeFilter)}"` : ''}
-                      >
+                      <a class="io-menu-link" ${renderLinkAttributes(link)}>
                         ${escapeHtml(link.label)}
                       </a>
                     </li>
@@ -64,26 +133,30 @@ export function renderHeaderNav({
                 .join('')}
             </ul>
           </div>
-        `
-      )
+        `;
+      })
       .join('');
 
-    const panelClass =
-      item.layout === 'mega' ? 'io-megamenu-panel' : 'io-dropdown-panel';
+    const gridColsClass =
+      item.columns.length >= 4
+        ? 'io-megamenu-grid io-megamenu-grid--4'
+        : 'io-megamenu-grid';
 
     return `
-      <li class="io-nav-item ${item.layout === 'dropdown' ? 'is-dropdown' : ''}" data-nav-key="${escapeHtml(item.key)}">
+      <li class="io-nav-item" data-nav-key="${escapeHtml(item.key)}">
         <a
           href="#/categoria/${escapeHtml(item.category)}"
           class="io-nav-trigger ${item.isAccent ? 'is-accent' : ''} ${isActive ? 'is-current' : ''}"
           data-action="go-category"
           data-category="${escapeHtml(item.category)}"
+          data-filter-gender="${escapeHtml(item.gender)}"
+          ${item.onlyOffers ? 'data-filter-offers="true"' : ''}
         >
           ${item.isAccent ? '<span class="io-nav-indicator-dot" aria-hidden="true"></span>' : ''}
           <span>${escapeHtml(item.label)}</span>
         </a>
-        <div class="${panelClass}" data-menu-panel="${escapeHtml(item.key)}">
-          <div class="${item.layout === 'mega' ? 'container-xl io-megamenu-grid' : 'io-dropdown-inner'}">
+        <div class="io-megamenu-panel" data-menu-panel="${escapeHtml(item.key)}">
+          <div class="container-xl ${gridColsClass}">
             ${columnsHtml}
           </div>
         </div>
@@ -93,7 +166,54 @@ export function renderHeaderNav({
 
   const mobileNavItemsHtml = NAV_MENU_ITEMS.map((item) => {
     const isExpanded = expandedMobileKey === item.key;
-    const allLinks = item.columns.flatMap((c) => c.links);
+
+    const mobileSublinksHtml = item.columns
+      .map((col) => {
+        if (col.categoryGroups && col.categoryGroups.length > 0) {
+          return `
+            <div class="px-3 pt-2 pb-1 text-uppercase small opacity-75 fw-semibold">${escapeHtml(col.heading)}</div>
+            ${col.categoryGroups
+              .map(
+                (grp) => `
+                  <a
+                    href="#/categoria/${escapeHtml(grp.category)}"
+                    class="io-mobile-sublink fw-semibold"
+                    data-action="go-category"
+                    data-category="${escapeHtml(grp.category)}"
+                    data-filter-gender="${escapeHtml(grp.gender)}"
+                    ${grp.ageGroup ? `data-filter-age="${escapeHtml(grp.ageGroup)}"` : ''}
+                  >
+                    ${escapeHtml(grp.categoryLabel)}
+                  </a>
+                  ${grp.links
+                    .map(
+                      (l) => `
+                        <a class="io-mobile-sublink ps-4" ${renderLinkAttributes(l)}>
+                          · ${escapeHtml(l.label)}
+                        </a>
+                      `
+                    )
+                    .join('')}
+                `
+              )
+              .join('')}
+          `;
+        }
+
+        return `
+          <div class="px-3 pt-2 pb-1 text-uppercase small opacity-75 fw-semibold">${escapeHtml(col.heading)}</div>
+          ${col.links
+            .map(
+              (l) => `
+                <a class="io-mobile-sublink" ${renderLinkAttributes(l)}>
+                  ${escapeHtml(l.label)}
+                </a>
+              `
+            )
+            .join('')}
+        `;
+      })
+      .join('');
 
     return `
       <div class="border-bottom border-secondary border-opacity-25">
@@ -119,24 +239,12 @@ export function renderHeaderNav({
             class="io-mobile-sublink fw-bold"
             data-action="go-category"
             data-category="${escapeHtml(item.category)}"
+            data-filter-gender="${escapeHtml(item.gender)}"
+            ${item.onlyOffers ? 'data-filter-offers="true"' : ''}
           >
             Ver todo en ${escapeHtml(item.label)} →
           </a>
-          ${allLinks
-            .map(
-              (l) => `
-                <a
-                  href="#/categoria/${escapeHtml(l.category)}"
-                  class="io-mobile-sublink"
-                  data-action="go-category"
-                  data-category="${escapeHtml(l.category)}"
-                  ${l.sizeFilter ? `data-filter-size="${escapeHtml(l.sizeFilter)}"` : ''}
-                >
-                  ${escapeHtml(l.label)}
-                </a>
-              `
-            )
-            .join('')}
+          ${mobileSublinksHtml}
         </div>
       </div>
     `;
@@ -167,7 +275,7 @@ export function renderHeaderNav({
           ${renderBrandLogo()}
         </div>
 
-        <nav class="io-header-center d-none d-lg-flex" aria-label="Navegación principal de categorías">
+        <nav class="io-header-center d-none d-lg-flex" aria-label="Navegación principal por público y ofertas">
           <ul class="io-nav-list">
             ${navItemsHtml}
           </ul>
@@ -225,7 +333,7 @@ export function renderHeaderNav({
                   id="buscador-catalogo"
                   type="search"
                   class="form-control"
-                  placeholder="Buscar vestido, pantalón, casaca..."
+                  placeholder="Buscar vestido, pantalón, casaca, sports..."
                   value="${escapeHtml(searchQuery)}"
                   autocomplete="off"
                 />

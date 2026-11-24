@@ -5,7 +5,7 @@
 > 1. **ANDRADE CHIRINOS, Olver Daniel** (`N00401718`)  
 > 2. **RAZURI PAREDES, Josue Daniel** (`N00421512`)  
 > **Fase Global Actual:** `03. Desarrollo Frontend Iniciado — Migración visual completa a Espresso & Piedra (Propuesta 5) bajo Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3 (WCAG 2.1 AA)`  
-> **Última Actualización:** `23/11/2026` (Refinamiento Espresso & Piedra v2.1: barra de anuncios, header dinámico, micro-interacciones, tokens de movimiento/sombras y contenedor de logo en `frontend/public/img/brand/logo-io.svg`; WCAG 2.1 AA)
+> **Última Actualización:** `23/11/2026` (Taxonomía omnicanal v2.2: 8 categorías principales incluyendo `Sports`, subcategorías, navegación por contextos `Hombre` / `Mujer` / `Niños` [Edad → Categoría → Subcategoría] / `Ofertas`, y extensión SQL Server `02_extension_catalogo_taxonomia.sql`)
 
 ---
 
@@ -19,7 +19,7 @@ Este tablero maestro conecta la **documentación académica UPN** (en `documento
 | **1.1.2** | `documentos/Interaccion Humano Com Proyecto/` | Curso IHC — UX/UI, Design Sprint, WCAG 2.1 AA y Rúbrica RE3 (v1.5) | **2 integrantes exclusivos:** Olver Andrade (`N00401718`) y Josue Razuri (`N00421512`) | `.git` independiente (`origin/main` → `IHC_G3.git`, ramas `dev-*`) | ⚠️ **Falta revisión humana** (6 archivos fuente `Informacion_IHC/` y 2 `.docx` compilados) | [ESTADO_PROYECTO_IHC.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/documentos/Interaccion%20Humano%20Com%20Proyecto/ESTADO_PROYECTO_IHC.md) |
 | **1.2** | `frontend/` | Capa de Presentación, UI POS/Web, Dashboard y Accesibilidad Nativa WCAG 2.1 AA | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | 🟢 **En desarrollo activo: Estética Espresso & Piedra v2.1 (Vite + TS + HTML5 + CSS3 puro + Bootstrap 5.3). Logo: colocar `logo-io.svg` (o `.png`) en `frontend/public/img/brand/`** | [frontend/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/frontend/README.md) |
 | **1.3** | `backend/` | Capa de Lógica de Negocio, APIs, RBAC (5 roles) y 42 Reglas | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | ✅ **Stack y arquitectura aprobados: Node.js + Express (TS) — Monolito Modular + `mssql` + `Zod` (Fases 0–3)** | [backend/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/backend/README.md) |
-| **1.4** | `DB/` | Capa de Persistencia (12 Entidades aprobadas con herencia) | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | ✅ **Microsoft SQL Server — DDL y seeds generados** (`esquemas/01_esquema_io_sqlserver.sql`, `seeds/01_datos_iniciales_io.sql`) | [DB/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/DB/README.md) |
+| **1.4** | `DB/` | Capa de Persistencia (12 Entidades aprobadas con herencia) | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | ✅ **Microsoft SQL Server — DDL, extensión de taxonomía (8 categorías, subcategorías, género/edad) y seeds generados** (`esquemas/01_esquema_io_sqlserver.sql`, `esquemas/02_extension_catalogo_taxonomia.sql`, `seeds/01_datos_iniciales_io.sql`) | [DB/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/DB/README.md) |
 
 ---
 

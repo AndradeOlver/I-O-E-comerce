@@ -13,7 +13,12 @@ import { renderCategoryPage } from './render/categoryPage';
 import { renderHeaderNav } from './render/headerNav';
 import { bindBrandLogo } from './render/brand';
 import { renderOffersCarousel } from './render/offersCarousel';
-import { CartItem, CategorySlug } from './types/store.types';
+import {
+  CartItem,
+  CategorySlug,
+  GenderFilter,
+  KidsAgeFilter,
+} from './types/store.types';
 import { escapeHtml, icons } from './utils/icons';
 
 const RESERVE_DURATION_SECONDS = 15 * 60;
@@ -24,6 +29,10 @@ interface StoreState {
   view: AppView;
   searchQuery: string;
   selectedCategory: CategorySlug;
+  selectedSubcategory: string;
+  selectedGender: GenderFilter;
+  selectedAgeGroup: KidsAgeFilter;
+  onlyOffers: boolean;
   selectedSize: string;
   sortBy: 'relevancia' | 'precio-asc' | 'precio-desc';
   carouselIndex: number;
@@ -66,6 +75,10 @@ const state: StoreState = {
   view: initialRoute.view,
   searchQuery: '',
   selectedCategory: initialRoute.category,
+  selectedSubcategory: 'todas',
+  selectedGender: 'todos',
+  selectedAgeGroup: 'todas',
+  onlyOffers: false,
   selectedSize: 'todas',
   sortBy: 'relevancia',
   carouselIndex: 0,
@@ -99,14 +112,86 @@ function getAvailableSizes(): string[] {
   return Array.from(sizes);
 }
 
+function getActiveOfferProductIds(): Set<number> {
+  const ids = new Set<number>();
+  for (const campana of OFERTAS_CARRUSEL) {
+    if (
+      campana.activa &&
+      campana.aprobada_dueno &&
+      campana.stock_consumido < campana.stock_maximo &&
+      campana.productoIds
+    ) {
+      for (const id of campana.productoIds) ids.add(id);
+    }
+  }
+  return ids;
+}
+
+function getActiveOfferCategories(): Set<CategorySlug> {
+  const cats = new Set<CategorySlug>();
+  for (const campana of OFERTAS_CARRUSEL) {
+    if (
+      campana.activa &&
+      campana.aprobada_dueno &&
+      campana.stock_consumido < campana.stock_maximo
+    ) {
+      cats.add(campana.categoriaTarget);
+    }
+  }
+  return cats;
+}
+
 function getFilteredProducts() {
   const q = state.searchQuery.trim().toLowerCase();
+  const activeOfferIds = state.onlyOffers ? getActiveOfferProductIds() : null;
+  const activeOfferCats = state.onlyOffers ? getActiveOfferCategories() : null;
 
   const matches = CATALOGO_PRODUCTOS.filter((product) => {
-    if (state.selectedCategory !== 'todas' && product.categorySlug !== state.selectedCategory) {
+    if (state.selectedGender !== 'todos') {
+      if (state.selectedGender === 'ninos') {
+        if (product.genero !== 'ninos') return false;
+        if (
+          state.selectedAgeGroup !== 'todas' &&
+          product.rango_edad !== state.selectedAgeGroup
+        ) {
+          return false;
+        }
+      } else if (
+        product.genero !== state.selectedGender &&
+        product.genero !== 'unisex'
+      ) {
+        return false;
+      }
+    }
+
+    if (
+      state.selectedCategory !== 'todas' &&
+      product.categorySlug !== state.selectedCategory
+    ) {
       return false;
     }
-    if (state.selectedSize !== 'todas' && !product.variants.some((v) => v.talla === state.selectedSize)) {
+
+    if (
+      state.selectedSubcategory !== 'todas' &&
+      product.subcategorySlug !== state.selectedSubcategory
+    ) {
+      return false;
+    }
+
+    if (state.onlyOffers && activeOfferIds && activeOfferCats) {
+      const matchesProductOffer = product.variants.some((v) =>
+        activeOfferIds.has(v.producto_id)
+      );
+      const matchesCategoryOffer = activeOfferCats.has(product.categorySlug);
+      if (!matchesProductOffer && !matchesCategoryOffer) {
+        return false;
+      }
+    }
+
+    if (
+      state.selectedSize !== 'todas' &&
+      !product.variants.some((v) => v.talla === state.selectedSize)
+    ) {
       return false;
     }
     if (!q) return true;
@@ -246,6 +331,10 @@ function syncCarouselDom(): void {
 function navigateToHome(): void {
   state.view = 'home';
   state.selectedCategory = 'todas';
+  state.selectedSubcategory = 'todas';
+  state.selectedGender = 'todos';
+  state.selectedAgeGroup = 'todas';
+  state.onlyOffers = false;
   state.selectedSize = 'todas';
   state.isMobileMenuOpen = false;
   if (window.location.hash !== '#/' && window.location.hash !== '') {
@@ -255,11 +344,28 @@ function navigateToHome(): void {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function navigateToCategory(slug: CategorySlug, sizeFilter?: string): void {
+interface NavigateCategoryFilters {
+  gender?: GenderFilter;
+  ageGroup?: KidsAgeFilter;
+  subcategory?: string;
+  onlyOffers?: boolean;
+  sizeFilter?: string;
+}
+
+function navigateToCategory(
+  slug: CategorySlug,
+  filters: NavigateCategoryFilters = {}
+): void {
   state.view = 'category';
   state.selectedCategory = slug;
-  state.selectedSize = sizeFilter ?? 'todas';
+  state.selectedGender = filters.gender ?? 'todos';
+  state.selectedAgeGroup =
+    state.selectedGender === 'ninos' ? (filters.ageGroup ?? 'todas') : 'todas';
+  state.selectedSubcategory = filters.subcategory ?? 'todas';
+  state.onlyOffers = filters.onlyOffers ?? false;
+  state.selectedSize = filters.sizeFilter ?? 'todas';
   state.isMobileMenuOpen = false;
+  syncHeaderMenuDom(null);
   const targetHash = `#/categoria/${slug}`;
   if (window.location.hash !== targetHash) {
     window.location.hash = targetHash;
@@ -303,6 +409,10 @@ function renderApp(): void {
           categories: CATEGORIAS_TIENDA,
           currentCategory: currentCategoryObj,
           selectedCategory: state.selectedCategory,
+          selectedSubcategory: state.selectedSubcategory,
+          selectedGender: state.selectedGender,
+          selectedAgeGroup: state.selectedAgeGroup,
+          onlyOffers: state.onlyOffers,
           products: filteredProducts,
           totalCatalogCount: CATALOGO_PRODUCTOS.length,
           selectedSize: state.selectedSize,
@@ -315,6 +425,8 @@ function renderApp(): void {
     <div class="d-flex flex-column min-vh-100">
       ${renderHeaderNav({
         selectedCategory: state.selectedCategory,
+        selectedGender: state.selectedGender,
+        onlyOffers: state.onlyOffers,
         isHome: state.view === 'home',
         cartCount,
         wishlistCount: state.wishlistCount,
@@ -464,8 +576,45 @@ root.addEventListener('click', (event) => {
     case 'go-category': {
       event.preventDefault();
       const slug = (target.dataset.category as CategorySlug) ?? 'todas';
+      const gender = target.dataset.filterGender as GenderFilter | undefined;
+      const ageGroup = target.dataset.filterAge as KidsAgeFilter | undefined;
+      const subcategory = target.dataset.filterSubcategory;
+      const onlyOffers = target.dataset.filterOffers === 'true';
       const sizeFilter = target.dataset.filterSize;
-      navigateToCategory(slug, sizeFilter);
+      navigateToCategory(slug, {
+        gender,
+        ageGroup,
+        subcategory,
+        onlyOffers,
+        sizeFilter,
+      });
+      break;
+    }
+    case 'filter-gender': {
+      const gender = (target.dataset.gender as GenderFilter) ?? 'todos';
+      state.selectedGender = gender;
+      if (gender !== 'ninos') state.selectedAgeGroup = 'todas';
+      if (gender === 'hombre' && state.selectedCategory === 'vestidos') {
+        state.selectedCategory = 'todas';
+      }
+      state.selectedSubcategory = 'todas';
+      renderApp();
+      break;
+    }
+    case 'filter-age': {
+      state.selectedGender = 'ninos';
+      state.selectedAgeGroup = (target.dataset.age as KidsAgeFilter) ?? 'todas';
+      renderApp();
+      break;
+    }
+    case 'filter-subcategory': {
+      state.selectedSubcategory = target.dataset.subcategory ?? 'todas';
+      renderApp();
+      break;
+    }
+    case 'toggle-offers-filter': {
+      state.onlyOffers = !state.onlyOffers;
+      renderApp();
       break;
     }
     case 'toggle-search':
@@ -555,6 +704,10 @@ root.addEventListener('click', (event) => {
     case 'reset-filters':
       state.searchQuery = '';
       state.selectedCategory = 'todas';
+      state.selectedSubcategory = 'todas';
+      state.selectedGender = 'todos';
+      state.selectedAgeGroup = 'todas';
+      state.onlyOffers = false;
       state.selectedSize = 'todas';
       state.sortBy = 'relevancia';
       renderApp();
