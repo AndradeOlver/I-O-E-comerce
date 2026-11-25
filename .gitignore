@@ -88,4 +88,23 @@ desktop.ini
 *.swo
 .vscode/
 .idea/
-.agents/
+
+# ------------------------------------------------------------------------------
+# 6. SKILLS DEL WORKSPACE (versionables)
+# ------------------------------------------------------------------------------
+# AGENTS.md referencia .agents/skills/arquitectura-backend-io/SKILL.md y el equipo
+# debe heredar las mismas reglas. Se versionan los SKILL.md y sus referencias .md.
+# Solo se ignoran binarios, fuentes tipográficas y cache que puedan inflar el repo.
+.agents/skills/**/*.png
+.agents/skills/**/*.jpg
+.agents/skills/**/*.jpeg
+.agents/skills/**/*.webp
+.agents/skills/**/*.gif
+.agents/skills/**/*.ico
+.agents/skills/**/*.ttf
+.agents/skills/**/*.woff
+.agents/skills/**/*.woff2
+.agents/skills/**/*.otf
+.agents/skills/**/node_modules/
+.agents/skills/**/__pycache__/
+.agents/skills/**/.git/

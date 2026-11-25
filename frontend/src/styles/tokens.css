@@ -54,10 +54,17 @@
   /* Estados semánticos accesibles */
   --color-success-ok: #23684a;
   /* Verde bosque accesible (> 4.5:1) */
+  --color-success-bg: #eef5f1;
+  --color-success-border: rgba(35, 104, 74, 0.35);
   --color-warning-low: #8d4f10;
   /* Ámbar tierra accesible (> 4.5:1) */
+  --color-warning-bg: #f8f1e6;
+  --color-warning-border: rgba(141, 79, 16, 0.4);
   --color-danger-err: #a32222;
   /* Carmín terroso accesible (> 4.5:1) */
+  --color-danger-bg: #f9eded;
+  --color-danger-border: rgba(163, 34, 34, 0.38);
+  --color-terracotta-soft: rgba(201, 138, 123, 0.16);
 
   /* Tipografía */
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -197,22 +204,28 @@ body.io-scroll-lock {
 .progress {
   --bs-progress-bg: var(--color-border-subtle);
   --bs-progress-bar-bg: var(--color-accent-terracotta);
-  border-radius: 999px;
+  border-radius: var(--radius-xs);
+}
+
+.io-num {
+  font-variant-numeric: tabular-nums;
 }
 
 .btn-close:focus-visible {
   opacity: 1;
 }
 
-/* Soporte nativo de alto contraste del SO (RN-ACC-01 — 19.56:1 AAA) */
+/* Soporte nativo de alto contraste del SO (RN-ACC-01 — 19.56:1 AAA, exclusivo de la tienda del comprador) */
 @media (prefers-contrast: more) {
-  :root {
+  body.io-storefront {
     --color-top-strip-bg: #000000;
     --color-top-strip-text: #ffffff;
     --color-header-bg: #000000;
     --color-header-bg-translucent: #000000;
     --color-header-bg-scrolled: #000000;
     --color-header-text: #ffffff;
+    --color-header-text-muted: #ffffff;
+    --color-header-divider: #ffff00;
     --color-primary-espresso: #000000;
     --color-primary-hover: #111111;
     --color-accent-terracotta: #ffff00;
@@ -227,23 +240,55 @@ body.io-scroll-lock {
     --color-border-strong: #ffff00;
     --color-ink: #ffff00;
     --color-ink-muted: #ffffff;
+    --color-success-ok: #7dffb3;
+    --color-warning-low: #ffff00;
+    --color-danger-err: #ff8a8a;
+    --shadow-warm-sm: none;
+    --shadow-warm-md: none;
+    --shadow-warm-lg: none;
     --focus-color: #ffff00;
     --focus-ring: 3px solid #ffff00;
     --focus-inner: 0 0 0 2px #000000;
   }
 
-  body,
-  .io-card,
-  .io-header,
-  .io-category-tile,
-  .io-carousel-shell,
-  .io-drawer-panel,
-  .io-modal,
-  .io-footer,
-  .io-product-card {
+  body.io-storefront,
+  body.io-storefront .io-header,
+  body.io-storefront .io-top-strip,
+  body.io-storefront .io-product-card,
+  body.io-storefront .io-drawer-panel,
+  body.io-storefront .io-modal,
+  body.io-storefront .io-footer,
+  body.io-storefront .io-carousel-shell,
+  body.io-storefront .io-brands-strip,
+  body.io-storefront .io-featured-band,
+  body.io-storefront .io-empty--panel,
+  body.io-storefront .io-cart-line,
+  body.io-storefront .io-alert,
+  body.io-storefront .io-brand-card,
+  body.io-storefront .form-control,
+  body.io-storefront .form-select {
     background-color: #000000 !important;
     color: #ffff00 !important;
     border-color: #ffff00 !important;
+  }
+
+  body.io-storefront .io-btn-primary,
+  body.io-storefront .io-carousel-cta,
+  body.io-storefront .io-btn-ver-detalles,
+  body.io-storefront .io-cat-chip.is-active,
+  body.io-storefront .io-size-btn.is-selected,
+  body.io-storefront .io-a11y-switch.is-active,
+  body.io-storefront .io-a11y-pill.is-active,
+  body.io-storefront .io-product-offer-badge,
+  body.io-storefront .io-bag-badge:not(.is-empty) {
+    background-color: #ffff00 !important;
+    color: #000000 !important;
+    border-color: #ffff00 !important;
+  }
+
+  body.io-storefront .btn-close {
+    filter: invert(1) sepia(1) saturate(8) hue-rotate(15deg);
+    opacity: 1;
   }
 }
 

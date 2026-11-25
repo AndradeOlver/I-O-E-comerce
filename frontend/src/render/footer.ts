@@ -218,8 +218,8 @@ export function renderFooter(
                 <span class="d-inline-flex align-items-center gap-2">
                   <span class="io-reclamaciones-icon" aria-hidden="true">${icons.eye(18)}</span>
                   <span>
-                    <strong class="d-block" style="font-size: 0.85rem">Modo Daltonismo</strong>
-                    <span class="io-reclamaciones-sub">Texturas y tramas en colores</span>
+                    <strong class="d-block" style="font-size: 0.85rem">Daltonismo y Lectura Ampliada</strong>
+                    <span class="io-reclamaciones-sub">Texturas, alto contraste y letra ampliada</span>
                   </span>
                 </span>
                 <button
@@ -256,7 +256,7 @@ export function renderFooter(
           <span class="io-footer-meta">
             ${
               colorblindMode
-                ? 'Modo Daltonismo Activo (RN-ACC-01 a RN-ACC-06) · Precios con IGV 18% (RN-TRI-01) · RUC: 10458796321'
+                ? 'Modo Daltonismo y Lectura Ampliada activo (RN-ACC-01 a RN-ACC-06) · Precios con IGV 18% (RN-TRI-01) · RUC: 10458796321'
                 : 'Todos los precios incluyen IGV · Atelier &amp; Tienda Oficial Lima · RUC 10458796321'
             }
           </span>

@@ -20,36 +20,40 @@ export function renderTextureSwatchSvg(
     patternDef = `
       <pattern id="${pid}" width="6" height="6" patternUnits="userSpaceOnUse">
         <rect width="6" height="6" fill="${colorHex}"/>
-        <circle cx="2" cy="2" r="1.1" fill="rgba(255,255,255,0.55)"/>
-        <circle cx="5" cy="5" r="0.9" fill="rgba(0,0,0,0.35)"/>
+        <circle cx="2" cy="2" r="1.2" fill="rgba(250,247,242,0.72)"/>
+        <circle cx="5" cy="5" r="1.0" fill="rgba(26,21,18,0.68)"/>
       </pattern>
     `;
   } else if (patternId === 'raya-fina') {
     patternDef = `
-      <pattern id="${pid}" width="5" height="5" patternUnits="userSpaceOnUse">
-        <rect width="5" height="5" fill="${colorHex}"/>
-        <line x1="0" y1="0" x2="0" y2="5" stroke="rgba(255,255,255,0.62)" stroke-width="1.5"/>
+      <pattern id="${pid}" width="6" height="6" patternUnits="userSpaceOnUse">
+        <rect width="6" height="6" fill="${colorHex}"/>
+        <line x1="1" y1="0" x2="1" y2="6" stroke="rgba(250,247,242,0.78)" stroke-width="1.6"/>
+        <line x1="2.6" y1="0" x2="2.6" y2="6" stroke="rgba(26,21,18,0.55)" stroke-width="1"/>
       </pattern>
     `;
   } else if (patternId === 'diagonal') {
     patternDef = `
-      <pattern id="${pid}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-        <rect width="6" height="6" fill="${colorHex}"/>
-        <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.55)" stroke-width="1.7"/>
+      <pattern id="${pid}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="7" height="7" fill="${colorHex}"/>
+        <line x1="0" y1="0" x2="0" y2="7" stroke="rgba(250,247,242,0.75)" stroke-width="2"/>
+        <line x1="2" y1="0" x2="2" y2="7" stroke="rgba(26,21,18,0.55)" stroke-width="1"/>
       </pattern>
     `;
   } else if (patternId === 'punteado') {
     patternDef = `
       <pattern id="${pid}" width="6" height="6" patternUnits="userSpaceOnUse">
         <rect width="6" height="6" fill="${colorHex}"/>
-        <circle cx="3" cy="3" r="1.3" fill="rgba(26,21,18,0.62)"/>
+        <circle cx="3" cy="3" r="1.5" fill="rgba(26,21,18,0.75)"/>
+        <circle cx="3" cy="3" r="0.6" fill="rgba(250,247,242,0.72)"/>
       </pattern>
     `;
   } else if (patternId === 'cuadricula') {
     patternDef = `
       <pattern id="${pid}" width="7" height="7" patternUnits="userSpaceOnUse">
         <rect width="7" height="7" fill="${colorHex}"/>
-        <path d="M 7 0 L 0 0 0 7" fill="none" stroke="rgba(255,255,255,0.58)" stroke-width="1.1"/>
+        <path d="M 7 0 L 0 0 0 7" fill="none" stroke="rgba(250,247,242,0.76)" stroke-width="1.4"/>
+        <path d="M 7 1.4 L 1.4 1.4 1.4 7" fill="none" stroke="rgba(26,21,18,0.5)" stroke-width="0.9"/>
       </pattern>
     `;
   }
@@ -60,7 +64,7 @@ export function renderTextureSwatchSvg(
     return `
       <svg class="io-circle-pattern-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         ${patternDef ? `<defs>${patternDef}</defs>` : ''}
-        <circle cx="12" cy="12" r="12" fill="${fillVal}"/>
+        <rect width="24" height="24" rx="2" fill="${fillVal}"/>
       </svg>
     `;
   }
@@ -68,7 +72,7 @@ export function renderTextureSwatchSvg(
   return `
     <svg class="io-color-swatch" viewBox="0 0 28 28" aria-hidden="true" focusable="false">
       ${patternDef ? `<defs>${patternDef}</defs>` : ''}
-      <rect width="28" height="28" fill="${fillVal}"/>
+      <rect width="28" height="28" rx="2" fill="${fillVal}"/>
     </svg>
   `;
 }
@@ -87,7 +91,6 @@ export function renderProductVisualContent(
       role="img"
       aria-label="Imagen de respaldo con logo institucional I&O para ${escapeHtml(product.nombre)} en tono ${escapeHtml(activeVariant.color)}"
     >
-      <div class="io-product-logo-aura" aria-hidden="true"></div>
       <div class="io-product-logo-frame">
         <img
           src="/img/brand/logo-io.png"
@@ -185,6 +188,13 @@ export function renderProductCard(
   const badgeText =
     product.badgeLabel ??
     (product.recienLlegado ? 'Nuevo' : product.destacado ? 'Destacado' : '');
+  const hasOffer = Boolean(
+    product.precio_regular && product.precio_regular > activeVariant.precio_venta
+  );
+  const discountPct =
+    hasOffer && product.precio_regular
+      ? Math.round(((product.precio_regular - activeVariant.precio_venta) / product.precio_regular) * 100)
+      : 0;
 
   const daltonismPanelHtml = colorblindMode
     ? `
@@ -230,7 +240,7 @@ export function renderProductCard(
       : '';
 
   return `
-    <div class="col-12 col-sm-6 col-lg-4 col-xl-3 io-reveal">
+    <div class="col-12 col-sm-6 col-lg-3 io-reveal">
       <article class="io-product-card ${colorblindMode ? 'is-colorblind' : ''}">
         <div class="io-product-media-wrap">
           <button
@@ -264,14 +274,20 @@ export function renderProductCard(
         <div class="io-product-body">
           <div class="io-product-meta-row">
             <span class="io-product-brand">${escapeHtml(product.marca)}</span>
-            <div class="io-product-price-wrap">
-              ${
-                product.precio_regular && product.precio_regular > activeVariant.precio_venta
-                  ? `<del class="io-product-price-old">S/ ${product.precio_regular.toFixed(2)}</del>`
-                  : ''
-              }
-              <span class="io-product-price">S/ ${activeVariant.precio_venta.toFixed(2)}</span>
-            </div>
+            ${
+              hasOffer && product.precio_regular
+                ? `<span class="io-product-offer-badge">Oferta · -${discountPct}%</span>`
+                : ''
+            }
+          </div>
+
+          <div class="io-product-price-wrap">
+            <span class="io-product-price io-num">S/ ${activeVariant.precio_venta.toFixed(2)}</span>
+            ${
+              hasOffer && product.precio_regular
+                ? `<del class="io-product-price-old io-num">S/ ${product.precio_regular.toFixed(2)}</del>`
+                : ''
+            }
           </div>
 
           <h3 class="io-product-title">
@@ -288,7 +304,11 @@ export function renderProductCard(
           <p class="io-product-desc">${escapeHtml(product.descripcion)}</p>
         </div>
 
-        ${daltonismPanelHtml}
+        ${
+          colorblindMode
+            ? daltonismPanelHtml
+            : `<div class="io-product-active-tone">Color: <strong>${escapeHtml(activeVariant.color)}</strong></div>`
+        }
 
         <div class="io-product-footer-bar">
           <div class="io-color-box" role="group" aria-label="Selector de colores para ${escapeHtml(product.nombre)}">
@@ -310,7 +330,7 @@ export function renderProductCard(
             aria-label="Ver detalles de ${escapeHtml(product.nombre)}"
           >
             <span>Ver detalles</span>
-            ${icons.chevronRight(14)}
+            ${icons.arrowRight(14)}
           </button>
         </div>
       </article>

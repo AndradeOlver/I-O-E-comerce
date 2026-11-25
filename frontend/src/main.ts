@@ -1,6 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/tokens.css';
 import './styles/storefront.css';
+import { DemoSession, clearDemoSession, getActiveDemoSession } from './auth/demoSession';
 import {
   CATALOGO_PRODUCTOS,
   CATEGORIAS_TIENDA,
@@ -8,7 +9,7 @@ import {
   MARCAS_TIENDA,
   OFERTAS_CARRUSEL,
 } from './data/catalogData';
-import { renderLoginModal, renderWishlistDrawer } from './render/accountPanels';
+import { renderAccountSessionModal, renderWishlistDrawer } from './render/accountPanels';
 import { bindBrandLogo } from './render/brand';
 import { renderBrandsSection } from './render/brandsSection';
 import { renderCartDrawer } from './render/cartDrawer';
@@ -68,6 +69,7 @@ interface StoreState {
   colorblindMode: boolean;
   optInMarketing: boolean;
   liveFeedback: string;
+  checkoutFeedback: string;
 }
 
 const VALID_SLUGS = new Set<CategorySlug>([
@@ -132,7 +134,17 @@ const state: StoreState = {
   colorblindMode: loadSavedColorblindMode(),
   optInMarketing: false,
   liveFeedback: '',
+  checkoutFeedback: '',
 };
+
+const initialSession = getActiveDemoSession().session;
+let currentSession: DemoSession | null =
+  initialSession && initialSession.role === 'cliente' ? initialSession : null;
+
+function getCurrentStorefrontReturnPath(): string {
+  const hash = window.location.hash;
+  return hash && hash.startsWith('#/') ? `/index.html${hash}` : '/index.html';
+}
 
 const rootEl = document.getElementById('root');
 if (!rootEl) {
@@ -466,6 +478,7 @@ function navigateToCategory(
 }
 
 function renderApp(): void {
+  document.body.classList.toggle('io-mode-colorblind', state.colorblindMode);
   const activeElement = document.activeElement as HTMLElement | null;
   const restoreFocusId = activeElement?.id || '';
   const selectionStart =
@@ -491,14 +504,14 @@ function renderApp(): void {
           <div class="d-flex align-items-center gap-2">
             <span class="io-daltonism-banner-icon" aria-hidden="true">${icons.eye(18)}</span>
             <div>
-              <strong>Modo Daltonismo y Accesibilidad Universal Activo (WCAG 2.1 AA · RN-ACC-01 a RN-ACC-06)</strong>
+              <strong>Modo Daltonismo y Lectura Ampliada activo (WCAG 2.1 AA · RN-ACC-01 a RN-ACC-06)</strong>
               <span class="d-block small" style="color: var(--color-ink-muted)">
-                Tramas geométricas SVG en cada círculo de color, etiquetas explícitas de textura, alertas no cromáticas de stock (≤ 5 uds) y trazabilidad normativa habilitadas.
+                Texturas marcadas en colores, contraste negro y amarillo, letra ampliada, subrayados reforzados y avisos detallados.
               </span>
             </div>
           </div>
           <button type="button" class="io-btn-outline" data-action="toggle-colorblind-mode">
-            <span>Volver a vista estética estándar</span>
+            <span>Desactivar modo accesible</span>
           </button>
         </div>
       </div>
@@ -603,6 +616,7 @@ function renderApp(): void {
         mobileCategoryKey: state.mobileCategoryKey,
         searchQuery: state.searchQuery,
         colorblindMode: state.colorblindMode,
+        sessionDisplayName: currentSession?.displayName ?? null,
       })}
 
       <main id="contenido-principal" class="flex-grow-1">
@@ -631,10 +645,11 @@ function renderApp(): void {
         state.cart,
         state.secondsRemaining,
         state.optInMarketing,
-        state.colorblindMode
+        state.colorblindMode,
+        state.checkoutFeedback
       )}
       ${renderWishlistDrawer(state.isWishlistOpen, wishlistedProducts)}
-      ${renderLoginModal(state.isLoginOpen, state.loginFeedback)}
+      ${renderAccountSessionModal(state.isLoginOpen, currentSession, getCurrentStorefrontReturnPath())}
       ${renderFooterInfoModal(state.footerInfoTopic)}
       ${renderProductDetailModal({
         product: activeDetailProduct,
@@ -961,6 +976,14 @@ root.addEventListener('click', (event) => {
         renderApp();
       });
       break;
+    case 'logout-session':
+      clearDemoSession();
+      currentSession = null;
+      state.isLoginOpen = false;
+      state.isMobileMenuOpen = false;
+      state.liveFeedback = 'Sesión cerrada. Sigues explorando la tienda como visitante.';
+      renderApp();
+      break;
     case 'toggle-colorblind-mode': {
       state.colorblindMode = !state.colorblindMode;
       try {
@@ -969,8 +992,8 @@ root.addEventListener('click', (event) => {
         // Ignorar si localStorage está restringido
       }
       state.liveFeedback = state.colorblindMode
-        ? 'Modo Daltonismo activado: tramas geométricas, nombres de textura y requisitos accesibles visibles.'
-        : 'Vista estética estándar activada.';
+        ? 'Modo Daltonismo y Lectura Ampliada activado.'
+        : 'Modo Daltonismo y Lectura Ampliada desactivado.';
       renderApp();
       break;
     }
@@ -1076,6 +1099,7 @@ root.addEventListener('click', (event) => {
         });
       }
       state.secondsRemaining = RESERVE_DURATION_SECONDS;
+      state.checkoutFeedback = '';
       const msg = `${product.nombre} · Talla ${variant.talla} (${variant.color}) agregado a tu bolsa.`;
       if (state.activeDetailGroupId === groupId) {
         state.detailFeedback = msg;
@@ -1088,11 +1112,13 @@ root.addEventListener('click', (event) => {
     case 'open-cart':
       overlayOpenerAction = 'open-cart';
       state.isCartOpen = true;
+      state.checkoutFeedback = '';
       renderApp();
       break;
     case 'close-cart':
       animateClose(() => {
         state.isCartOpen = false;
+        state.checkoutFeedback = '';
         renderApp();
       });
       break;
@@ -1107,23 +1133,27 @@ root.addEventListener('click', (event) => {
           return { ...item, cantidad: Math.min(next, item.maxStock) };
         })
         .filter((item): item is CartItem => item !== null);
+      state.checkoutFeedback = '';
       renderApp();
       break;
     }
     case 'cart-remove': {
       const productoId = Number(target.dataset.productoId ?? 0);
       state.cart = state.cart.filter((item) => item.producto_id !== productoId);
+      state.checkoutFeedback = '';
       renderApp();
       break;
     }
     case 'cart-clear':
       state.cart = [];
       state.secondsRemaining = RESERVE_DURATION_SECONDS;
+      state.checkoutFeedback = '';
       renderApp();
       break;
     case 'cart-checkout': {
       const total = target.dataset.total ?? '0.00';
-      window.alert(`Resumen listo para Checkout: ${state.cart.length} ítem(s) por S/ ${total}.`);
+      state.checkoutFeedback = `Resumen listo para pago: ${state.cart.length} prenda(s) por S/ ${total}. La pasarela en línea se habilitará al conectar el servicio de pagos.`;
+      renderApp();
       break;
     }
   }
@@ -1159,10 +1189,6 @@ root.addEventListener('submit', (event) => {
   const form = event.target as HTMLElement;
   if (form.id === 'form-busqueda') {
     event.preventDefault();
-  } else if (form.id === 'form-login') {
-    event.preventDefault();
-    state.loginFeedback = 'Inicio de sesión disponible al conectar el servidor.';
-    renderApp();
   }
 });
 

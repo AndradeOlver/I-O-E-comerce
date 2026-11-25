@@ -86,4 +86,15 @@ export const icons = {
     svg('<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/>', size),
   eye: (size = 17) =>
     svg('<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>', size),
+  logOut: (size = 18) =>
+    svg(
+      '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+      size
+    ),
+  info: (size = 18) =>
+    svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>', size),
+  arrowLeft: (size = 18) =>
+    svg('<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>', size),
+  arrowRight: (size = 18) =>
+    svg('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>', size),
 };

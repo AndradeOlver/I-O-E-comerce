@@ -9,7 +9,8 @@ export function renderCartDrawer(
   items: CartItem[],
   secondsRemaining: number,
   optInMarketing: boolean,
-  colorblindMode = false
+  colorblindMode = false,
+  checkoutFeedback = ''
 ): string {
   if (!isOpen) return '';
 
@@ -57,7 +58,7 @@ export function renderCartDrawer(
               >
                 ${icons.minus(16)}
               </button>
-              <span class="fw-bold px-2" style="color: var(--color-ink)">${item.cantidad}</span>
+              <span class="fw-bold px-2 io-num" style="color: var(--color-ink)">${item.cantidad}</span>
               <button
                 type="button"
                 class="io-size-btn"
@@ -71,7 +72,7 @@ export function renderCartDrawer(
               </button>
             </div>
 
-            <strong style="color: var(--color-primary-espresso)">
+            <strong class="io-num" style="color: var(--color-primary-espresso)">
               S/ ${(item.precio_venta * item.cantidad).toFixed(2)}
             </strong>
           </div>
@@ -104,7 +105,7 @@ export function renderCartDrawer(
                     ${icons.clock(15)} Reserva de prendas
                   </span>
                   <span
-                    class="badge"
+                    class="badge io-num"
                     role="timer"
                     data-cart-timer
                     style="background-color: var(--color-primary-espresso); color: #faf7f2"
@@ -116,7 +117,7 @@ export function renderCartDrawer(
                 <div class="small mt-2" style="color: var(--color-ink-muted)" role="status" aria-live="polite">
                   ${
                     qualifiesFreeShipping
-                      ? `✓ ¡Tienes envío de cortesía incluido!${colorblindMode ? ' (RN-ENV-04)' : ''}`
+                      ? `<span class="d-inline-flex align-items-center gap-1">${icons.checkCircle(15)}<span>Envío gratis incluido${colorblindMode ? ' (RN-ENV-04)' : ''}.</span></span>`
                       : `Agrega S/ ${remainingForFree.toFixed(2)} más para envío gratis${colorblindMode ? ' (RN-ENV-04)' : ''}.`
                   }
                 </div>
@@ -144,15 +145,15 @@ export function renderCartDrawer(
         items.length > 0
           ? `
             <div class="io-cart-summary">
-              <div class="d-flex justify-content-between mb-1 small" style="color: var(--color-ink-muted)">
+              <div class="d-flex justify-content-between mb-1 small io-num" style="color: var(--color-ink-muted)">
                 <span>Subtotal:</span>
                 <span>S/ ${subtotal.toFixed(2)}</span>
               </div>
-              <div class="d-flex justify-content-between mb-2 small" style="color: var(--color-ink-muted)">
+              <div class="d-flex justify-content-between mb-2 small io-num" style="color: var(--color-ink-muted)">
                 <span>Envío urbano:</span>
                 <span>${shippingCost === 0 ? '<strong style="color: var(--color-success-ok)">GRATIS</strong>' : `S/ ${shippingCost.toFixed(2)}`}</span>
               </div>
-              <div class="d-flex justify-content-between mb-3 h5 fw-bold" style="color: var(--color-ink)">
+              <div class="d-flex justify-content-between mb-3 h5 fw-bold io-num" style="color: var(--color-ink)">
                 <span>Total:</span>
                 <span style="color: var(--color-primary-espresso)">S/ ${total.toFixed(2)}</span>
               </div>
@@ -165,9 +166,17 @@ export function renderCartDrawer(
                   ${optInMarketing ? 'checked' : ''}
                 />
                 <label class="form-check-label small" for="opt-in-marketing" style="color: var(--color-ink-muted)">
-                  Deseo recibir preventas, lanzamientos y novedades exclusivas de I&amp;O${colorblindMode ? ' (Consentimiento explícito RN-MKT-03)' : ''}.
+                  Recibir avisos de colecciones y promociones de I&amp;O${colorblindMode ? ' (Consentimiento explícito RN-MKT-03)' : ''}.
                 </label>
               </div>
+
+              ${
+                checkoutFeedback
+                  ? `<div class="io-detail-added-banner" role="status" aria-live="polite">
+                       <span>${icons.checkCircle(16)} ${escapeHtml(checkoutFeedback)}</span>
+                     </div>`
+                  : ''
+              }
 
               <button
                 type="button"
@@ -176,7 +185,7 @@ export function renderCartDrawer(
                 data-total="${total.toFixed(2)}"
               >
                 <span>Proceder al pago seguro</span>
-                ${icons.chevronRight(18)}
+                ${icons.arrowRight(18)}
               </button>
             </div>
           `

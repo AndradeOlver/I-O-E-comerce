@@ -1,0 +1,776 @@
+/* ==========================================================================
+   I&O POS · Mostrador Interno (Vendedor / Cajero)
+   Misma casa Espresso & Piedra con densidad operativa y respuesta rápida
+   (sin Modo Daltonismo, texturas ni anuncios aria-live).
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body.pos-body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-page);
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--color-ink);
+  --bs-table-border-color: var(--color-border-subtle);
+}
+
+.pos-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.15;
+}
+
+.pos-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Barra superior compacta */
+.pos-topbar {
+  min-height: 52px;
+  background-color: var(--color-primary-espresso);
+  color: var(--color-header-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 1rem;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--color-top-strip-bg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.pos-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.pos-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+}
+
+.pos-brand-mark .io-brand-logo-img {
+  height: 24px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  display: block;
+}
+
+.pos-brand-mark .io-brand-logo-img.is-pending {
+  display: none;
+}
+
+.pos-brand-mark .io-brand-text {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-header-text);
+  line-height: 1;
+}
+
+.pos-topbar-title {
+  margin: 0;
+  font-size: 1.22rem;
+  color: var(--color-header-text);
+  white-space: nowrap;
+}
+
+.pos-topbar-staff {
+  font-size: 0.8rem;
+  color: var(--color-header-text-muted);
+  white-space: nowrap;
+}
+
+.pos-topbar-staff strong {
+  color: var(--color-header-text);
+  font-weight: 600;
+}
+
+.pos-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pos-shortcuts-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--color-header-text-muted);
+}
+
+.pos-kbd {
+  display: inline-block;
+  background: rgba(250, 247, 242, 0.12);
+  border: 1px solid rgba(250, 247, 242, 0.28);
+  border-radius: var(--radius-xs);
+  padding: 0.1rem 0.38rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-header-text);
+}
+
+.pos-topbar-btn {
+  min-height: 36px;
+  background: rgba(250, 247, 242, 0.1);
+  color: var(--color-header-text);
+  border: 1px solid rgba(250, 247, 242, 0.28);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+
+.pos-topbar-btn:hover {
+  background: rgba(250, 247, 242, 0.2);
+  border-color: var(--color-accent-terracotta);
+  color: var(--color-header-text);
+}
+
+.pos-counter-badge {
+  background-color: var(--color-accent-terracotta);
+  color: var(--color-accent-ink);
+  font-weight: 700;
+  font-size: 0.76rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+/* Contenedor principal */
+.pos-shell {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 0.75rem;
+}
+
+/* Botones de mostrador (>= 48px en acciones principales para rapidez) */
+.pos-btn-lg {
+  min-height: var(--touch-tactile);
+  font-weight: 700;
+  font-size: 0.92rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+
+.pos-btn-md {
+  min-height: 38px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  border-radius: var(--radius-sm);
+  padding: 0.32rem 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+
+.pos-btn-primary {
+  background-color: var(--color-primary-espresso);
+  color: var(--color-header-text);
+  border: 1px solid var(--color-primary-espresso);
+}
+
+.pos-btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: var(--color-header-text);
+}
+
+.pos-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pos-btn-success {
+  background-color: var(--color-success-ok);
+  color: #faf7f2;
+  border: 1px solid var(--color-success-ok);
+}
+
+.pos-btn-success:hover:not(:disabled) {
+  background-color: #1c543b;
+  border-color: #1c543b;
+  color: #faf7f2;
+}
+
+.pos-btn-success:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pos-btn-secondary {
+  background-color: var(--color-surface-white);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border-strong);
+}
+
+.pos-btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-surface-subtle);
+  border-color: var(--color-primary-espresso);
+  color: var(--color-ink);
+}
+
+.pos-btn-warn {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-low);
+  border: 1px solid var(--color-warning-border);
+}
+
+.pos-btn-warn:hover:not(:disabled) {
+  background-color: #efe2cd;
+  color: var(--color-warning-low);
+}
+
+.pos-btn-danger {
+  background-color: var(--color-surface-white);
+  color: var(--color-danger-err);
+  border: 1px solid var(--color-danger-border);
+}
+
+.pos-btn-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger-err);
+  color: var(--color-danger-err);
+}
+
+/* Segmented tabs */
+.pos-seg-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.pos-seg-btn {
+  min-height: 38px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface-white);
+  color: var(--color-ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+}
+
+.pos-seg-btn:hover {
+  background-color: var(--color-surface-subtle);
+}
+
+.pos-seg-btn.is-active {
+  background-color: var(--color-primary-espresso);
+  border-color: var(--color-primary-espresso);
+  color: var(--color-header-text);
+}
+
+/* Paneles */
+.pos-panel {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-warm-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-panel-header {
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--color-ink);
+}
+
+.pos-panel-title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--color-ink);
+}
+
+.pos-panel-body {
+  padding: 0.8rem 0.9rem;
+}
+
+/* Layout Vendedor (2 columnas 65 / 35) */
+.pos-vendedor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(340px, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.pos-order-sticky {
+  position: sticky;
+  top: calc(52px + 0.75rem);
+}
+
+/* Layout Cajero (3 columnas) */
+.pos-cajero-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.65fr) minmax(280px, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+@media (max-width: 1120px) {
+  .pos-vendedor-grid,
+  .pos-cajero-grid {
+    grid-template-columns: 1fr;
+  }
+  .pos-order-sticky {
+    position: static;
+  }
+}
+
+/* Tabla densa de búsqueda */
+.pos-table-wrap {
+  max-height: 520px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface-white);
+}
+
+.pos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.pos-table th {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+  z-index: 2;
+}
+
+.pos-table td {
+  padding: 0.48rem 0.6rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: middle;
+}
+
+.pos-table tbody tr:hover {
+  background-color: var(--color-surface-card);
+}
+
+.pos-row-agotado {
+  background-color: var(--color-danger-bg);
+}
+
+.pos-sku-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--color-ink);
+}
+
+.pos-color-dot {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(38, 30, 27, 0.35);
+  vertical-align: middle;
+  margin-right: 0.35rem;
+}
+
+/* Etiquetas de stock: palabra y tono */
+.pos-stock-badge {
+  display: inline-block;
+  padding: 0.18rem 0.48rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pos-stock-ok {
+  background: var(--color-success-bg);
+  color: var(--color-success-ok);
+  border: 1px solid var(--color-success-border);
+}
+
+.pos-stock-low {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-low);
+  border: 1px solid var(--color-warning-border);
+}
+
+.pos-stock-zero {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-err);
+  border: 1px solid var(--color-danger-border);
+}
+
+/* Chips de estado de órdenes */
+.pos-status-chip {
+  display: inline-block;
+  padding: 0.16rem 0.45rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pos-status-chip.is-pending {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-low);
+  border: 1px solid var(--color-warning-border);
+}
+
+.pos-status-chip.is-partial {
+  background: var(--color-terracotta-soft);
+  color: var(--color-ink);
+  border: 1px solid var(--color-accent-terracotta);
+}
+
+.pos-status-chip.is-paid {
+  background: var(--color-success-bg);
+  color: var(--color-success-ok);
+  border: 1px solid var(--color-success-border);
+}
+
+.pos-status-chip.is-cancelled {
+  background: var(--color-surface-subtle);
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* Banners y errores contextuales */
+.pos-banner {
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  border-left-width: 4px;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.pos-banner.is-ok {
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success-border);
+  border-left-color: var(--color-success-ok);
+  color: var(--color-success-ok);
+}
+
+.pos-banner.is-warn {
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+  border-left-color: var(--color-warning-low);
+  color: var(--color-warning-low);
+}
+
+.pos-banner.is-err {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+  border-left-color: var(--color-danger-err);
+  color: var(--color-danger-err);
+}
+
+.pos-inline-error {
+  margin-top: 0.45rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-left: 3px solid var(--color-danger-err);
+  color: var(--color-danger-err);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Subcontenedores y texto semántico */
+.pos-subbox {
+  background-color: var(--color-surface-white);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+}
+
+.pos-subbox--muted {
+  background-color: var(--color-surface-subtle);
+}
+
+.pos-text-ok {
+  color: var(--color-success-ok);
+}
+
+.pos-text-warn {
+  color: var(--color-warning-low);
+}
+
+.pos-text-err {
+  color: var(--color-danger-err);
+}
+
+.pos-text-muted {
+  color: var(--color-ink-muted);
+}
+
+/* Panel de alternativas RN-VEN-02 */
+.pos-alt-box {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-left: 4px solid var(--color-warning-low);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.pos-alt-item {
+  background: var(--color-surface-white);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Ítems en orden de compra */
+.pos-order-line {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.65rem;
+  background: var(--color-surface-white);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pos-qty-btn {
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-card);
+  color: var(--color-ink);
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.pos-qty-btn:hover:not(:disabled) {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-primary-espresso);
+}
+
+.pos-qty-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Tira de órdenes enviadas (Vendedor) */
+.pos-sent-strip {
+  margin-top: 0.75rem;
+}
+
+.pos-sent-chip {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.65rem;
+  background: var(--color-surface-white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* Notificación entrante en Cajero */
+.pos-notif-banner {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-strong);
+  border-left: 4px solid var(--color-accent-terracotta);
+  box-shadow: var(--shadow-warm-sm);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Cola de órdenes (Cajero) */
+.pos-queue-card {
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface-white);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.7rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pos-queue-card:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-card);
+}
+
+.pos-queue-card.is-active {
+  border: 2px solid var(--color-primary-espresso);
+  background: var(--color-surface-subtle);
+}
+
+/* Métodos de pago grandes */
+.pos-method-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.pos-method-btn {
+  min-height: var(--touch-tactile);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-white);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-ink);
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+}
+
+.pos-method-btn:hover {
+  background: var(--color-surface-subtle);
+}
+
+.pos-method-btn.is-active {
+  background: var(--color-primary-espresso);
+  color: var(--color-header-text);
+  border-color: var(--color-primary-espresso);
+}
+
+/* Comprobante / Ticket */
+.pos-receipt-box {
+  background: var(--color-surface-white);
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  font-size: 0.84rem;
+}
+
+.pos-receipt-header {
+  text-align: center;
+  border-bottom: 1px dashed var(--color-border-strong);
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+/* KPIs Cajero */
+.pos-kpi-card {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  background: var(--color-surface-white);
+}
+
+.pos-kpi-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+  font-weight: 600;
+}
+
+.pos-kpi-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-top: 0.1rem;
+}
+
+/* Modal sencillo de Arqueo */
+.pos-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 21, 18, 0.56);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 500;
+}
+
+.pos-modal-card {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-warm-lg);
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.15rem;
+}
+
+/* Impresión limpia de comprobante o arqueo */
+@media print {
+  body.pos-body {
+    background: #ffffff;
+  }
+  .pos-no-print {
+    display: none !important;
+  }
+  .pos-print-only-target {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .pos-cajero-grid {
+    display: block !important;
+  }
+}

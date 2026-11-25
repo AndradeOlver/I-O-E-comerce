@@ -31,12 +31,12 @@ export function renderNewArrivalsSection({
     >
       <div class="io-section-head">
         <div>
-          <span class="io-eyebrow">Nuevos Ingresos · Edición Reciente</span>
+          <span class="io-eyebrow">Nuevos ingresos</span>
           <h2 id="heading-recien-llegados" class="io-display io-section-title">
             Recién Llegados
           </h2>
           <p class="io-section-lead mb-0">
-            Las últimas siluetas incorporadas esta semana a nuestro archivo contemporáneo en Lima.
+            Últimas prendas incorporadas esta semana en tienda.
           </p>
         </div>
 
@@ -46,8 +46,8 @@ export function renderNewArrivalsSection({
           data-action="go-category"
           data-category="todas"
         >
-          <span>Ver novedades</span>
-          ${icons.chevronRight(16)}
+          <span>Ver catálogo</span>
+          ${icons.arrowRight(16)}
         </a>
       </div>
 
@@ -91,12 +91,12 @@ export function renderFeaturedSection({
     >
       <div class="io-section-head">
         <div>
-          <span class="io-eyebrow">Favoritos de la Casa · Íconos I&amp;O</span>
+          <span class="io-eyebrow">Selección I&amp;O</span>
           <h2 id="heading-destacados" class="io-display io-section-title">
             Lo Más Destacado
           </h2>
           <p class="io-section-lead mb-0">
-            Las piezas más elegidas por su corte impecable, caída textil y versatilidad diaria.
+            Prendas de mayor rotación por calce y tejido.
           </p>
         </div>
 
@@ -106,8 +106,8 @@ export function renderFeaturedSection({
           data-action="go-category"
           data-category="todas"
         >
-          <span>Explorar favoritos</span>
-          ${icons.chevronRight(16)}
+          <span>Ver catálogo</span>
+          ${icons.arrowRight(16)}
         </a>
       </div>
 

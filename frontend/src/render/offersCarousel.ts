@@ -22,6 +22,7 @@ export function renderOffersCarousel(
       const mainTitle = offer.portadaTexto ?? offer.titulo;
       const italicLine = offer.tituloItalico ?? '';
       const remainingUnits = Math.max(0, offer.stock_maximo - offer.stock_consumido);
+      const headingTag = idx === 0 ? 'h1' : 'h2';
 
       const daltonismMetaHtml = colorblindMode
         ? `
@@ -59,10 +60,10 @@ export function renderOffersCarousel(
                 : ''
             }
 
-            <h2 class="io-carousel-title">
+            <${headingTag} class="io-carousel-title">
               <span>${escapeHtml(mainTitle)}</span>
-              ${italicLine ? `<em class="io-carousel-title-italic">${escapeHtml(italicLine)}</em>` : ''}
-            </h2>
+              ${italicLine ? `<span class="io-carousel-title-sub">${escapeHtml(italicLine)}</span>` : ''}
+            </${headingTag}>
 
             ${daltonismMetaHtml}
 
@@ -75,8 +76,8 @@ export function renderOffersCarousel(
                 ${offer.generoTarget && offer.generoTarget !== 'todos' ? `data-filter-gender="${escapeHtml(offer.generoTarget)}"` : ''}
                 aria-label="Ver detalles de ${escapeHtml(offer.titulo)}"
               >
-                <span>Ver detalles</span>
-                ${icons.chevronRight(17)}
+                <span>${escapeHtml(offer.ctaLabel ?? 'Ver detalles')}</span>
+                ${icons.arrowRight(16)}
               </a>
             </div>
           </div>

@@ -25,6 +25,7 @@ interface HeaderNavOptions {
   mobileCategoryKey: string | null;
   searchQuery: string;
   colorblindMode: boolean;
+  sessionDisplayName: string | null;
 }
 
 function renderBrandLogo(): string {
@@ -212,7 +213,7 @@ function renderDesktopCascadePanel(
                   <li>
                     <a class="io-menu-link io-offer-menu-link" ${renderLinkAttributes(offer)}>
                       <span>${escapeHtml(offer.label)}</span>
-                      ${offer.priceBadge ? `<span class="io-offer-menu-price">${escapeHtml(offer.priceBadge)}</span>` : ''}
+                      ${offer.priceBadge ? `<span class="io-offer-menu-price io-num">${escapeHtml(offer.priceBadge)}</span>` : ''}
                     </a>
                   </li>
                 `
@@ -369,7 +370,7 @@ function renderMobileDrawerItem(
           (offer) => `
             <a class="io-mobile-sublink d-flex justify-content-between align-items-center gap-2" ${renderLinkAttributes(offer)}>
               <span>${escapeHtml(offer.label)}</span>
-              ${offer.priceBadge ? `<span class="io-offer-menu-price">${escapeHtml(offer.priceBadge)}</span>` : ''}
+              ${offer.priceBadge ? `<span class="io-offer-menu-price io-num">${escapeHtml(offer.priceBadge)}</span>` : ''}
             </a>
           `
         )
@@ -461,6 +462,7 @@ export function renderHeaderNav({
   mobileCategoryKey,
   searchQuery,
   colorblindMode,
+  sessionDisplayName,
 }: HeaderNavOptions): string {
   const navItemsHtml = NAV_MENU_ITEMS.map((item) => {
     const isOpen = openNavKey === item.key;
@@ -508,14 +510,10 @@ export function renderHeaderNav({
   return `
     <div class="io-top-strip">
       <div class="container-xl io-top-strip-inner">
-        <div class="d-flex align-items-center gap-3">
-          <p class="m-0">
-            ${icons.truck(15)}
-            <span><strong>Envío de cortesía</strong> en pedidos mayores a S/ 150</span>
-          </p>
-          <span class="io-top-strip-dot d-none d-lg-inline-block" aria-hidden="true"></span>
-          <span class="d-none d-lg-inline-block" style="opacity: 0.82">Algodón Pima Peruano · Atelier Lima</span>
-        </div>
+        <p class="m-0">
+          ${icons.truck(15)}
+          <span><strong>Envío gratis</strong> en compras mayores a S/ 150</span>
+        </p>
 
         <button
           type="button"
@@ -526,7 +524,7 @@ export function renderHeaderNav({
           data-action="toggle-colorblind-mode"
         >
           ${icons.eye(14)}
-          <span>Modo Daltonismo: <strong>${colorblindMode ? 'Activo' : 'Inactivo'}</strong></span>
+          <span>Daltonismo y Lectura: <strong>${colorblindMode ? 'Activo' : 'Inactivo'}</strong></span>
         </button>
       </div>
     </div>
@@ -577,7 +575,7 @@ export function renderHeaderNav({
             type="button"
             class="io-icon-action-btn d-none d-md-inline-flex"
             data-action="open-login"
-            aria-label="Iniciar sesión o mi cuenta"
+            aria-label="${sessionDisplayName ? `Tu cuenta: ${escapeHtml(sessionDisplayName)}` : 'Iniciar sesión o crear cuenta'}"
           >
             ${icons.user(20)}
           </button>
@@ -658,18 +656,36 @@ export function renderHeaderNav({
               >
                 <span class="d-inline-flex align-items-center gap-2">
                   ${icons.eye(16)}
-                  <span>Modo Daltonismo</span>
+                  <span>Daltonismo y Lectura</span>
                 </span>
                 <strong>${colorblindMode ? 'Activo' : 'Inactivo'}</strong>
               </button>
-              <button
-                type="button"
-                class="io-btn-primary w-100"
-                data-action="open-login"
-              >
-                ${icons.user(18)}
-                <span>Iniciar sesión</span>
-              </button>
+              ${
+                sessionDisplayName
+                  ? `
+                    <div class="small px-1" style="color: var(--color-header-text-muted)">
+                      Sesión: <strong style="color: var(--color-header-text)">${escapeHtml(sessionDisplayName)}</strong>
+                    </div>
+                    <button
+                      type="button"
+                      class="io-btn-primary w-100"
+                      data-action="logout-session"
+                    >
+                      ${icons.logOut(18)}
+                      <span>Cerrar sesión</span>
+                    </button>
+                  `
+                  : `
+                    <button
+                      type="button"
+                      class="io-btn-primary w-100"
+                      data-action="open-login"
+                    >
+                      ${icons.user(18)}
+                      <span>Iniciar sesión o crear cuenta</span>
+                    </button>
+                  `
+              }
             </div>
           </nav>
         `

@@ -29,11 +29,11 @@ export function renderBrandsSection(brands: MarcaTienda[]): string {
     <section id="seccion-marcas" aria-labelledby="heading-marcas" class="io-brands-strip">
       <div class="io-brands-strip-head">
         <div>
-          <span class="io-eyebrow mb-1">Sello &amp; Alianzas</span>
+          <span class="io-eyebrow mb-1">Marcas</span>
           <h2 id="heading-marcas" class="io-display io-brands-strip-title">Nuestras Marcas</h2>
         </div>
         <p class="io-brands-strip-copy mb-0">
-          Firmas seleccionadas por su nobleza textil, confección ética y diseño contemporáneo.
+          Firmas del catálogo I&amp;O agrupadas por línea textil.
         </p>
       </div>
 

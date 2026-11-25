@@ -41,7 +41,7 @@ export function renderCollectionBanners(banners: CollectionBanner[]): string {
             <p class="io-collection-desc">${escapeHtml(banner.descripcion)}</p>
             <a class="io-collection-cta" ${filterAttrs.join(' ')}>
               <span>${escapeHtml(banner.ctaLabel)}</span>
-              ${icons.chevronRight(16)}
+              ${icons.arrowRight(16)}
             </a>
           </div>
         </article>
@@ -53,7 +53,7 @@ export function renderCollectionBanners(banners: CollectionBanner[]): string {
     <section id="seccion-colecciones" aria-labelledby="heading-colecciones" class="io-home-section">
       <div class="io-section-head">
         <div>
-          <span class="io-eyebrow">Universos &amp; Estilo</span>
+          <span class="io-eyebrow">Colecciones</span>
           <h2 id="heading-colecciones" class="io-display io-section-title">Colecciones de Temporada</h2>
         </div>
       </div>

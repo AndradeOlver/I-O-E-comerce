@@ -1,3 +1,4 @@
+import { DemoSession, formatSessionExpiry, getRoleProfile } from '../auth/demoSession';
 import { ProductGroup } from '../types/store.types';
 import { escapeHtml, icons } from '../utils/icons';
 
@@ -31,7 +32,7 @@ export function renderWishlistDrawer(
                     <div>
                       <span class="io-product-brand mb-0">${escapeHtml(p.marca)}</span>
                       <div class="fw-bold" style="color: var(--color-ink)">${escapeHtml(p.nombre)}</div>
-                      <div class="small fw-semibold" style="color: var(--color-primary-espresso)">
+                      <div class="small fw-semibold io-num" style="color: var(--color-primary-espresso)">
                         S/ ${(v?.precio_venta ?? 0).toFixed(2)}
                       </div>
                     </div>
@@ -82,63 +83,94 @@ export function renderWishlistDrawer(
   `;
 }
 
-export function renderLoginModal(isOpen: boolean, feedback: string): string {
+export function renderAccountSessionModal(
+  isOpen: boolean,
+  session: DemoSession | null,
+  currentReturnPath = '/index.html'
+): string {
   if (!isOpen) return '';
+
+  const encodedNext = encodeURIComponent(currentReturnPath);
+
+  if (!session) {
+    return `
+      <div class="io-drawer-backdrop" data-action="close-login" aria-hidden="true"></div>
+      <aside
+        class="io-drawer-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-login"
+      >
+        <div class="io-drawer-head">
+          <div class="d-flex align-items-center gap-2">
+            ${icons.user(22)}
+            <h2 id="titulo-login" class="io-drawer-title">Cuenta</h2>
+          </div>
+          <button type="button" class="io-btn-outline" data-action="close-login" aria-label="Cerrar panel de cuenta">
+            ${icons.x(18)}
+            <span>Cerrar</span>
+          </button>
+        </div>
+
+        <div class="p-3 overflow-auto flex-grow-1 d-flex flex-column gap-3">
+          <p class="mb-0" style="color: var(--color-ink); line-height: 1.55">
+            Inicia sesión para guardar tus favoritos o crea tu cuenta personal. También puedes seguir navegando en la tienda como visitante.
+          </p>
+
+          <div class="d-flex flex-column gap-2 pt-1">
+            <a href="/acceso.html?next=${encodedNext}&amp;required=cliente" class="io-btn-primary w-100 text-decoration-none justify-content-center">
+              <span>Iniciar sesión</span>
+              ${icons.arrowRight(16)}
+            </a>
+            <a href="/acceso.html?mode=register&amp;next=${encodedNext}" class="io-btn-outline w-100 text-decoration-none justify-content-center">
+              <span>Crear cuenta</span>
+            </a>
+          </div>
+        </div>
+      </aside>
+    `;
+  }
+
+  const profile = getRoleProfile(session.role);
 
   return `
     <div class="io-drawer-backdrop" data-action="close-login" aria-hidden="true"></div>
-    <div
-      class="io-modal"
+    <aside
+      class="io-drawer-panel"
       role="dialog"
       aria-modal="true"
       aria-labelledby="titulo-login"
     >
-      <div class="d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom: 1px solid var(--color-border-subtle)">
+      <div class="io-drawer-head">
         <div class="d-flex align-items-center gap-2">
           ${icons.user(22)}
-          <h2 id="titulo-login" class="io-drawer-title">Mi Cuenta</h2>
+          <h2 id="titulo-login" class="io-drawer-title">Cuenta</h2>
         </div>
-        <button type="button" class="io-btn-outline" data-action="close-login" aria-label="Cerrar inicio de sesión">
+        <button type="button" class="io-btn-outline" data-action="close-login" aria-label="Cerrar detalle de cuenta">
           ${icons.x(18)}
+          <span>Cerrar</span>
         </button>
       </div>
 
-      ${
-        feedback
-          ? `<div class="io-alert" role="status" aria-live="polite"><span>${escapeHtml(feedback)}</span></div>`
-          : ''
-      }
-
-      <form id="form-login" class="d-flex flex-column gap-3">
-        <div>
-          <label for="login-email" class="form-label small fw-semibold mb-1" style="color: var(--color-ink)">Correo electrónico</label>
-          <input
-            id="login-email"
-            type="email"
-            class="form-control"
-            placeholder="cliente@io-moda.pe"
-            autocomplete="email"
-            required
-          />
+      <div class="p-3 overflow-auto flex-grow-1 d-flex flex-column gap-3">
+        <div class="p-3 rounded" style="background-color: var(--color-surface-white); border: 1px solid var(--color-border-subtle)">
+          <div class="fw-bold fs-6" style="color: var(--color-ink)">${escapeHtml(session.displayName)}</div>
+          <div class="small mt-1 io-num" style="color: var(--color-ink-muted)">
+            ${escapeHtml(profile.label)} · Sesión activa hasta las ${escapeHtml(formatSessionExpiry(session.expiresAt))}
+          </div>
         </div>
 
-        <div>
-          <label for="login-password" class="form-label small fw-semibold mb-1" style="color: var(--color-ink)">Contraseña</label>
-          <input
-            id="login-password"
-            type="password"
-            class="form-control"
-            placeholder="••••••••"
-            autocomplete="current-password"
-            required
-          />
+        <div class="d-flex flex-column gap-2 pt-1">
+          <button type="button" class="io-btn-primary w-100" data-action="logout-session">
+            ${icons.logOut(17)}
+            <span>Cerrar sesión</span>
+          </button>
+          <a href="/acceso.html?next=${encodedNext}" class="io-btn-outline w-100 text-decoration-none justify-content-center">
+            <span>Cambiar de perfil</span>
+            ${icons.arrowRight(16)}
+          </a>
         </div>
-
-        <button type="submit" class="io-btn-primary w-100 mt-1">
-          <span>Ingresar</span>
-          ${icons.chevronRight(16)}
-        </button>
-      </form>
-    </div>
+      </div>
+    </aside>
   `;
 }

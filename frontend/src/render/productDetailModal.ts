@@ -69,13 +69,13 @@ export function renderProductDetailModal({
             return `
               <button
                 type="button"
-                class="io-detail-color-pill ${isSelected ? 'is-selected' : ''}"
+                class="io-detail-color-btn ${isSelected ? 'is-selected' : ''}"
                 data-action="select-color"
                 data-group="${escapeHtml(product.groupId)}"
                 data-color="${escapeHtml(colorOpt.color)}"
                 aria-pressed="${isSelected}"
               >
-                <span class="io-color-circle-fill" style="background-color: ${escapeHtml(colorOpt.colorHex)}" aria-hidden="true"></span>
+                <span class="io-detail-color-swatch-solid" style="background-color: ${escapeHtml(colorOpt.colorHex)}" aria-hidden="true"></span>
                 <span>${escapeHtml(colorOpt.color)}</span>
               </button>
             `;
@@ -108,8 +108,16 @@ export function renderProductDetailModal({
     activeVariant.stock === 0
       ? `<span class="io-detail-stock is-out">${icons.xCircle(15)} Agotado en esta talla</span>`
       : activeVariant.stock <= activeVariant.stock_minimo
-        ? `<span class="io-detail-stock is-low">${icons.alertTriangle(15)} ¡Últimas ${activeVariant.stock} unidades!${colorblindMode ? ' · RN-INV-03' : ''}</span>`
+        ? `<span class="io-detail-stock is-low">${icons.alertTriangle(15)} Últimas ${activeVariant.stock} unidades${colorblindMode ? ' · RN-INV-03' : ''}</span>`
         : `<span class="io-detail-stock is-ok">${icons.checkCircle(15)} En stock (${activeVariant.stock} disponibles)</span>`;
+
+  const hasOffer = Boolean(
+    product.precio_regular && product.precio_regular > activeVariant.precio_venta
+  );
+  const discountPct =
+    hasOffer && product.precio_regular
+      ? Math.round(((product.precio_regular - activeVariant.precio_venta) / product.precio_regular) * 100)
+      : 0;
 
   return `
     <div class="io-drawer-backdrop" data-action="close-product-detail" aria-hidden="true"></div>
@@ -145,11 +153,12 @@ export function renderProductDetailModal({
             ${escapeHtml(product.nombre)}
           </h2>
 
-          <div class="d-flex flex-wrap align-items-baseline gap-3 mb-3">
-            <span class="io-detail-price">S/ ${activeVariant.precio_venta.toFixed(2)}</span>
+          <div class="d-flex flex-wrap align-items-baseline gap-2 mb-3">
+            <span class="io-detail-price io-num">S/ ${activeVariant.precio_venta.toFixed(2)}</span>
             ${
-              product.precio_regular && product.precio_regular > activeVariant.precio_venta
-                ? `<del class="io-product-price-old" style="font-size: 1rem">S/ ${product.precio_regular.toFixed(2)}</del>`
+              hasOffer && product.precio_regular
+                ? `<del class="io-product-price-old io-num" style="font-size: 1rem">S/ ${product.precio_regular.toFixed(2)}</del>
+                   <span class="io-product-offer-badge">Oferta · -${discountPct}%</span>`
                 : ''
             }
             ${stockBadgeHtml}
@@ -161,7 +170,7 @@ export function renderProductDetailModal({
             product.materialDetalle
               ? `
                 <div class="io-detail-material">
-                  ${icons.sparkles(15)}
+                  ${icons.tag(15)}
                   <span>${escapeHtml(product.materialDetalle)}</span>
                 </div>
               `

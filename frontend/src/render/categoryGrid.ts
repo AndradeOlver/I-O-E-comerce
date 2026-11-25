@@ -10,7 +10,6 @@ export function renderCategoryGrid(
   const tilesHtml = categories
     .map((cat, idx) => {
       const isActive = selectedCategory === cat.slug;
-      const numLabel = String(idx + 1).padStart(2, '0');
 
       return `
         <a
@@ -28,8 +27,6 @@ export function renderCategoryGrid(
               aspectRatio: '4 / 5',
               compact: true,
             })}
-            <div class="io-category-tile-shade" aria-hidden="true"></div>
-            <span class="io-category-tile-num" aria-hidden="true">${numLabel}</span>
           </div>
 
           <div class="io-category-tile-footer">
@@ -43,8 +40,8 @@ export function renderCategoryGrid(
                   : ''
               }
             </div>
-            <span class="io-category-tile-arrow-pill" aria-hidden="true">
-              ${icons.chevronRight(16)}
+            <span class="io-category-tile-arrow" aria-hidden="true">
+              ${icons.arrowRight(18)}
             </span>
           </div>
         </a>
@@ -56,8 +53,8 @@ export function renderCategoryGrid(
     <section id="seccion-categorias" aria-labelledby="heading-categorias" class="io-home-section">
       <div class="io-section-head">
         <div>
-          <span class="io-eyebrow">Universo de Estilo · Curaduría</span>
-          <h2 id="heading-categorias" class="io-display io-section-title">Explora por Categoría</h2>
+          <span class="io-eyebrow">Categorías</span>
+          <h2 id="heading-categorias" class="io-display io-section-title">Explorar por categoría</h2>
         </div>
 
         <a
@@ -66,8 +63,8 @@ export function renderCategoryGrid(
           data-action="go-category"
           data-category="todas"
         >
-          <span>Ver catálogo completo</span>
-          ${icons.chevronRight(16)}
+          <span>Todas</span>
+          ${icons.arrowRight(16)}
         </a>
       </div>
 
