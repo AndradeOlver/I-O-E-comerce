@@ -14,6 +14,8 @@ export interface PosInventoryItem {
   talla: string;
   color: string;
   colorHex: string;
+  imageSlotKey: string;
+  alt_text: string;
   precio_venta: number;
   stock: number;
   stock_minimo: number;
@@ -59,6 +61,7 @@ export interface PosOrder {
   tipoComprobante: PosReceiptType;
   clienteDoc: string;
   clienteRazonSocial: string;
+  metodoPagoSolicitado?: PosPaymentMethod;
   numeroComprobante?: string;
   pagos: PosPaymentRecord[];
   montoPagado: number;

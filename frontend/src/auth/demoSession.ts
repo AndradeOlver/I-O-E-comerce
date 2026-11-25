@@ -53,7 +53,7 @@ export const DEMO_ROLE_PROFILES: readonly RoleProfileConfig[] = [
     defaultName: 'Camila Torres',
     destination: '/pos-vendedor.html',
     group: 'equipo',
-    description: 'Consulta de stock por SKU y armado de pedidos para caja.',
+    description: 'Catálogo por modelo, escáner en mostrador, cobro integrado y caja.',
   },
   {
     role: 'cajero',
@@ -300,24 +300,35 @@ export function getRequiredRoleForPath(path: string): DemoRole | null {
   return null;
 }
 
+export function canRoleAccessPath(role: DemoRole, path: string): boolean {
+  const safePath = sanitizeNextPath(path);
+  if (!safePath) return false;
+  const pathname = safePath.split('#')[0];
+  if (pathname === '/pos-vendedor.html' || pathname === '/pos-cajero.html') {
+    return role === 'vendedor' || role === 'cajero' || role === 'administrador';
+  }
+  return getRequiredRoleForPath(safePath) === role;
+}
+
 export function resolvePostLoginDestination(role: DemoRole, rawNext: string | null): string {
   const safeNext = sanitizeNextPath(rawNext);
-  if (safeNext && getRequiredRoleForPath(safeNext) === role) {
+  if (safeNext && canRoleAccessPath(role, safeNext)) {
     return safeNext;
   }
   return getRoleProfile(role).destination;
 }
 
-export function requireZoneRole(
-  expectedRole: DemoRole,
+export function requireAnyZoneRole(
+  allowedRoles: DemoRole[],
   currentPathOverride?: string
 ): DemoSession | null {
   const { session, expired } = getActiveDemoSession();
-  if (session && session.role === expectedRole) {
+  if (session && allowedRoles.includes(session.role)) {
     return session;
   }
 
-  const fallbackPath = getRoleProfile(expectedRole).destination;
+  const primaryRole = allowedRoles[0] ?? 'vendedor';
+  const fallbackPath = getRoleProfile(primaryRole).destination;
   const rawCurrent =
     currentPathOverride ?? `${window.location.pathname}${window.location.search}`;
   const safeNext = sanitizeNextPath(rawCurrent) ?? fallbackPath;
@@ -330,11 +341,18 @@ export function requireZoneRole(
   const params = new URLSearchParams({
     next: safeNext,
     reason,
-    required: expectedRole,
+    required: primaryRole,
   });
 
   window.location.replace(`/acceso.html?${params.toString()}`);
   return null;
+}
+
+export function requireZoneRole(
+  expectedRole: DemoRole,
+  currentPathOverride?: string
+): DemoSession | null {
+  return requireAnyZoneRole([expectedRole], currentPathOverride);
 }
 
 export function formatSessionExpiry(expiresAt: number): string {

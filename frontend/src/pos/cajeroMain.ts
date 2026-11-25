@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/tokens.css';
 import '../styles/pos.css';
-import { DemoSession, logoutToAccess, requireZoneRole } from '../auth/demoSession';
+import { DemoSession, logoutToAccess, requireAnyZoneRole } from '../auth/demoSession';
 import { bindBrandLogo, renderBrandMark } from '../render/brand';
 import { escapeHtml } from '../utils/icons';
 import {
@@ -39,7 +39,10 @@ interface CajeroLocalState {
   isArqueoOpen: boolean;
 }
 
-const activeSession = requireZoneRole('cajero', '/pos-cajero.html');
+const activeSession = requireAnyZoneRole(
+  ['cajero', 'vendedor', 'administrador'],
+  '/pos-cajero.html'
+);
 if (!activeSession) {
   throw new Error('Redirigiendo al acceso');
 }
@@ -118,6 +121,9 @@ function renderStaticShell(): void {
           <span><span class="pos-kbd">F7</span> Imprimir</span>
           <span><span class="pos-kbd">Esc</span> Cerrar</span>
         </div>
+        <a href="/pos-vendedor.html" class="pos-topbar-btn">
+          Mostrador
+        </a>
         <button type="button" id="btn-open-arqueo" class="pos-topbar-btn">
           Arqueo (F6)
         </button>

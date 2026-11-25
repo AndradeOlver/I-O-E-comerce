@@ -34,6 +34,8 @@ const BASE_INVENTORY: PosInventoryItem[] = CATALOGO_PRODUCTOS.flatMap((group) =>
     talla: variant.talla,
     color: variant.color,
     colorHex: variant.colorHex,
+    imageSlotKey: variant.imageSlotKey,
+    alt_text: variant.alt_text,
     precio_venta: variant.precio_venta,
     stock: variant.stock,
     stock_minimo: variant.stock_minimo,
@@ -256,6 +258,10 @@ export interface CreateOrderPayload {
   items: { sku: string; cantidad: number }[];
   descuentoPct: number;
   descuentoAutorizado: boolean;
+  tipoComprobante?: PosReceiptType;
+  clienteDoc?: string;
+  clienteRazonSocial?: string;
+  metodoPagoSolicitado?: PosPaymentMethod;
 }
 
 export function createAndSendOrder(
@@ -326,14 +332,22 @@ export function createAndSendOrder(
     opGravada: totals.opGravada,
     igv: totals.igv,
     status: 'pendiente_cobro',
-    tipoComprobante: 'boleta',
-    clienteDoc: '',
-    clienteRazonSocial: 'Cliente Varios',
+    tipoComprobante: payload.tipoComprobante ?? 'boleta',
+    clienteDoc: (payload.clienteDoc ?? '').trim(),
+    clienteRazonSocial: (payload.clienteRazonSocial ?? '').trim() || 'Cliente Varios',
+    metodoPagoSolicitado: payload.metodoPagoSolicitado,
     pagos: [],
     montoPagado: 0,
     saldoPendiente: totals.total,
     vuelto: 0,
   };
+
+  if (order.tipoComprobante === 'factura') {
+    const billingError = validateBillingForReceipt(order);
+    if (billingError) {
+      return { ok: false, error: billingError };
+    }
+  }
 
   state.nextOrderSeq += 1;
   state.orders.unshift(order);
@@ -596,4 +610,16 @@ export function getDailySummary(state: PosStoreState): PosDailySummary {
     totalAbonosEnPendientes,
     igvTotal,
   };
+}
+
+export function pickRandomAvailableItem(
+  state: PosStoreState,
+  reservedBySku?: Record<string, number>
+): PosInventoryItem | null {
+  const candidates = getInventoryList(state).filter(
+    (item) => item.stock - (reservedBySku?.[item.sku] ?? 0) > 0
+  );
+  if (candidates.length === 0) return null;
+  const idx = Math.floor(Math.random() * candidates.length);
+  return candidates[idx] ?? null;
 }
