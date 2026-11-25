@@ -1,5 +1,7 @@
 import { CATALOGO_PRODUCTOS } from '../data/catalogData';
 import {
+  PosAllyDebt,
+  PosAllyDebtType,
   PosAlternativeSuggestion,
   PosBroadcastEvent,
   PosCashMovement,
@@ -11,9 +13,11 @@ import {
   PosPaymentRecord,
   PosReceiptType,
   PosStoreState,
+  PosUiMode,
 } from './posTypes';
 
 const STORAGE_KEY = 'io_pos_state_v1';
+const MODE_STORAGE_KEY = 'io_pos_mode_v1';
 const CHANNEL_NAME = 'io_pos_channel_v1';
 
 export const POS_PAYMENT_LABELS: Record<PosPaymentMethod, string> = {
@@ -80,6 +84,84 @@ function buildInitialInventoryMap(): Record<string, number> {
   return map;
 }
 
+function addDaysIso(offsetDays: number): string {
+  const dt = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
+  return dt.toISOString();
+}
+
+function buildInitialAllyDebts(): PosAllyDebt[] {
+  return [
+    {
+      id: 'ALI-001',
+      negocioNombre: 'Boutique Miraflores Moda S.A.C.',
+      ruc: '20601234567',
+      contacto: 'Valeria Paredes · 987 452 110',
+      tipo: 'consignacion',
+      fechaEmision: addDaysIso(-4),
+      fechaVencimiento: addDaysIso(3),
+      descripcionPrendas: '6× Polo Oversize Pima Studio, 2× Casaca Bomber Urbano',
+      autorizadoPor: 'Mateo Quispe (Almacén · RN-PRE-01)',
+      montoTotal: 480,
+      montoPagado: 0,
+      saldoPendiente: 480,
+      status: 'pendiente',
+      pagos: [],
+    },
+    {
+      id: 'ALI-002',
+      negocioNombre: 'Galería Sur Textil E.I.R.L.',
+      ruc: '20559876543',
+      contacto: 'Carlos Mendoza · 991 330 812',
+      tipo: 'consignacion',
+      fechaEmision: addDaysIso(-9),
+      fechaVencimiento: addDaysIso(-2),
+      descripcionPrendas: '4× Camisa Lino Clásica, 2× Pantalón Cargo Índigo',
+      autorizadoPor: 'Lucía Benavides (Admin)',
+      montoTotal: 320,
+      montoPagado: 120,
+      saldoPendiente: 200,
+      status: 'pendiente',
+      pagos: [
+        {
+          id: 'PAY-INIT-001',
+          fecha: addDaysIso(-3),
+          metodo: 'transferencia',
+          monto: 120,
+          tipo: 'abono_cuenta',
+          referencia: 'TRF-ALI-1024',
+          nota: 'Primer abono parcial',
+        },
+      ],
+    },
+    {
+      id: 'ALI-003',
+      negocioNombre: 'Atelier Barranco Asociados S.A.C.',
+      ruc: '20608877661',
+      contacto: 'Andrea Rivas · 955 218 409',
+      tipo: 'credito',
+      fechaEmision: addDaysIso(-3),
+      fechaVencimiento: addDaysIso(12),
+      descripcionPrendas: '5× Vestido Midi Satén, 3× Blusa Seda Minimal',
+      autorizadoPor: 'Lucía Benavides (Admin)',
+      montoTotal: 750,
+      montoPagado: 250,
+      saldoPendiente: 500,
+      status: 'pendiente',
+      pagos: [
+        {
+          id: 'PAY-INIT-002',
+          fecha: addDaysIso(-1),
+          metodo: 'yape_plin',
+          monto: 250,
+          tipo: 'abono_cuenta',
+          referencia: 'YAPE-ALI-8841',
+          nota: 'Adelanto inicial',
+        },
+      ],
+    },
+  ];
+}
+
 function createInitialState(): PosStoreState {
   return {
     version: 1,
@@ -87,8 +169,10 @@ function createInitialState(): PosStoreState {
     nextOrderSeq: 1,
     nextBoletaSeq: 1,
     nextFacturaSeq: 1,
+    nextAllySeq: 4,
     inventory: buildInitialInventoryMap(),
     orders: [],
+    allyDebts: buildInitialAllyDebts(),
     movimientosCaja: [],
   };
 }
@@ -138,8 +222,10 @@ export function loadPosState(): PosStoreState {
       nextOrderSeq: typeof parsed.nextOrderSeq === 'number' ? parsed.nextOrderSeq : 1,
       nextBoletaSeq: typeof parsed.nextBoletaSeq === 'number' ? parsed.nextBoletaSeq : 1,
       nextFacturaSeq: typeof parsed.nextFacturaSeq === 'number' ? parsed.nextFacturaSeq : 1,
+      nextAllySeq: typeof parsed.nextAllySeq === 'number' ? parsed.nextAllySeq : 4,
       inventory: mergedInventory,
       orders: parsed.orders,
+      allyDebts: Array.isArray(parsed.allyDebts) ? parsed.allyDebts : buildInitialAllyDebts(),
       movimientosCaja: Array.isArray(parsed.movimientosCaja) ? parsed.movimientosCaja : [],
     };
   } catch {
@@ -170,6 +256,55 @@ export function subscribePosEvents(callback: (event: PosBroadcastEvent) => void)
   return () => {
     ch?.removeEventListener('message', handleChannel);
     window.removeEventListener('storage', handleStorage);
+  };
+}
+
+export function getPosUiMode(): PosUiMode {
+  try {
+    return window.localStorage.getItem(MODE_STORAGE_KEY) === 'practica' ? 'practica' : 'operacion';
+  } catch {
+    return 'operacion';
+  }
+}
+
+export function setPosUiMode(mode: PosUiMode): PosUiMode {
+  const normalized: PosUiMode = mode === 'practica' ? 'practica' : 'operacion';
+  try {
+    window.localStorage.setItem(MODE_STORAGE_KEY, normalized);
+  } catch {
+    // Ignorar si localStorage está restringido
+  }
+  const now = new Date().toISOString();
+  emitEvent({ type: 'MODE_CHANGED', mode: normalized, timestamp: now });
+  window.dispatchEvent(new CustomEvent<PosUiMode>('io-pos-mode-change', { detail: normalized }));
+  return normalized;
+}
+
+export function subscribePosMode(listener: (mode: PosUiMode) => void): () => void {
+  const ch = getChannel();
+  const handleCustom = (ev: Event) => {
+    const custom = ev as CustomEvent<PosUiMode>;
+    listener(custom.detail === 'practica' ? 'practica' : 'operacion');
+  };
+  const handleStorage = (ev: StorageEvent) => {
+    if (ev.key === MODE_STORAGE_KEY) {
+      listener(getPosUiMode());
+    }
+  };
+  const handleChannel = (ev: MessageEvent<PosBroadcastEvent>) => {
+    if (ev.data?.type === 'MODE_CHANGED') {
+      listener(ev.data.mode);
+    }
+  };
+
+  window.addEventListener('io-pos-mode-change', handleCustom);
+  window.addEventListener('storage', handleStorage);
+  ch?.addEventListener('message', handleChannel);
+
+  return () => {
+    window.removeEventListener('io-pos-mode-change', handleCustom);
+    window.removeEventListener('storage', handleStorage);
+    ch?.removeEventListener('message', handleChannel);
   };
 }
 
@@ -600,6 +735,10 @@ export function getDailySummary(state: PosStoreState): PosDailySummary {
     pendientes.reduce((acc, o) => acc + o.montoPagado, 0)
   );
   const igvTotal = roundMoney(cobradas.reduce((acc, o) => acc + o.igv, 0));
+  const pendingAllies = state.allyDebts.filter((d) => d.status === 'pendiente');
+  const totalDeudaAliados = roundMoney(
+    pendingAllies.reduce((acc, d) => acc + d.saldoPendiente, 0)
+  );
 
   return {
     totalCobrado,
@@ -609,7 +748,129 @@ export function getDailySummary(state: PosStoreState): PosDailySummary {
     porMetodo,
     totalAbonosEnPendientes,
     igvTotal,
+    totalDeudaAliados,
+    cantidadDeudasAliados: pendingAllies.length,
   };
+}
+
+export function createAllyDebt(payload: {
+  negocioNombre: string;
+  ruc: string;
+  contacto: string;
+  tipo: PosAllyDebtType;
+  diasPlazo: number;
+  descripcionPrendas: string;
+  montoTotal: number;
+  autorizadoPor: string;
+}): { ok: true; debt: PosAllyDebt } | { ok: false; error: string } {
+  const negocioNombre = payload.negocioNombre.trim();
+  const ruc = payload.ruc.trim();
+  const descripcionPrendas = payload.descripcionPrendas.trim();
+  const montoTotal = roundMoney(payload.montoTotal);
+
+  if (negocioNombre.length < 3) {
+    return { ok: false, error: 'Ingresa el nombre o razón social del negocio aliado.' };
+  }
+  if (!/^\d{11}$/.test(ruc)) {
+    return { ok: false, error: 'El RUC del negocio aliado debe tener 11 dígitos.' };
+  }
+  if (descripcionPrendas.length < 3) {
+    return { ok: false, error: 'Detalla las prendas entregadas en préstamo o crédito.' };
+  }
+  if (!Number.isFinite(montoTotal) || montoTotal <= 0) {
+    return { ok: false, error: 'Ingresa un monto total mayor a S/ 0.00.' };
+  }
+  if (payload.tipo === 'consignacion' && (payload.diasPlazo < 1 || payload.diasPlazo > 7)) {
+    return {
+      ok: false,
+      error: 'Los préstamos en consignación tienen un plazo máximo de 7 días calendario (RN-PRE-02).',
+    };
+  }
+
+  const effectiveDays = Math.max(1, Math.min(payload.tipo === 'consignacion' ? 7 : 60, payload.diasPlazo));
+  const state = loadPosState();
+  const id = `ALI-${String(state.nextAllySeq).padStart(3, '0')}`;
+  const now = new Date().toISOString();
+
+  const debt: PosAllyDebt = {
+    id,
+    negocioNombre,
+    ruc,
+    contacto: payload.contacto.trim() || 'Sin contacto registrado',
+    tipo: payload.tipo,
+    fechaEmision: now,
+    fechaVencimiento: addDaysIso(effectiveDays),
+    descripcionPrendas,
+    autorizadoPor: payload.autorizadoPor.trim() || 'Colaborador I&O',
+    montoTotal,
+    montoPagado: 0,
+    saldoPendiente: montoTotal,
+    status: 'pendiente',
+    pagos: [],
+  };
+
+  state.nextAllySeq += 1;
+  state.allyDebts.unshift(debt);
+  savePosState(state);
+  emitEvent({ type: 'STATE_SYNC', timestamp: now });
+  return { ok: true, debt };
+}
+
+export function recordAllyDebtPayment(params: {
+  debtId: string;
+  monto: number;
+  metodo: PosPaymentMethod;
+  nota?: string;
+}): { ok: true; debt: PosAllyDebt; settled: boolean } | { ok: false; error: string } {
+  const state = loadPosState();
+  const debt = state.allyDebts.find((d) => d.id === params.debtId);
+  if (!debt) {
+    return { ok: false, error: `Cuenta ${params.debtId} no encontrada.` };
+  }
+  if (debt.status !== 'pendiente') {
+    return { ok: false, error: `La cuenta ${debt.id} ya está liquidada.` };
+  }
+
+  const requested = roundMoney(params.monto);
+  if (!Number.isFinite(requested) || requested <= 0) {
+    return { ok: false, error: 'Ingresa un monto válido mayor a S/ 0.00.' };
+  }
+
+  const applied = Math.min(requested, debt.saldoPendiente);
+  const now = new Date().toISOString();
+  const ref = buildSimulatedRef(params.metodo);
+
+  debt.pagos.push({
+    id: `PAY-${Date.now()}-${Math.floor(Math.random() * 999)}`,
+    fecha: now,
+    metodo: params.metodo,
+    monto: applied,
+    tipo: 'abono_cuenta',
+    referencia: ref,
+    nota: params.nota?.trim() || undefined,
+  });
+
+  debt.montoPagado = roundMoney(debt.montoPagado + applied);
+  debt.saldoPendiente = roundMoney(Math.max(0, debt.montoTotal - debt.montoPagado));
+  const settled = debt.saldoPendiente <= 0;
+  if (settled) {
+    debt.status = 'pagado';
+  }
+
+  state.movimientosCaja.unshift({
+    id: `MOV-${Date.now()}-${Math.floor(Math.random() * 999)}`,
+    fecha: now,
+    orderId: debt.id,
+    tipo: 'abono_aliado',
+    metodo: params.metodo,
+    monto: applied,
+    referencia: ref,
+    nota: `${debt.negocioNombre}${params.nota ? ` · ${params.nota}` : ''}`,
+  });
+
+  savePosState(state);
+  emitEvent({ type: 'STATE_SYNC', timestamp: now });
+  return { ok: true, debt, settled };
 }
 
 export function pickRandomAvailableItem(

@@ -7,36 +7,49 @@ import { escapeHtml } from '../utils/icons';
 import {
   POS_PAYMENT_LABELS,
   cancelOrder,
+  createAllyDebt,
   emitSimulatedRejection,
   formatPen,
   formatTimeShort,
   getDailySummary,
+  getPosUiMode,
   loadPosState,
+  recordAllyDebtPayment,
   recordPaymentOrAbono,
   resetPosDay,
   roundMoney,
+  setPosUiMode,
   subscribePosEvents,
+  subscribePosMode,
   updateOrderBilling,
 } from './posStore';
 import {
+  PosAllyDebt,
+  PosAllyDebtType,
   PosBroadcastEvent,
   PosConsoleApi,
   PosOrder,
   PosPaymentMethod,
   PosReceiptType,
   PosStoreState,
+  PosUiMode,
 } from './posTypes';
 
 interface CajeroLocalState {
-  queueTab: 'pendientes' | 'cobradas';
+  uiMode: PosUiMode;
+  queueTab: 'pendientes' | 'cobradas' | 'aliados';
   selectedOrderId: string | null;
+  selectedAllyId: string | null;
   selectedMethod: PosPaymentMethod;
+  allyMethod: PosPaymentMethod;
   cashReceivedStr: string;
   incomingNotif: { orderId: string; total: number; itemsCount: number } | null;
   billingError: string;
   paymentError: string;
+  allyError: string;
   feedback: { kind: 'ok' | 'err' | 'warn'; text: string } | null;
   isArqueoOpen: boolean;
+  isAllyModalOpen: boolean;
 }
 
 const activeSession = requireAnyZoneRole(
@@ -51,18 +64,23 @@ const currentSession: DemoSession = activeSession;
 let storeState: PosStoreState = loadPosState();
 
 const local: CajeroLocalState = {
+  uiMode: getPosUiMode(),
   queueTab: 'pendientes',
   selectedOrderId:
     storeState.orders.find((o) => o.status === 'pendiente_cobro')?.id ??
     storeState.orders[0]?.id ??
     null,
+  selectedAllyId: storeState.allyDebts[0]?.id ?? null,
   selectedMethod: 'efectivo',
+  allyMethod: 'transferencia',
   cashReceivedStr: '',
   incomingNotif: null,
   billingError: '',
   paymentError: '',
+  allyError: '',
   feedback: null,
   isArqueoOpen: false,
+  isAllyModalOpen: false,
 };
 
 const root = document.getElementById('pos-cajero-root');
@@ -109,9 +127,16 @@ function renderStaticShell(): void {
     <header class="pos-topbar pos-no-print">
       <div class="pos-topbar-left">
         <span class="pos-brand-mark">${renderBrandMark()}</span>
-        <h1 class="pos-topbar-title pos-display">Caja y Cobro</h1>
+        <nav class="pos-nav-tabs" aria-label="Áreas del punto de venta">
+          <a href="/pos-vendedor.html" class="pos-nav-tab">
+            Mostrador (Productos)
+          </a>
+          <a href="/pos-cajero.html" class="pos-nav-tab is-active" aria-current="page">
+            Caja y Cobros
+            <span id="cajero-topbar-counter" class="pos-counter-badge pos-num d-none">0</span>
+          </a>
+        </nav>
         <span class="pos-topbar-staff">Turno: <strong>${escapeHtml(currentSession.displayName)}</strong></span>
-        <span id="cajero-topbar-counter" class="pos-counter-badge pos-num">0 pendientes</span>
       </div>
       <div class="pos-topbar-right">
         <div class="pos-shortcuts-strip d-none d-xl-flex">
@@ -121,9 +146,6 @@ function renderStaticShell(): void {
           <span><span class="pos-kbd">F7</span> Imprimir</span>
           <span><span class="pos-kbd">Esc</span> Cerrar</span>
         </div>
-        <a href="/pos-vendedor.html" class="pos-topbar-btn">
-          Mostrador
-        </a>
         <button type="button" id="btn-open-arqueo" class="pos-topbar-btn">
           Arqueo (F6)
         </button>
@@ -136,6 +158,7 @@ function renderStaticShell(): void {
     <main class="pos-shell">
       <div id="cajero-notif-slot" class="pos-no-print"></div>
       <div id="cajero-feedback-slot" class="pos-no-print"></div>
+      <div id="cajero-practice-slot" class="pos-no-print"></div>
 
       <div class="pos-cajero-grid">
         <section id="cajero-queue-slot" class="pos-panel pos-no-print"></section>
@@ -145,6 +168,7 @@ function renderStaticShell(): void {
     </main>
 
     <div id="cajero-modal-slot"></div>
+    <div id="cajero-ally-modal-slot" class="pos-no-print"></div>
   `;
 
   bindBrandLogo(root!);
@@ -154,7 +178,32 @@ function renderTopCounter(): void {
   const el = document.getElementById('cajero-topbar-counter');
   if (!el) return;
   const count = storeState.orders.filter((o) => o.status === 'pendiente_cobro').length;
-  el.textContent = `${count} pendiente${count === 1 ? '' : 's'}`;
+  if (count > 0) {
+    el.textContent = String(count);
+    el.classList.remove('d-none');
+  } else {
+    el.textContent = '0';
+    el.classList.add('d-none');
+  }
+}
+
+function renderPracticeBar(): void {
+  const slot = document.getElementById('cajero-practice-slot');
+  if (!slot) return;
+  if (local.uiMode !== 'practica') {
+    slot.innerHTML = '';
+    return;
+  }
+
+  slot.innerHTML = `
+    <div class="pos-practice-bar">
+      <div>
+        <strong>Modo Práctica activo:</strong>
+        <span>Comandos en consola: <code>IO_POS.ayuda()</code> · <code>IO_POS.pagar()</code> · <code>IO_POS.abonar(100)</code> · <code>IO_POS.simularRechazo()</code> · <code>IO_POS.reiniciarDia()</code></span>
+      </div>
+      <span class="pos-text-muted">Volver a modo real: <code>IO_POS.modo('operacion')</code></span>
+    </div>
+  `;
 }
 
 function renderNotif(): void {
@@ -205,77 +254,148 @@ function renderFeedback(): void {
   `;
 }
 
+function getSelectedAlly(): PosAllyDebt | null {
+  if (local.selectedAllyId) {
+    const found = storeState.allyDebts.find((d) => d.id === local.selectedAllyId);
+    if (found) return found;
+  }
+  const first = storeState.allyDebts[0] ?? null;
+  local.selectedAllyId = first?.id ?? null;
+  return first;
+}
+
+function getAllyDaysRemaining(debt: PosAllyDebt): number {
+  const due = new Date(debt.fechaVencimiento).getTime();
+  const diff = due - Date.now();
+  return Math.ceil(diff / (24 * 60 * 60 * 1000));
+}
+
 function renderQueue(): void {
   const slot = document.getElementById('cajero-queue-slot');
   if (!slot) return;
 
   const pendientes = storeState.orders.filter((o) => o.status === 'pendiente_cobro');
   const cobradas = storeState.orders.filter((o) => o.status === 'cobrado');
+  const aliadosPendientes = storeState.allyDebts.filter((d) => d.status === 'pendiente');
   const list = local.queueTab === 'pendientes' ? pendientes : cobradas;
   const selected = getSelectedOrder();
+  const selectedAlly = getSelectedAlly();
 
   slot.innerHTML = `
     <div class="pos-panel-header">
-      <h2 class="pos-panel-title pos-display">Órdenes en Caja</h2>
+      <h2 class="pos-panel-title pos-display">Órdenes y Cuentas</h2>
     </div>
     <div class="pos-panel-body">
-      <div class="pos-seg-group mb-2">
+      <div class="pos-seg-group pos-seg-group--3 mb-2">
         <button
           type="button"
           class="pos-seg-btn pos-num ${local.queueTab === 'pendientes' ? 'is-active' : ''}"
           data-queue-tab="pendientes"
         >
-          Pendientes (${pendientes.length})
+          Pend. (${pendientes.length})
         </button>
         <button
           type="button"
           class="pos-seg-btn pos-num ${local.queueTab === 'cobradas' ? 'is-active' : ''}"
           data-queue-tab="cobradas"
         >
-          Cobradas (${cobradas.length})
+          Cobr. (${cobradas.length})
+        </button>
+        <button
+          type="button"
+          class="pos-seg-btn pos-num ${local.queueTab === 'aliados' ? 'is-active' : ''}"
+          data-queue-tab="aliados"
+        >
+          Aliados (${aliadosPendientes.length})
         </button>
       </div>
 
-      <div class="d-flex flex-column gap-2" style="max-height: 540px; overflow-y: auto;">
-        ${
-          list.length === 0
-            ? `<div class="pos-subbox pos-subbox--muted p-3 text-center pos-text-muted small">
-                ${local.queueTab === 'pendientes' ? 'Sin órdenes pendientes de cobro.' : 'Sin ventas cobradas hoy.'}
-              </div>`
-            : list
-                .map((o) => {
-                  const isActive = selected?.id === o.id;
-                  return `
-                    <button
-                      type="button"
-                      class="pos-queue-card ${isActive ? 'is-active' : ''}"
-                      data-select-order="${escapeHtml(o.id)}"
-                    >
-                      <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold pos-num">${escapeHtml(o.id)}</span>
-                        <span class="small pos-text-muted pos-num">${formatTimeShort(o.creadoEn)}</span>
-                      </div>
-                      <div class="small text-truncate">${escapeHtml(o.clienteReferencia)}</div>
-                      <div class="d-flex justify-content-between align-items-center mt-1">
-                        <span class="small pos-text-muted pos-num">${o.items.reduce((a, i) => a + i.cantidad, 0)} prendas</span>
-                        <span class="fw-bold pos-num">${formatPen(o.total)}</span>
-                      </div>
-                      ${
-                        o.status === 'pendiente_cobro' && o.montoPagado > 0
-                          ? `<div class="small pos-text-warn fw-semibold pos-num">Abonado ${formatPen(o.montoPagado)} · Falta ${formatPen(o.saldoPendiente)}</div>`
-                          : ''
-                      }
-                      ${
-                        o.status === 'cobrado'
-                          ? `<div class="small pos-text-ok fw-semibold pos-num">${escapeHtml(o.numeroComprobante ?? '')}</div>`
-                          : ''
-                      }
-                    </button>
-                  `;
-                })
-                .join('')
-        }
-      </div>
+      ${
+        local.queueTab === 'aliados'
+          ? `
+            <button type="button" id="btn-open-ally-modal" class="pos-btn-md pos-btn-primary w-100 mb-2">
+              + Registrar préstamo / crédito
+            </button>
+            <div class="d-flex flex-column gap-2" style="max-height: 500px; overflow-y: auto;">
+              ${
+                storeState.allyDebts.length === 0
+                  ? '<div class="pos-subbox pos-subbox--muted p-3 text-center pos-text-muted small">Sin cuentas de negocios aliados.</div>'
+                  : storeState.allyDebts
+                      .map((d) => {
+                        const isActive = selectedAlly?.id === d.id;
+                        const days = getAllyDaysRemaining(d);
+                        let badge = '<span class="pos-status-chip is-paid">Liquidado</span>';
+                        if (d.status === 'pendiente') {
+                          badge =
+                            days < 0
+                              ? `<span class="pos-stock-badge pos-stock-zero pos-num">Vencido ${Math.abs(days)}d</span>`
+                              : `<span class="pos-status-chip is-pending pos-num">Vence en ${days}d</span>`;
+                        }
+                        return `
+                          <button
+                            type="button"
+                            class="pos-queue-card ${isActive ? 'is-active' : ''}"
+                            data-select-ally="${escapeHtml(d.id)}"
+                          >
+                            <div class="d-flex justify-content-between align-items-center gap-1">
+                              <span class="fw-bold pos-num">${escapeHtml(d.id)}</span>
+                              ${badge}
+                            </div>
+                            <div class="small fw-semibold text-truncate">${escapeHtml(d.negocioNombre)}</div>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                              <span class="small pos-text-muted">${d.tipo === 'consignacion' ? 'Consignación 7d' : 'Crédito'}</span>
+                              <span class="fw-bold pos-num">${formatPen(d.saldoPendiente)}</span>
+                            </div>
+                          </button>
+                        `;
+                      })
+                      .join('')
+              }
+            </div>
+          `
+          : `
+            <div class="d-flex flex-column gap-2" style="max-height: 540px; overflow-y: auto;">
+              ${
+                list.length === 0
+                  ? `<div class="pos-subbox pos-subbox--muted p-3 text-center pos-text-muted small">
+                      ${local.queueTab === 'pendientes' ? 'Sin órdenes pendientes de cobro.' : 'Sin ventas cobradas hoy.'}
+                    </div>`
+                  : list
+                      .map((o) => {
+                        const isActive = selected?.id === o.id;
+                        return `
+                          <button
+                            type="button"
+                            class="pos-queue-card ${isActive ? 'is-active' : ''}"
+                            data-select-order="${escapeHtml(o.id)}"
+                          >
+                            <div class="d-flex justify-content-between align-items-center">
+                              <span class="fw-bold pos-num">${escapeHtml(o.id)}</span>
+                              <span class="small pos-text-muted pos-num">${formatTimeShort(o.creadoEn)}</span>
+                            </div>
+                            <div class="small text-truncate">${escapeHtml(o.clienteReferencia)}</div>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                              <span class="small pos-text-muted pos-num">${o.items.reduce((a, i) => a + i.cantidad, 0)} prendas</span>
+                              <span class="fw-bold pos-num">${formatPen(o.total)}</span>
+                            </div>
+                            ${
+                              o.status === 'pendiente_cobro' && o.montoPagado > 0
+                                ? `<div class="small pos-text-warn fw-semibold pos-num">Abonado ${formatPen(o.montoPagado)} · Falta ${formatPen(o.saldoPendiente)}</div>`
+                                : ''
+                            }
+                            ${
+                              o.status === 'cobrado'
+                                ? `<div class="small pos-text-ok fw-semibold pos-num">${escapeHtml(o.numeroComprobante ?? '')}</div>`
+                                : ''
+                            }
+                          </button>
+                        `;
+                      })
+                      .join('')
+              }
+            </div>
+          `
+      }
     </div>
   `;
 }
@@ -394,9 +514,149 @@ function renderReceiptView(order: PosOrder): string {
   `;
 }
 
+function renderAllyDetail(debt: PosAllyDebt): string {
+  const days = getAllyDaysRemaining(debt);
+  const isOverdue = debt.status === 'pendiente' && days < 0;
+
+  return `
+    <div class="pos-panel-header">
+      <h2 class="pos-panel-title pos-display">Cuenta Aliado · ${escapeHtml(debt.id)}</h2>
+      <span class="pos-status-chip ${debt.status === 'pagado' ? 'is-paid' : isOverdue ? 'is-partial' : 'is-pending'}">
+        ${debt.status === 'pagado' ? 'Liquidada' : isOverdue ? `Vencida (${Math.abs(days)} días)` : `Vence en ${days} días`}
+      </span>
+    </div>
+    <div class="pos-panel-body">
+      ${
+        isOverdue && debt.tipo === 'consignacion'
+          ? `<div class="pos-banner is-warn mb-3">
+              <span>Plazo máximo de consignación de 7 días vencido (RN-PRE-02). Corresponde liquidación o devolución inmediata.</span>
+            </div>`
+          : ''
+      }
+
+      <div class="pos-subbox mb-3">
+        <div class="fw-bold fs-6 mb-1">${escapeHtml(debt.negocioNombre)}</div>
+        <div class="row g-1 small">
+          <div class="col-6"><strong>RUC:</strong> <span class="pos-num">${escapeHtml(debt.ruc)}</span></div>
+          <div class="col-6"><strong>Tipo:</strong> ${debt.tipo === 'consignacion' ? 'Préstamo en Consignación' : 'Crédito Comercial'}</div>
+          <div class="col-12"><strong>Contacto:</strong> ${escapeHtml(debt.contacto)}</div>
+          <div class="col-6"><strong>Emisión:</strong> <span class="pos-num">${new Date(debt.fechaEmision).toLocaleDateString('es-PE')}</span></div>
+          <div class="col-6"><strong>Vencimiento:</strong> <span class="pos-num">${new Date(debt.fechaVencimiento).toLocaleDateString('es-PE')}</span></div>
+          <div class="col-12"><strong>Autorizado por:</strong> ${escapeHtml(debt.autorizadoPor)}</div>
+          <div class="col-12 mt-1"><strong>Prendas:</strong> ${escapeHtml(debt.descripcionPrendas)}</div>
+        </div>
+      </div>
+
+      <div class="pos-subbox pos-subbox--muted mb-3 pos-num">
+        <div class="d-flex justify-content-between small">
+          <span>Monto total</span>
+          <span>${formatPen(debt.montoTotal)}</span>
+        </div>
+        <div class="d-flex justify-content-between small pos-text-ok">
+          <span>Abonado a la fecha</span>
+          <span>${formatPen(debt.montoPagado)}</span>
+        </div>
+        <div class="d-flex justify-content-between fw-bold fs-5 border-top mt-1 pt-1">
+          <span>Saldo pendiente</span>
+          <span class="${debt.saldoPendiente > 0 ? 'pos-text-err' : 'pos-text-ok'}">${formatPen(debt.saldoPendiente)}</span>
+        </div>
+      </div>
+
+      ${
+        debt.status === 'pendiente'
+          ? `
+            <div class="mb-3">
+              <div class="small fw-bold text-uppercase pos-text-muted mb-1">Registrar Abono o Liquidación</div>
+              <div class="pos-method-grid mb-2">
+                ${(['efectivo', 'tarjeta', 'yape_plin', 'transferencia'] as PosPaymentMethod[])
+                  .map(
+                    (m) => `
+                    <button
+                      type="button"
+                      class="pos-method-btn ${local.allyMethod === m ? 'is-active' : ''}"
+                      data-ally-method="${m}"
+                    >
+                      ${escapeHtml(POS_PAYMENT_LABELS[m])}
+                    </button>
+                  `
+                  )
+                  .join('')}
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-5">
+                  <label for="ally-pay-amount" class="form-label small fw-semibold mb-1">Monto (S/)</label>
+                  <input
+                    id="ally-pay-amount"
+                    type="number"
+                    min="0.10"
+                    step="0.10"
+                    max="${debt.saldoPendiente.toFixed(2)}"
+                    value="${debt.saldoPendiente.toFixed(2)}"
+                    class="form-control form-control-sm pos-num fw-bold"
+                  />
+                </div>
+                <div class="col-7">
+                  <label for="ally-pay-note" class="form-label small fw-semibold mb-1">N.° operación / nota</label>
+                  <input
+                    id="ally-pay-note"
+                    type="text"
+                    maxlength="60"
+                    placeholder="Ej. Operación bancaria o abono parcial"
+                    class="form-control form-control-sm"
+                  />
+                </div>
+              </div>
+              ${local.allyError ? `<div class="pos-inline-error mb-2">${escapeHtml(local.allyError)}</div>` : ''}
+              <button type="button" id="btn-pay-ally" class="pos-btn-lg pos-btn-success w-100">
+                Registrar abono / liquidar (${escapeHtml(POS_PAYMENT_LABELS[local.allyMethod])})
+              </button>
+            </div>
+          `
+          : ''
+      }
+
+      ${
+        debt.pagos.length > 0
+          ? `
+            <div class="pos-subbox">
+              <div class="small fw-bold mb-1">Historial de abonos (${debt.pagos.length})</div>
+              ${debt.pagos
+                .map(
+                  (p) => `
+                  <div class="d-flex justify-content-between small py-1 border-bottom pos-num">
+                    <span>${new Date(p.fecha).toLocaleDateString('es-PE')} · ${escapeHtml(POS_PAYMENT_LABELS[p.metodo])} · <code>${escapeHtml(p.referencia)}</code></span>
+                    <span class="fw-bold pos-text-ok">${formatPen(p.monto)}</span>
+                  </div>
+                `
+                )
+                .join('')}
+            </div>
+          `
+          : ''
+      }
+    </div>
+  `;
+}
+
 function renderCenter(): void {
   const slot = document.getElementById('cajero-center-slot');
   if (!slot) return;
+
+  if (local.queueTab === 'aliados') {
+    const ally = getSelectedAlly();
+    if (!ally) {
+      slot.innerHTML = `
+        <div class="pos-panel-header"><h2 class="pos-panel-title pos-display">Cuentas de Negocios Aliados</h2></div>
+        <div class="pos-panel-body text-center py-5">
+          <div class="fw-bold mb-1">Sin cuentas registradas</div>
+          <div class="small pos-text-muted">Registra un préstamo en consignación o venta a crédito desde el panel izquierdo.</div>
+        </div>
+      `;
+      return;
+    }
+    slot.innerHTML = renderAllyDetail(ally);
+    return;
+  }
 
   const order = getSelectedOrder();
   if (!order) {
@@ -616,8 +876,19 @@ function renderCenter(): void {
           </div>
           ${local.paymentError ? `<div class="pos-inline-error mb-2">${escapeHtml(local.paymentError)}</div>` : ''}
           <button type="button" id="btn-pay-digital" class="pos-btn-lg pos-btn-success w-100">
-            Registrar Cobro (${escapeHtml(POS_PAYMENT_LABELS[local.selectedMethod])}) · ${formatPen(order.saldoPendiente)}
+            ${
+              local.uiMode === 'practica'
+                ? `Simular llegada de pago (${escapeHtml(POS_PAYMENT_LABELS[local.selectedMethod])}) · ${formatPen(order.saldoPendiente)}`
+                : `Confirmar cobro recibido (${escapeHtml(POS_PAYMENT_LABELS[local.selectedMethod])}) · ${formatPen(order.saldoPendiente)}`
+            }
           </button>
+          ${
+            local.uiMode === 'practica'
+              ? `<button type="button" id="btn-sim-reject-digital" class="pos-btn-md pos-btn-danger w-100 mt-2">
+                  Simular rechazo de pasarela
+                </button>`
+              : ''
+          }
         </div>
       `
       }
@@ -689,6 +960,12 @@ function renderSummary(): void {
         </div>
       </div>
 
+      <div class="pos-kpi-card">
+        <div class="pos-kpi-label">Cuentas Aliados por cobrar</div>
+        <div class="pos-kpi-value pos-text-err pos-num">${formatPen(summary.totalDeudaAliados)}</div>
+        <div class="small pos-text-muted pos-num">${summary.cantidadDeudasAliados} negocio${summary.cantidadDeudasAliados === 1 ? '' : 's'} con saldo</div>
+      </div>
+
       <button type="button" id="btn-summary-arqueo" class="pos-btn-lg pos-btn-primary w-100 mt-1">
         Ver / Imprimir Arqueo (F6)
       </button>
@@ -753,11 +1030,15 @@ function renderArqueoModal(): void {
           </div>
         </div>
 
-        <div class="d-flex justify-content-end mb-3 pos-no-print">
-          <button type="button" class="pos-btn-md pos-btn-danger" id="btn-reset-day">
-            Reiniciar jornada
-          </button>
-        </div>
+        ${
+          local.uiMode === 'practica'
+            ? `<div class="d-flex justify-content-end mb-3 pos-no-print">
+                <button type="button" class="pos-btn-md pos-btn-danger" id="btn-reset-day">
+                  Reiniciar jornada de prueba
+                </button>
+              </div>`
+            : ''
+        }
 
         <h3 class="h6 fw-bold">Comprobantes emitidos (${cobradas.length})</h3>
         <div class="table-responsive mb-3">
@@ -816,7 +1097,7 @@ function renderArqueoModal(): void {
                     <tr>
                       <td>${formatTimeShort(m.fecha)}</td>
                       <td>${escapeHtml(m.orderId)}</td>
-                      <td>${m.tipo === 'ingreso_venta' ? 'Venta cerrada' : 'Abono a cuenta'}</td>
+                      <td>${m.tipo === 'ingreso_venta' ? 'Venta cerrada' : m.tipo === 'abono_aliado' ? 'Abono aliado' : 'Abono a cuenta'}</td>
                       <td>${escapeHtml(POS_PAYMENT_LABELS[m.metodo])}</td>
                       <td><code>${escapeHtml(m.referencia)}</code></td>
                       <td class="text-end fw-bold">${formatPen(m.monto)}</td>
@@ -833,14 +1114,79 @@ function renderArqueoModal(): void {
   `;
 }
 
+function renderAllyModal(): void {
+  const slot = document.getElementById('cajero-ally-modal-slot');
+  if (!slot) return;
+
+  if (!local.isAllyModalOpen) {
+    slot.innerHTML = '';
+    return;
+  }
+
+  slot.innerHTML = `
+    <div class="pos-modal-backdrop" id="ally-modal-backdrop">
+      <div class="pos-modal-card" style="max-width: 560px;" role="dialog" aria-modal="true" aria-labelledby="ally-modal-title">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+          <h2 id="ally-modal-title" class="h5 pos-display mb-0">Registrar Préstamo o Crédito a Aliado</h2>
+          <button type="button" class="pos-btn-md pos-btn-secondary" id="btn-close-ally-modal">Cerrar</button>
+        </div>
+        <form id="form-new-ally-debt" class="d-flex flex-column gap-2">
+          <div>
+            <label for="ally-name" class="form-label small fw-semibold mb-1">Negocio aliado / Razón social *</label>
+            <input id="ally-name" type="text" class="form-control form-control-sm" required placeholder="Ej. Boutique San Isidro S.A.C." />
+          </div>
+          <div class="row g-2">
+            <div class="col-5">
+              <label for="ally-ruc" class="form-label small fw-semibold mb-1">RUC (11 dígitos) *</label>
+              <input id="ally-ruc" type="text" maxlength="11" class="form-control form-control-sm pos-num" required placeholder="20601234567" />
+            </div>
+            <div class="col-7">
+              <label for="ally-contact" class="form-label small fw-semibold mb-1">Contacto / Teléfono</label>
+              <input id="ally-contact" type="text" class="form-control form-control-sm" placeholder="Nombre y celular" />
+            </div>
+          </div>
+          <div class="row g-2">
+            <div class="col-7">
+              <label for="ally-type" class="form-label small fw-semibold mb-1">Modalidad</label>
+              <select id="ally-type" class="form-select form-select-sm">
+                <option value="consignacion">Préstamo en Consignación (máx. 7 días · RN-PRE-02)</option>
+                <option value="credito">Venta a Crédito Comercial</option>
+              </select>
+            </div>
+            <div class="col-5">
+              <label for="ally-days" class="form-label small fw-semibold mb-1">Plazo (días)</label>
+              <input id="ally-days" type="number" min="1" max="60" value="7" class="form-control form-control-sm pos-num" />
+            </div>
+          </div>
+          <div>
+            <label for="ally-items" class="form-label small fw-semibold mb-1">Prendas entregadas *</label>
+            <input id="ally-items" type="text" class="form-control form-control-sm" required placeholder="Ej. 4× Polo Pima, 2× Casaca Bomber" />
+          </div>
+          <div>
+            <label for="ally-total" class="form-label small fw-semibold mb-1">Monto total (S/) *</label>
+            <input id="ally-total" type="number" min="1" step="0.10" class="form-control form-control-sm pos-num" required placeholder="350.00" />
+          </div>
+          ${local.allyError ? `<div class="pos-inline-error">${escapeHtml(local.allyError)}</div>` : ''}
+          <div class="d-flex justify-content-end gap-2 mt-2">
+            <button type="button" class="pos-btn-md pos-btn-secondary" id="btn-cancel-ally-modal">Cancelar</button>
+            <button type="submit" class="pos-btn-md pos-btn-primary">Guardar cuenta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
 function renderAllDynamic(): void {
   renderTopCounter();
   renderNotif();
   renderFeedback();
+  renderPracticeBar();
   renderQueue();
   renderCenter();
   renderSummary();
   renderArqueoModal();
+  renderAllyModal();
 }
 
 function routeOrderError(error: string): void {
@@ -898,16 +1244,26 @@ function buildConsoleApi(): PosConsoleApi {
   };
 
   const api: PosConsoleApi = {
+    modo(nuevoModo) {
+      if (!nuevoModo) return local.uiMode;
+      const next = setPosUiMode(nuevoModo);
+      local.uiMode = next;
+      renderAllDynamic();
+      console.info(`[I&O POS] Modo cambiado a: ${next}`);
+      return next;
+    },
+
     ayuda() {
       console.info(
         [
-          '=== I&O POS · Simulador de Cobros y Abonos por Consola ===',
-          'posPago.estado() -> Ver orden activa, pendientes y cuadre del día',
-          "posPago.pagar(monto?, metodo?, ordenId?) -> Simula pago (ej. posPago.pagar(119.90, 'yape_plin'))",
-          "posPago.abonar(monto, metodo?, ordenId?, nota?) -> Simula abono parcial a cuenta",
-          "posPago.simularRechazo(motivo?, ordenId?) -> Simula rechazo de pasarela",
-          'posPago.fondoCaja(monto) -> Ajusta el fondo inicial de gaveta',
-          'posPago.reiniciarDia() -> Reinicia el estado POS de pruebas',
+          '=== I&O POS · Comandos de Consola ===',
+          "IO_POS.modo('practica')  -> Activa botones y guías de práctica",
+          "IO_POS.modo('operacion') -> Vuelve al modo operativo limpio (100% real)",
+          'IO_POS.estado()          -> Ver orden activa, pendientes y cuadre del día',
+          "IO_POS.pagar(monto?, metodo?, ordenId?) -> Simula pago (ej. IO_POS.pagar(119.90, 'yape_plin'))",
+          'IO_POS.abonar(monto, metodo?, ordenId?, nota?) -> Simula abono parcial a cuenta',
+          'IO_POS.simularRechazo(motivo?, ordenId?) -> Simula rechazo de pasarela',
+          'IO_POS.reiniciarDia()    -> Reinicia el estado POS de pruebas',
           "Métodos válidos: 'efectivo' | 'tarjeta' | 'yape_plin' | 'transferencia'",
         ].join('\n')
       );
@@ -1125,8 +1481,87 @@ function bindEvents(): void {
 
     const tabBtn = target.closest<HTMLElement>('[data-queue-tab]');
     if (tabBtn?.dataset.queueTab) {
-      local.queueTab = tabBtn.dataset.queueTab as 'pendientes' | 'cobradas';
+      local.queueTab = tabBtn.dataset.queueTab as 'pendientes' | 'cobradas' | 'aliados';
+      local.allyError = '';
       renderQueue();
+      renderCenter();
+      return;
+    }
+
+    if (target.closest('#btn-open-ally-modal')) {
+      local.isAllyModalOpen = true;
+      local.allyError = '';
+      renderAllyModal();
+      return;
+    }
+
+    if (
+      target.id === 'ally-modal-backdrop' ||
+      target.closest('#btn-close-ally-modal') ||
+      target.closest('#btn-cancel-ally-modal')
+    ) {
+      local.isAllyModalOpen = false;
+      local.allyError = '';
+      renderAllyModal();
+      return;
+    }
+
+    const allyBtn = target.closest<HTMLElement>('[data-select-ally]');
+    if (allyBtn?.dataset.selectAlly) {
+      local.selectedAllyId = allyBtn.dataset.selectAlly;
+      local.allyError = '';
+      renderQueue();
+      renderCenter();
+      return;
+    }
+
+    const allyMethodBtn = target.closest<HTMLElement>('[data-ally-method]');
+    if (allyMethodBtn?.dataset.allyMethod) {
+      local.allyMethod = allyMethodBtn.dataset.allyMethod as PosPaymentMethod;
+      local.allyError = '';
+      renderCenter();
+      return;
+    }
+
+    if (target.closest('#btn-pay-ally')) {
+      const ally = getSelectedAlly();
+      if (!ally) return;
+      const amountEl = document.getElementById('ally-pay-amount') as HTMLInputElement | null;
+      const noteEl = document.getElementById('ally-pay-note') as HTMLInputElement | null;
+      const res = recordAllyDebtPayment({
+        debtId: ally.id,
+        monto: Number(amountEl?.value ?? 0),
+        metodo: local.allyMethod,
+        nota: noteEl?.value ?? '',
+      });
+      if (!res.ok) {
+        local.allyError = res.error;
+        renderCenter();
+        return;
+      }
+      storeState = loadPosState();
+      local.allyError = '';
+      local.feedback = {
+        kind: 'ok',
+        text: res.settled
+          ? `Cuenta ${res.debt.id} (${res.debt.negocioNombre}) liquidada por completo.`
+          : `Abono registrado en ${res.debt.id}. Saldo restante: ${formatPen(res.debt.saldoPendiente)}.`,
+      };
+      renderAllDynamic();
+      return;
+    }
+
+    if (target.closest('#btn-sim-reject-digital')) {
+      const order = getSelectedOrder();
+      if (order && order.status === 'pendiente_cobro') {
+        emitSimulatedRejection(
+          order.id,
+          `Pago rechazado por pasarela (${POS_PAYMENT_LABELS[local.selectedMethod]}).`
+        );
+        local.paymentError =
+          'Pasarela simuló un rechazo. Puedes reintentar o cambiar el método de pago.';
+        renderCenter();
+      }
       return;
     }
 
@@ -1236,11 +1671,54 @@ function bindEvents(): void {
     if (target.closest('#btn-reset-day')) {
       storeState = resetPosDay();
       local.selectedOrderId = null;
+      local.selectedAllyId = storeState.allyDebts[0]?.id ?? null;
       local.incomingNotif = null;
       local.isArqueoOpen = false;
       local.feedback = { kind: 'warn', text: 'Jornada POS reiniciada.' };
       renderAllDynamic();
     }
+  });
+
+  root!.addEventListener('submit', (ev) => {
+    const form = ev.target as HTMLFormElement | null;
+    if (form?.id !== 'form-new-ally-debt') return;
+    ev.preventDefault();
+
+    const nameEl = document.getElementById('ally-name') as HTMLInputElement | null;
+    const rucEl = document.getElementById('ally-ruc') as HTMLInputElement | null;
+    const contactEl = document.getElementById('ally-contact') as HTMLInputElement | null;
+    const typeEl = document.getElementById('ally-type') as HTMLSelectElement | null;
+    const daysEl = document.getElementById('ally-days') as HTMLInputElement | null;
+    const itemsEl = document.getElementById('ally-items') as HTMLInputElement | null;
+    const totalEl = document.getElementById('ally-total') as HTMLInputElement | null;
+
+    const res = createAllyDebt({
+      negocioNombre: nameEl?.value ?? '',
+      ruc: rucEl?.value ?? '',
+      contacto: contactEl?.value ?? '',
+      tipo: (typeEl?.value as PosAllyDebtType) ?? 'consignacion',
+      diasPlazo: Number(daysEl?.value ?? 7),
+      descripcionPrendas: itemsEl?.value ?? '',
+      montoTotal: Number(totalEl?.value ?? 0),
+      autorizadoPor: currentSession.displayName,
+    });
+
+    if (!res.ok) {
+      local.allyError = res.error;
+      renderAllyModal();
+      return;
+    }
+
+    storeState = loadPosState();
+    local.isAllyModalOpen = false;
+    local.allyError = '';
+    local.queueTab = 'aliados';
+    local.selectedAllyId = res.debt.id;
+    local.feedback = {
+      kind: 'ok',
+      text: `Cuenta ${res.debt.id} registrada para ${res.debt.negocioNombre}.`,
+    };
+    renderAllDynamic();
   });
 
   root!.addEventListener('input', (ev) => {
@@ -1318,13 +1796,16 @@ function bindEvents(): void {
   });
 
   subscribePosEvents(handleIncomingBroadcast);
+  subscribePosMode((mode) => {
+    local.uiMode = mode;
+    renderAllDynamic();
+  });
 }
 
-if ((import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV) {
-  const consoleApi = buildConsoleApi();
-  window.posPago = consoleApi;
-  window.ioPos = consoleApi;
-}
+const consoleApi = buildConsoleApi();
+window.IO_POS = consoleApi;
+window.posPago = consoleApi;
+window.ioPos = consoleApi;
 
 renderStaticShell();
 bindEvents();

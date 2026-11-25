@@ -3,6 +3,9 @@ import { CategorySlug } from '../types/store.types';
 export type PosPaymentMethod = 'efectivo' | 'tarjeta' | 'yape_plin' | 'transferencia';
 export type PosReceiptType = 'boleta' | 'factura';
 export type PosOrderStatus = 'pendiente_cobro' | 'cobrado' | 'cancelado';
+export type PosUiMode = 'operacion' | 'practica';
+export type PosAllyDebtType = 'consignacion' | 'credito';
+export type PosAllyDebtStatus = 'pendiente' | 'pagado';
 
 export interface PosInventoryItem {
   producto_id: number;
@@ -72,12 +75,29 @@ export interface PosOrder {
   motivoCancelacion?: string;
 }
 
+export interface PosAllyDebt {
+  id: string;
+  negocioNombre: string;
+  ruc: string;
+  contacto: string;
+  tipo: PosAllyDebtType;
+  fechaEmision: string;
+  fechaVencimiento: string;
+  descripcionPrendas: string;
+  autorizadoPor: string;
+  montoTotal: number;
+  montoPagado: number;
+  saldoPendiente: number;
+  status: PosAllyDebtStatus;
+  pagos: PosPaymentRecord[];
+}
+
 export interface PosCashMovement {
   id: string;
   fecha: string;
   orderId: string;
   numeroComprobante?: string;
-  tipo: 'ingreso_venta' | 'abono_cuenta';
+  tipo: 'ingreso_venta' | 'abono_cuenta' | 'abono_aliado';
   metodo: PosPaymentMethod;
   monto: number;
   referencia: string;
@@ -90,8 +110,10 @@ export interface PosStoreState {
   nextOrderSeq: number;
   nextBoletaSeq: number;
   nextFacturaSeq: number;
+  nextAllySeq: number;
   inventory: Record<string, number>;
   orders: PosOrder[];
+  allyDebts: PosAllyDebt[];
   movimientosCaja: PosCashMovement[];
 }
 
@@ -101,6 +123,7 @@ export type PosBroadcastEvent =
   | { type: 'ORDER_PAID'; orderId: string; numeroComprobante: string; timestamp: string }
   | { type: 'ORDER_CANCELLED'; orderId: string; timestamp: string }
   | { type: 'PAYMENT_REJECTED_SIM'; orderId: string; motivo: string; timestamp: string }
+  | { type: 'MODE_CHANGED'; mode: PosUiMode; timestamp: string }
   | { type: 'STATE_SYNC'; timestamp: string };
 
 export interface PosDailySummary {
@@ -111,6 +134,8 @@ export interface PosDailySummary {
   porMetodo: Record<PosPaymentMethod, number>;
   totalAbonosEnPendientes: number;
   igvTotal: number;
+  totalDeudaAliados: number;
+  cantidadDeudasAliados: number;
 }
 
 export interface PosAlternativeSuggestion {
@@ -119,6 +144,7 @@ export interface PosAlternativeSuggestion {
 }
 
 export interface PosConsoleApi {
+  modo: (nuevoModo?: PosUiMode) => PosUiMode;
   ayuda: () => void;
   estado: () => Record<string, unknown>;
   pagar: (monto?: number, metodo?: PosPaymentMethod, ordenId?: string) => Record<string, unknown>;
@@ -134,6 +160,7 @@ export interface PosConsoleApi {
 
 declare global {
   interface Window {
+    IO_POS?: PosConsoleApi;
     posPago?: PosConsoleApi;
     ioPos?: PosConsoleApi;
   }
