@@ -15,8 +15,9 @@ export function renderCollectionBanners(banners: CollectionBanner[]): string {
       if (banner.gender) filterAttrs.push(`data-filter-gender="${escapeHtml(banner.gender)}"`);
       if (banner.ageGroup) filterAttrs.push(`data-filter-age="${escapeHtml(banner.ageGroup)}"`);
       if (banner.onlyOffers) filterAttrs.push(`data-filter-offers="true"`);
+      filterAttrs.push(`data-collection-id="${escapeHtml(banner.id)}"`);
 
-      const hasMedia = hasImageSlotSrc(banner.imageSlotKey);
+      const hasMedia = hasImageSlotSrc(banner.imageSlotKey, false, banner.customImageUrl);
       const romanIdx = String(idx + 1).padStart(2, '0');
       const mediaHtml = hasMedia
         ? `
@@ -26,6 +27,7 @@ export function renderCollectionBanners(banners: CollectionBanner[]): string {
               alt: banner.alt_text,
               aspectRatio: '16 / 10',
               compact: true,
+              customSrc: banner.customImageUrl,
             })}
           </div>
           <div class="io-collection-scrim" aria-hidden="true"></div>

@@ -86,6 +86,23 @@ export interface PurchaseOrder {
 
 export type WarehouseLoanStatus = 'en_consignacion' | 'devuelto' | 'liquidado_caja';
 
+export type WarehouseSupplierStatus = 'pendiente_validacion' | 'aprobado' | 'rechazado';
+
+export interface WarehouseSupplier {
+  id: string;
+  ruc: string;
+  razonSocial: string;
+  contacto: string;
+  telefono: string;
+  rubro: string;
+  status: WarehouseSupplierStatus;
+  creadoPor: string;
+  creadoEn: string;
+  validadoPor?: string;
+  validadoEn?: string;
+  motivoRechazo?: string;
+}
+
 export interface WarehouseLoanItem {
   sku: string;
   nombre: string;
@@ -128,9 +145,11 @@ export interface WarehouseStoreState {
   nextDispatchSeq: number;
   nextPurchaseSeq: number;
   nextLoanSeq: number;
+  nextSupplierSeq?: number;
   dispatches: WarehouseDispatch[];
   purchases: PurchaseOrder[];
   loans: WarehouseLoan[];
+  suppliers?: WarehouseSupplier[];
   auditLog: WarehouseAuditEntry[];
 }
 

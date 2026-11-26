@@ -8,12 +8,15 @@ interface ImageSlotOptions {
   compact?: boolean;
   responsivePicture?: boolean;
   ambientBackdrop?: boolean;
+  customSrc?: string;
 }
 
 export function hasImageSlotSrc(
   slotKey: string,
-  responsivePicture = false
+  responsivePicture = false,
+  customSrc?: string
 ): boolean {
+  if (customSrc && customSrc.trim().length > 0) return true;
   const config = IMAGE_SLOTS[slotKey];
   const desktopSrc = config?.src?.trim() ?? '';
   const mobileSrc = config?.mobileSrc?.trim() ?? '';
@@ -27,10 +30,12 @@ export function renderImageSlot({
   compact = false,
   responsivePicture = false,
   ambientBackdrop = false,
+  customSrc,
 }: ImageSlotOptions): string {
   const config = IMAGE_SLOTS[slotKey];
-  const desktopSrc = config?.src?.trim() ?? '';
-  const mobileSrc = config?.mobileSrc?.trim() ?? '';
+  const overrideSrc = customSrc?.trim() ?? '';
+  const desktopSrc = overrideSrc || (config?.src?.trim() ?? '');
+  const mobileSrc = overrideSrc || (config?.mobileSrc?.trim() ?? '');
   const effectiveSrc = desktopSrc || (responsivePicture ? mobileSrc : '');
   const label = compact ? 'Sin imagen' : (config?.slotLabel ?? 'Espacio para imagen');
 

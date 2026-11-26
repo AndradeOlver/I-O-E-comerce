@@ -38,11 +38,13 @@ export interface CollectionBanner {
   descripcion: string;
   ctaLabel: string;
   imageSlotKey: string;
+  customImageUrl?: string;
   alt_text: string;
   category: CategorySlug;
   gender?: GenderFilter;
   ageGroup?: KidsAgeFilter;
   onlyOffers?: boolean;
+  productGroupIds?: string[];
 }
 
 export interface Categoria {
@@ -91,6 +93,8 @@ export interface ProductGroup {
   destacado?: boolean;
   recienLlegado?: boolean;
   badgeLabel?: string;
+  fraseCorta?: string;
+  customImageUrl?: string;
   precio_regular?: number;
   materialDetalle?: string;
   nombre: string;
@@ -111,6 +115,8 @@ export interface CampanaOferta {
   categoriaTarget: CategorySlug;
   generoTarget?: GenderFilter;
   rangoEdadTarget?: KidsAgeGroup;
+  collectionTargetId?: string;
+  onlyOffersTarget?: boolean;
   productoIds?: number[];
   precio_regular: number;
   precio_promocional: number;
@@ -121,6 +127,7 @@ export interface CampanaOferta {
   aprobada_dueno: boolean;
   activa: boolean;
   imageSlotKey: string;
+  customImageUrl?: string;
   alt_text: string;
 }
 

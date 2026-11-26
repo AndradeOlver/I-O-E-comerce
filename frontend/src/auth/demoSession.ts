@@ -69,7 +69,7 @@ export const DEMO_ROLE_PROFILES: readonly RoleProfileConfig[] = [
     label: 'Administrador',
     area: 'Dirección y finanzas',
     defaultName: 'Lucía Benavides',
-    destination: '/zona-preparacion.html?zona=administracion',
+    destination: '/admin.html',
     group: 'equipo',
     description: 'Indicadores de negocio, planilla y supervisión general.',
   },
@@ -87,9 +87,9 @@ export const DEMO_ROLE_PROFILES: readonly RoleProfileConfig[] = [
     label: 'Community Manager',
     area: 'Marketing y catálogo',
     defaultName: 'Sofía Ríos',
-    destination: '/zona-preparacion.html?zona=marketing',
+    destination: '/marketing.html',
     group: 'equipo',
-    description: 'Campañas promocionales, vigencias y catálogo editorial.',
+    description: 'Portada web, colecciones, recién llegados y campañas promocionales.',
   },
   {
     role: 'respaldo',
@@ -263,7 +263,9 @@ export function sanitizeNextPath(rawNext: string | null): string | null {
       pathname === '/index.html' ||
       pathname === '/pos-vendedor.html' ||
       pathname === '/pos-cajero.html' ||
-      pathname === '/almacen.html'
+      pathname === '/almacen.html' ||
+      pathname === '/marketing.html' ||
+      pathname === '/admin.html'
     ) {
       return `${pathname}${safeHash}`;
     }
@@ -290,6 +292,8 @@ export function getRequiredRoleForPath(path: string): DemoRole | null {
   if (pathname === '/pos-vendedor.html') return 'vendedor';
   if (pathname === '/pos-cajero.html') return 'cajero';
   if (pathname === '/almacen.html') return 'almacenero';
+  if (pathname === '/marketing.html') return 'community_manager';
+  if (pathname === '/admin.html') return 'administrador';
 
   if (pathname.startsWith('/zona-preparacion.html')) {
     const url = new URL(pathname, 'http://localhost');
@@ -306,8 +310,17 @@ export function canRoleAccessPath(role: DemoRole, path: string): boolean {
   const safePath = sanitizeNextPath(path);
   if (!safePath) return false;
   const pathname = safePath.split('#')[0];
+  if (role === 'administrador') {
+    return (
+      pathname === '/admin.html' ||
+      pathname === '/pos-vendedor.html' ||
+      pathname === '/pos-cajero.html' ||
+      pathname === '/almacen.html' ||
+      pathname === '/marketing.html'
+    );
+  }
   if (pathname === '/pos-vendedor.html' || pathname === '/pos-cajero.html') {
-    return role === 'vendedor' || role === 'cajero' || role === 'administrador';
+    return role === 'vendedor' || role === 'cajero';
   }
   return getRequiredRoleForPath(safePath) === role;
 }

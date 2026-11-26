@@ -1,4 +1,4 @@
-import { CATALOGO_PRODUCTOS } from '../data/catalogData';
+import { getAllCatalogProducts } from '../data/customCatalogStore';
 import {
   PosAllyDebt,
   PosAllyDebtType,
@@ -27,28 +27,30 @@ export const POS_PAYMENT_LABELS: Record<PosPaymentMethod, string> = {
   transferencia: 'Transferencia',
 };
 
-const BASE_INVENTORY: PosInventoryItem[] = CATALOGO_PRODUCTOS.flatMap((group) =>
-  group.variants.map((variant) => ({
-    producto_id: variant.producto_id,
-    groupId: group.groupId,
-    sku: variant.sku,
-    nombre: group.nombre,
-    marca: group.marca,
-    categorySlug: group.categorySlug,
-    talla: variant.talla,
-    color: variant.color,
-    colorHex: variant.colorHex,
-    imageSlotKey: variant.imageSlotKey,
-    alt_text: variant.alt_text,
-    precio_venta: variant.precio_venta,
-    stock: variant.stock,
-    stock_minimo: variant.stock_minimo,
-  }))
-);
+function buildBaseInventory(): PosInventoryItem[] {
+  return getAllCatalogProducts().flatMap((group) =>
+    group.variants.map((variant) => ({
+      producto_id: variant.producto_id,
+      groupId: group.groupId,
+      sku: variant.sku,
+      nombre: group.nombre,
+      marca: group.marca,
+      categorySlug: group.categorySlug,
+      talla: variant.talla,
+      color: variant.color,
+      colorHex: variant.colorHex,
+      imageSlotKey: variant.imageSlotKey,
+      alt_text: variant.alt_text,
+      precio_venta: variant.precio_venta,
+      stock: variant.stock,
+      stock_minimo: variant.stock_minimo,
+    }))
+  );
+}
 
-const BASE_BY_SKU = new Map<string, PosInventoryItem>(
-  BASE_INVENTORY.map((item) => [item.sku, item])
-);
+function buildBaseBySku(): Map<string, PosInventoryItem> {
+  return new Map<string, PosInventoryItem>(buildBaseInventory().map((item) => [item.sku, item]));
+}
 
 export function roundMoney(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
@@ -78,7 +80,7 @@ function getTodayKey(): string {
 
 function buildInitialInventoryMap(): Record<string, number> {
   const map: Record<string, number> = {};
-  for (const item of BASE_INVENTORY) {
+  for (const item of buildBaseInventory()) {
     map[item.sku] = item.stock;
   }
   return map;
@@ -211,8 +213,9 @@ export function loadPosState(): PosStoreState {
       return reset;
     }
     const mergedInventory = buildInitialInventoryMap();
+    const baseMap = buildBaseBySku();
     for (const [sku, qty] of Object.entries(parsed.inventory)) {
-      if (BASE_BY_SKU.has(sku) && typeof qty === 'number' && qty >= 0) {
+      if (baseMap.has(sku) && typeof qty === 'number' && qty >= 0) {
         mergedInventory[sku] = qty;
       }
     }
@@ -309,14 +312,14 @@ export function subscribePosMode(listener: (mode: PosUiMode) => void): () => voi
 }
 
 export function getInventoryList(state: PosStoreState): PosInventoryItem[] {
-  return BASE_INVENTORY.map((item) => ({
+  return buildBaseInventory().map((item) => ({
     ...item,
     stock: state.inventory[item.sku] ?? item.stock,
   }));
 }
 
 export function adjustSkuStock(sku: string, delta: number): boolean {
-  if (!BASE_BY_SKU.has(sku) || !Number.isFinite(delta) || delta === 0) {
+  if (!buildBaseBySku().has(sku) || !Number.isFinite(delta) || delta === 0) {
     return false;
   }
   const state = loadPosState();
@@ -332,7 +335,7 @@ export function getSkuStock(state: PosStoreState, sku: string): number {
   if (sku in state.inventory) {
     return state.inventory[sku];
   }
-  return BASE_BY_SKU.get(sku)?.stock ?? 0;
+  return buildBaseBySku().get(sku)?.stock ?? 0;
 }
 
 export function calculateOrderTotals(
@@ -382,7 +385,7 @@ export function findAlternativesForSku(
   sku: string,
   state: PosStoreState
 ): PosAlternativeSuggestion[] {
-  const target = BASE_BY_SKU.get(sku);
+  const target = buildBaseBySku().get(sku);
   if (!target) return [];
 
   const all = getInventoryList(state).filter((item) => item.sku !== sku && item.stock > 0);
@@ -457,8 +460,9 @@ export function createAndSendOrder(
   }
 
   const orderItems: PosOrderItem[] = [];
+  const baseMap = buildBaseBySku();
   for (const line of payload.items) {
-    const base = BASE_BY_SKU.get(line.sku);
+    const base = baseMap.get(line.sku);
     if (!base) {
       return { ok: false, error: `SKU no encontrado: ${line.sku}` };
     }

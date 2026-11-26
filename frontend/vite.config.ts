@@ -18,6 +18,8 @@ export default defineConfig({
         posVendedor: resolve(rootDir, 'pos-vendedor.html'),
         posCajero: resolve(rootDir, 'pos-cajero.html'),
         almacen: resolve(rootDir, 'almacen.html'),
+        marketing: resolve(rootDir, 'marketing.html'),
+        admin: resolve(rootDir, 'admin.html'),
       },
     },
   },

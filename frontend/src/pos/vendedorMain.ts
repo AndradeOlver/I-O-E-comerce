@@ -3,6 +3,12 @@ import '../styles/tokens.css';
 import '../styles/pos.css';
 import { DemoSession, logoutToAccess, requireAnyZoneRole } from '../auth/demoSession';
 import { IMAGE_SLOTS } from '../data/imageSlots';
+import {
+  calculatePromotionalPrice,
+  getActiveCampaignForProduct,
+  loadMarketingState,
+  subscribeMarketingEvents,
+} from '../marketing/marketingStore';
 import { bindBrandLogo, renderBrandMark } from '../render/brand';
 import { escapeHtml } from '../utils/icons';
 import {
@@ -48,6 +54,7 @@ interface VendedorLocalState {
   filterTalla: string;
   filterColor: string;
   onlyInStock: boolean;
+  onlyOffers: boolean;
   selectedSkuByGroup: Record<string, string>;
   draftItems: DraftLine[];
   isOrderDrawerOpen: boolean;
@@ -69,6 +76,7 @@ const local: VendedorLocalState = {
   filterTalla: '',
   filterColor: '',
   onlyInStock: false,
+  onlyOffers: false,
   selectedSkuByGroup: {},
   draftItems: [],
   isOrderDrawerOpen: false,
@@ -94,6 +102,7 @@ if (!activeSession) {
 const currentSession: DemoSession = activeSession;
 
 let storeState: PosStoreState = loadPosState();
+let marketingState = loadMarketingState();
 
 const root = document.getElementById('pos-vendedor-root');
 if (!root) {
@@ -134,6 +143,12 @@ function getFilteredInventory(): PosInventoryItem[] {
   const q = local.searchQuery.trim().toLowerCase();
   return all.filter((item) => {
     if (local.onlyInStock && item.stock <= 0) return false;
+    if (
+      local.onlyOffers &&
+      !getActiveCampaignForProduct(item.groupId, item.categorySlug, marketingState)
+    ) {
+      return false;
+    }
     if (local.filterTalla && item.talla !== local.filterTalla) return false;
     if (local.filterColor && item.color !== local.filterColor) return false;
     if (!q) return true;
@@ -305,6 +320,11 @@ function renderStaticShell(): void {
           <span><span class="pos-kbd">F8</span> Limpiar</span>
           <span><span class="pos-kbd">Esc</span> Cerrar</span>
         </div>
+        ${
+          currentSession.role === 'administrador'
+            ? '<a href="/admin.html" class="pos-topbar-btn text-decoration-none">Dirección</a>'
+            : ''
+        }
         <button type="button" id="btn-pos-logout" class="pos-topbar-btn">
           Cerrar sesión
         </button>
@@ -348,11 +368,17 @@ function renderStaticShell(): void {
                 ${colores.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
               </select>
             </div>
-            <div class="col-12 col-md-2 d-flex align-items-center">
+            <div class="col-12 col-md-2 d-flex flex-column justify-content-center gap-1">
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" id="pos-only-stock" />
                 <label class="form-check-label small fw-semibold" for="pos-only-stock">
                   Solo con stock
+                </label>
+              </div>
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="pos-only-offers" />
+                <label class="form-check-label small fw-semibold" for="pos-only-offers">
+                  Solo en oferta hoy
                 </label>
               </div>
             </div>
@@ -622,7 +648,37 @@ function renderResults(): void {
                         .join('')}
                     </div>
                   </td>
-                  <td class="text-end fw-bold pos-num">${formatPen(active.precio_venta)}</td>
+                  <td class="text-end fw-bold pos-num">
+                    ${(() => {
+                      const activeCamp = getActiveCampaignForProduct(
+                        group.groupId,
+                        active.categorySlug,
+                        marketingState
+                      );
+                      if (!activeCamp) {
+                        return formatPen(active.precio_venta);
+                      }
+                      const promoPrice = calculatePromotionalPrice(
+                        active.precio_venta,
+                        activeCamp.porcentajeDescuento
+                      );
+                      if (activeCamp.aplicaEnTiendaFisica) {
+                        return `
+                          <div class="small text-decoration-line-through pos-text-muted">${formatPen(active.precio_venta)}</div>
+                          <div>${formatPen(promoPrice)}</div>
+                          <div class="small fw-semibold" style="color: var(--color-success-ok);">
+                            Oferta -${activeCamp.porcentajeDescuento}% · hasta ${escapeHtml(activeCamp.fecha_fin.slice(5))}
+                          </div>
+                        `;
+                      }
+                      return `
+                        <div>${formatPen(active.precio_venta)}</div>
+                        <div class="small pos-text-muted">
+                          Web: ${formatPen(promoPrice)} (solo online)
+                        </div>
+                      `;
+                    })()}
+                  </td>
                   <td>${getStockBadgeHtml(active.stock, active.stock_minimo)}</td>
                   <td class="text-end">
                     ${
@@ -1019,6 +1075,7 @@ function bindEvents(): void {
   const tallaSelect = document.getElementById('pos-filter-talla') as HTMLSelectElement;
   const colorSelect = document.getElementById('pos-filter-color') as HTMLSelectElement;
   const onlyStockCheck = document.getElementById('pos-only-stock') as HTMLInputElement;
+  const onlyOffersCheck = document.getElementById('pos-only-offers') as HTMLInputElement | null;
 
   searchInput.addEventListener('input', () => {
     local.searchQuery = searchInput.value;
@@ -1059,6 +1116,11 @@ function bindEvents(): void {
 
   onlyStockCheck.addEventListener('change', () => {
     local.onlyInStock = onlyStockCheck.checked;
+    renderResults();
+  });
+
+  onlyOffersCheck?.addEventListener('change', () => {
+    local.onlyOffers = onlyOffersCheck.checked;
     renderResults();
   });
 
@@ -1331,6 +1393,11 @@ function bindEvents(): void {
   subscribePosMode((mode) => {
     local.uiMode = mode;
     renderPracticeBar();
+  });
+
+  subscribeMarketingEvents(() => {
+    marketingState = loadMarketingState();
+    renderResults();
   });
 }
 

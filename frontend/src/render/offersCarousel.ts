@@ -45,6 +45,7 @@ export function renderOffersCarousel(
             aspectRatio: '16 / 7',
             responsivePicture: true,
             ambientBackdrop: true,
+            customSrc: offer.customImageUrl,
           })}
 
           <div class="io-carousel-scrim" aria-hidden="true"></div>
@@ -74,6 +75,8 @@ export function renderOffersCarousel(
                 data-action="go-category"
                 data-category="${escapeHtml(offer.categoriaTarget)}"
                 ${offer.generoTarget && offer.generoTarget !== 'todos' ? `data-filter-gender="${escapeHtml(offer.generoTarget)}"` : ''}
+                ${offer.collectionTargetId ? `data-collection-id="${escapeHtml(offer.collectionTargetId)}"` : ''}
+                ${offer.onlyOffersTarget ? 'data-filter-offers="true"' : ''}
                 aria-label="Ver detalles de ${escapeHtml(offer.titulo)}"
               >
                 <span>${escapeHtml(offer.ctaLabel ?? 'Ver detalles')}</span>

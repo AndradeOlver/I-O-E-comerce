@@ -3,12 +3,15 @@ import './styles/tokens.css';
 import './styles/storefront.css';
 import { DemoSession, clearDemoSession, getActiveDemoSession } from './auth/demoSession';
 import {
-  CATALOGO_PRODUCTOS,
   CATEGORIAS_TIENDA,
-  COLECCIONES_BANNERS,
   MARCAS_TIENDA,
-  OFERTAS_CARRUSEL,
 } from './data/catalogData';
+import {
+  getEffectiveCatalogProducts,
+  getEffectiveCollectionBanners,
+  getEffectiveHeroOffers,
+  subscribeMarketingEvents,
+} from './marketing/marketingStore';
 import { renderAccountSessionModal, renderWishlistDrawer } from './render/accountPanels';
 import { bindBrandLogo } from './render/brand';
 import { renderBrandsSection } from './render/brandsSection';
@@ -42,6 +45,7 @@ interface StoreState {
   selectedGender: GenderFilter;
   selectedAgeGroup: KidsAgeFilter;
   selectedBrand: string;
+  selectedCollectionId: string | null;
   onlyOffers: boolean;
   selectedSize: string;
   sortBy: 'relevancia' | 'precio-asc' | 'precio-desc';
@@ -107,6 +111,7 @@ const state: StoreState = {
   selectedGender: 'todos',
   selectedAgeGroup: 'todas',
   selectedBrand: 'todas',
+  selectedCollectionId: null,
   onlyOffers: false,
   selectedSize: 'todas',
   sortBy: 'relevancia',
@@ -154,7 +159,7 @@ const root: HTMLElement = rootEl;
 
 function getAvailableSizes(): string[] {
   const sizes = new Set<string>();
-  for (const p of CATALOGO_PRODUCTOS) {
+  for (const p of getEffectiveCatalogProducts()) {
     for (const v of p.variants) sizes.add(v.talla);
   }
   return Array.from(sizes);
@@ -162,7 +167,7 @@ function getAvailableSizes(): string[] {
 
 function getActiveOfferProductIds(): Set<number> {
   const ids = new Set<number>();
-  for (const campana of OFERTAS_CARRUSEL) {
+  for (const campana of getEffectiveHeroOffers()) {
     if (
       campana.activa &&
       campana.aprobada_dueno &&
@@ -177,7 +182,7 @@ function getActiveOfferProductIds(): Set<number> {
 
 function getActiveOfferCategories(): Set<CategorySlug> {
   const cats = new Set<CategorySlug>();
-  for (const campana of OFERTAS_CARRUSEL) {
+  for (const campana of getEffectiveHeroOffers()) {
     if (
       campana.activa &&
       campana.aprobada_dueno &&
@@ -193,8 +198,19 @@ function getFilteredProducts() {
   const q = state.searchQuery.trim().toLowerCase();
   const activeOfferIds = state.onlyOffers ? getActiveOfferProductIds() : null;
   const activeOfferCats = state.onlyOffers ? getActiveOfferCategories() : null;
+  const catalogProducts = getEffectiveCatalogProducts();
+  const selectedCollection = state.selectedCollectionId
+    ? getEffectiveCollectionBanners().find((c) => c.id === state.selectedCollectionId)
+    : null;
+  const collectionGroupIds =
+    selectedCollection?.productGroupIds && selectedCollection.productGroupIds.length > 0
+      ? new Set(selectedCollection.productGroupIds)
+      : null;
 
-  const matches = CATALOGO_PRODUCTOS.filter((product) => {
+  const matches = catalogProducts.filter((product) => {
+    if (collectionGroupIds && !collectionGroupIds.has(product.groupId)) {
+      return false;
+    }
     if (state.selectedGender !== 'todos') {
       if (state.selectedGender === 'ninos') {
         if (product.genero !== 'ninos') return false;
@@ -428,6 +444,7 @@ function navigateToHome(): void {
   state.selectedGender = 'todos';
   state.selectedAgeGroup = 'todas';
   state.selectedBrand = 'todas';
+  state.selectedCollectionId = null;
   state.onlyOffers = false;
   state.selectedSize = 'todas';
   resetDesktopMenuState();
@@ -447,6 +464,7 @@ interface NavigateCategoryFilters {
   ageGroup?: KidsAgeFilter;
   subcategory?: string;
   brand?: string;
+  collectionId?: string | null;
   onlyOffers?: boolean;
   sizeFilter?: string;
 }
@@ -462,6 +480,7 @@ function navigateToCategory(
     state.selectedGender === 'ninos' ? (filters.ageGroup ?? 'todas') : 'todas';
   state.selectedSubcategory = filters.subcategory ?? 'todas';
   state.selectedBrand = filters.brand ?? 'todas';
+  state.selectedCollectionId = filters.collectionId ?? null;
   state.onlyOffers = filters.onlyOffers ?? false;
   state.selectedSize = filters.sizeFilter ?? 'todas';
   resetDesktopMenuState();
@@ -489,11 +508,15 @@ function renderApp(): void {
   const currentCategoryObj =
     CATEGORIAS_TIENDA.find((c) => c.slug === state.selectedCategory) ?? null;
 
+  const catalogProducts = getEffectiveCatalogProducts();
+  const collectionBanners = getEffectiveCollectionBanners();
+  const heroOffers = getEffectiveHeroOffers();
+
   const activeDetailProduct = state.activeDetailGroupId
-    ? (CATALOGO_PRODUCTOS.find((p) => p.groupId === state.activeDetailGroupId) ?? null)
+    ? (catalogProducts.find((p) => p.groupId === state.activeDetailGroupId) ?? null)
     : null;
 
-  const wishlistedProducts = CATALOGO_PRODUCTOS.filter((p) =>
+  const wishlistedProducts = catalogProducts.filter((p) =>
     state.wishlistGroups.has(p.groupId)
   );
 
@@ -522,7 +545,7 @@ function renderApp(): void {
     state.view === 'home'
       ? `
         ${renderOffersCarousel(
-          OFERTAS_CARRUSEL,
+          heroOffers,
           state.carouselIndex,
           state.carouselPaused,
           state.colorblindMode
@@ -542,10 +565,10 @@ function renderApp(): void {
               : ''
           }
 
-          ${renderCategoryGrid(CATEGORIAS_TIENDA, CATALOGO_PRODUCTOS, state.selectedCategory)}
+          ${renderCategoryGrid(CATEGORIAS_TIENDA, catalogProducts, state.selectedCategory)}
 
           ${renderNewArrivalsSection({
-            products: CATALOGO_PRODUCTOS,
+            products: catalogProducts,
             selectedVariants: state.selectedVariants,
             colorblindMode: state.colorblindMode,
             wishlistGroups: state.wishlistGroups,
@@ -554,13 +577,13 @@ function renderApp(): void {
           ${renderBrandsSection(MARCAS_TIENDA)}
 
           ${renderFeaturedSection({
-            products: CATALOGO_PRODUCTOS,
+            products: catalogProducts,
             selectedVariants: state.selectedVariants,
             colorblindMode: state.colorblindMode,
             wishlistGroups: state.wishlistGroups,
           })}
 
-          ${renderCollectionBanners(COLECCIONES_BANNERS)}
+          ${renderCollectionBanners(collectionBanners)}
         </div>
       `
       : `
@@ -587,7 +610,7 @@ function renderApp(): void {
           selectedBrand: state.selectedBrand,
           onlyOffers: state.onlyOffers,
           products: filteredProducts,
-          totalCatalogCount: CATALOGO_PRODUCTOS.length,
+          totalCatalogCount: catalogProducts.length,
           selectedSize: state.selectedSize,
           sortBy: state.sortBy,
           availableSizes: getAvailableSizes(),
@@ -760,7 +783,7 @@ root.addEventListener('click', (event) => {
   if (!target) return;
 
   const action = target.dataset.action;
-  const validOffersCount = OFERTAS_CARRUSEL.filter(
+  const validOffersCount = getEffectiveHeroOffers().filter(
     (o) => o.activa && o.aprobada_dueno && o.stock_consumido < o.stock_maximo
   ).length;
 
@@ -775,6 +798,7 @@ root.addEventListener('click', (event) => {
       const gender = target.dataset.filterGender as GenderFilter | undefined;
       const ageGroup = target.dataset.filterAge as KidsAgeFilter | undefined;
       const subcategory = target.dataset.filterSubcategory;
+      const collectionId = target.dataset.collectionId ?? null;
       const onlyOffers = target.dataset.filterOffers === 'true';
       const sizeFilter = target.dataset.filterSize;
       navigateToCategory(slug, {
@@ -782,6 +806,7 @@ root.addEventListener('click', (event) => {
         ageGroup,
         subcategory,
         brand: state.selectedBrand,
+        collectionId,
         onlyOffers,
         sizeFilter,
       });
@@ -911,7 +936,7 @@ root.addEventListener('click', (event) => {
     }
     case 'toggle-wishlist-item': {
       const groupId = target.dataset.group ?? '';
-      const product = CATALOGO_PRODUCTOS.find((p) => p.groupId === groupId);
+      const product = getEffectiveCatalogProducts().find((p) => p.groupId === groupId);
       if (!product) break;
       if (state.wishlistGroups.has(groupId)) {
         state.wishlistGroups.delete(groupId);
@@ -1054,7 +1079,7 @@ root.addEventListener('click', (event) => {
     case 'select-color': {
       const groupId = target.dataset.group ?? '';
       const color = target.dataset.color ?? '';
-      const product = CATALOGO_PRODUCTOS.find((p) => p.groupId === groupId);
+      const product = getEffectiveCatalogProducts().find((p) => p.groupId === groupId);
       if (!product) break;
       const matching = product.variants.filter((v) => v.color === color);
       const chosen = matching.find((v) => v.stock > 0) ?? matching[0];
@@ -1077,7 +1102,7 @@ root.addEventListener('click', (event) => {
     case 'add-to-cart': {
       const groupId = target.dataset.group ?? '';
       const variantId = Number(target.dataset.variantId ?? 0);
-      const product = CATALOGO_PRODUCTOS.find((p) => p.groupId === groupId);
+      const product = getEffectiveCatalogProducts().find((p) => p.groupId === groupId);
       const variant = product?.variants.find((v) => v.producto_id === variantId);
       if (!product || !variant || variant.stock <= 0) break;
 
@@ -1201,7 +1226,7 @@ function resetCarouselTimer(): void {
   carouselTimerId = window.setInterval(() => {
     if (state.view !== 'home' || state.carouselPaused) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const count = OFERTAS_CARRUSEL.filter(
+    const count = getEffectiveHeroOffers().filter(
       (o) => o.activa && o.aprobada_dueno && o.stock_consumido < o.stock_maximo
     ).length;
     if (count > 1) {
@@ -1230,6 +1255,10 @@ window.setInterval(() => {
 }, 1000);
 
 renderApp();
+
+subscribeMarketingEvents(() => {
+  renderApp();
+});
 
 let scrollTicking = false;
 window.addEventListener(

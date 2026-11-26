@@ -2,7 +2,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/tokens.css';
 import '../styles/pos.css';
 import '../styles/almacen.css';
-import { DemoSession, logoutToAccess, requireZoneRole } from '../auth/demoSession';
+import { DemoSession, logoutToAccess, requireAnyZoneRole } from '../auth/demoSession';
 import {
   formatPen,
   getInventoryList,
@@ -23,6 +23,7 @@ import {
   loadWarehouseState,
   receivePurchaseOrder,
   recordDeliveryAttempt,
+  registerSupplier,
   resetWarehouseState,
   subscribeWarehouseEvents,
   verifyDispatchSku,
@@ -46,6 +47,7 @@ interface AlmacenLocalState {
   selectedPurchaseId: string | null;
   selectedLoanId: string | null;
   isLoanModalOpen: boolean;
+  isSupplierModalOpen: boolean;
   isAuditModalOpen: boolean;
   printDoc: WarehousePrintDoc | null;
   modalError: string;
@@ -53,7 +55,7 @@ interface AlmacenLocalState {
   feedback: { kind: 'ok' | 'err' | 'warn'; text: string } | null;
 }
 
-const activeSession = requireZoneRole('almacenero', '/almacen.html');
+const activeSession = requireAnyZoneRole(['almacenero', 'administrador'], '/almacen.html');
 if (!activeSession) {
   throw new Error('Redirigiendo al acceso');
 }
@@ -70,6 +72,7 @@ const local: AlmacenLocalState = {
   selectedPurchaseId: whState.purchases[0]?.id ?? null,
   selectedLoanId: whState.loans[0]?.id ?? null,
   isLoanModalOpen: false,
+  isSupplierModalOpen: false,
   isAuditModalOpen: false,
   printDoc: null,
   modalError: '',
@@ -119,6 +122,11 @@ function renderStaticShell(): void {
           <span><span class="pos-kbd">F2</span> Buscar</span>
           <span><span class="pos-kbd">Esc</span> Cerrar</span>
         </div>
+        ${
+          currentSession.role === 'administrador'
+            ? '<a href="/admin.html" class="pos-topbar-btn text-decoration-none">Dirección</a>'
+            : ''
+        }
         <button type="button" id="btn-open-audit" class="pos-topbar-btn">Bitácora</button>
         <button type="button" id="btn-almacen-logout" class="pos-topbar-btn">Cerrar sesión</button>
       </div>
@@ -247,8 +255,12 @@ function renderTopActions(): void {
   if (!slot) return;
 
   if (local.activeTab === 'compras') {
-    slot.innerHTML =
-      '<span class="small pos-text-muted">Solo se recepcionan órdenes aprobadas previamente por el Administrador (RN-COM-03).</span>';
+    slot.innerHTML = `
+      <span class="small pos-text-muted">Solo se recepcionan órdenes aprobadas previamente por el Administrador (RN-COM-03).</span>
+      <button type="button" id="btn-open-supplier-modal" class="pos-btn-md pos-btn-secondary">
+        + Registrar proveedor
+      </button>
+    `;
   } else if (local.activeTab === 'prestamos') {
     slot.innerHTML = `
       <button type="button" id="btn-open-loan-modal" class="pos-btn-md pos-btn-primary">
@@ -974,6 +986,54 @@ function renderModals(): void {
     return;
   }
 
+  if (local.isSupplierModalOpen) {
+    slot.innerHTML = `
+      <div class="pos-modal-backdrop" id="alm-modal-backdrop">
+        <div class="pos-modal-card" style="max-width:520px;" role="dialog" aria-modal="true">
+          <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+            <h2 class="h5 pos-display mb-0">Registrar Proveedor (M04)</h2>
+            <button type="button" class="pos-btn-md pos-btn-secondary" id="btn-close-alm-modal">Cerrar</button>
+          </div>
+          <p class="small pos-text-muted mb-2">
+            El proveedor quedará en estado <strong>Pendiente de validación</strong> hasta ser habilitado por Dirección en el Dashboard.
+          </p>
+          <form id="form-new-supplier" class="d-flex flex-column gap-2">
+            <div class="row g-2">
+              <div class="col-5">
+                <label for="sup-ruc" class="form-label small fw-semibold mb-1">RUC (11 dígitos) *</label>
+                <input id="sup-ruc" type="text" maxlength="11" class="form-control form-control-sm pos-num" required placeholder="20601984512" />
+              </div>
+              <div class="col-7">
+                <label for="sup-razon" class="form-label small fw-semibold mb-1">Razón social *</label>
+                <input id="sup-razon" type="text" class="form-control form-control-sm" required placeholder="Ej. Tejidos Lima Sur SAC" />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label for="sup-contacto" class="form-label small fw-semibold mb-1">Contacto</label>
+                <input id="sup-contacto" type="text" class="form-control form-control-sm" placeholder="Nombre del asesor" />
+              </div>
+              <div class="col-6">
+                <label for="sup-telefono" class="form-label small fw-semibold mb-1">Teléfono</label>
+                <input id="sup-telefono" type="text" class="form-control form-control-sm pos-num" placeholder="987654321" />
+              </div>
+            </div>
+            <div>
+              <label for="sup-rubro" class="form-label small fw-semibold mb-1">Rubro / Especialidad</label>
+              <input id="sup-rubro" type="text" class="form-control form-control-sm" placeholder="Ej. Algodón Pima, sastrería, calzado" />
+            </div>
+            ${local.modalError ? `<div class="pos-inline-error">${escapeHtml(local.modalError)}</div>` : ''}
+            <div class="d-flex justify-content-end gap-2 mt-2">
+              <button type="button" class="pos-btn-md pos-btn-secondary" id="btn-cancel-alm-modal">Cancelar</button>
+              <button type="submit" class="pos-btn-md pos-btn-primary">Enviar a validación de Dirección</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   if (local.isAuditModalOpen) {
     slot.innerHTML = `
       <div class="pos-modal-backdrop" id="alm-modal-backdrop">
@@ -1504,12 +1564,20 @@ function bindEvents(): void {
       return;
     }
 
+    if (target.closest('#btn-open-supplier-modal')) {
+      local.isSupplierModalOpen = true;
+      local.modalError = '';
+      renderModals();
+      return;
+    }
+
     if (
       target.id === 'alm-modal-backdrop' ||
       target.closest('#btn-close-alm-modal') ||
       target.closest('#btn-cancel-alm-modal')
     ) {
       local.isLoanModalOpen = false;
+      local.isSupplierModalOpen = false;
       local.isAuditModalOpen = false;
       local.modalError = '';
       renderModals();
@@ -1589,6 +1657,38 @@ function bindEvents(): void {
         text: `Constancia ${res.loan.constanciaCodigo} emitida. Stock descontado.`,
       };
       renderAll();
+      return;
+    }
+
+    if (form.id === 'form-new-supplier') {
+      ev.preventDefault();
+      const ruc = (document.getElementById('sup-ruc') as HTMLInputElement | null)?.value ?? '';
+      const razonSocial = (document.getElementById('sup-razon') as HTMLInputElement | null)?.value ?? '';
+      const contacto = (document.getElementById('sup-contacto') as HTMLInputElement | null)?.value ?? '';
+      const telefono = (document.getElementById('sup-telefono') as HTMLInputElement | null)?.value ?? '';
+      const rubro = (document.getElementById('sup-rubro') as HTMLInputElement | null)?.value ?? '';
+
+      const res = registerSupplier({
+        ruc,
+        razonSocial,
+        contacto,
+        telefono,
+        rubro,
+        usuario: currentSession.displayName,
+      });
+      if (!res.ok) {
+        local.modalError = res.error;
+        renderModals();
+        return;
+      }
+      whState = loadWarehouseState();
+      local.isSupplierModalOpen = false;
+      local.modalError = '';
+      local.feedback = {
+        kind: 'ok',
+        text: `Proveedor ${res.supplier.razonSocial} registrado y enviado a validación de Dirección.`,
+      };
+      renderAll();
     }
   });
 
@@ -1610,8 +1710,9 @@ function bindEvents(): void {
       if (local.printDoc) {
         local.printDoc = null;
         renderPrintModal();
-      } else if (local.isLoanModalOpen || local.isAuditModalOpen) {
+      } else if (local.isLoanModalOpen || local.isSupplierModalOpen || local.isAuditModalOpen) {
         local.isLoanModalOpen = false;
+        local.isSupplierModalOpen = false;
         local.isAuditModalOpen = false;
         renderModals();
       } else if (local.feedback) {

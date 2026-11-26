@@ -1,0 +1,950 @@
+/* ==========================================================================
+   I&O Dirección · Mesa de Control por Excepción y Decisión (TN01)
+   Identidad Espresso & Piedra · Uso interno (sin componentes buyer-only)
+   ========================================================================== */
+
+.adm-shell {
+  max-width: 1420px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+}
+
+.adm-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.adm-page-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 2.2vw, 1.95rem);
+  font-weight: 600;
+  color: var(--color-ink);
+  line-height: 1.15;
+}
+
+.adm-page-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.86rem;
+  color: var(--color-ink-muted);
+}
+
+.adm-refresh-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+
+/* ==========================================================================
+   CAPA 1: Franja de Pulso Vital
+   ========================================================================== */
+.adm-pulse-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1.15fr 1fr;
+  gap: 0.85rem;
+  margin-bottom: 1.1rem;
+}
+
+.adm-pulse-card {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 0.95rem 1.05rem;
+  box-shadow: var(--shadow-warm-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+.adm-pulse-card.is-alert {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-bg);
+}
+
+.adm-pulse-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.adm-pulse-kicker {
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-ink-muted);
+}
+
+.adm-pulse-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-white);
+  color: var(--color-ink-muted);
+}
+
+.adm-pulse-status.is-ok {
+  color: var(--color-success-ok);
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
+}
+
+.adm-pulse-status.is-warn {
+  color: var(--color-warning-low);
+  border-color: var(--color-warning-border);
+  background: var(--color-warning-bg);
+}
+
+.adm-pulse-status.is-err {
+  color: var(--color-danger-err);
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-bg);
+}
+
+.adm-pulse-value {
+  font-size: clamp(1.45rem, 2.2vw, 1.85rem);
+  font-weight: 800;
+  color: var(--color-ink);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.adm-pulse-meter {
+  height: 5px;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+}
+
+.adm-pulse-meter-fill {
+  height: 100%;
+  background: var(--color-primary-espresso);
+  transition: width var(--dur-base) var(--ease-out);
+}
+
+.adm-pulse-meter-fill.is-accent {
+  background: var(--color-accent-terracotta);
+}
+
+.adm-pulse-meter-fill.is-err {
+  background: var(--color-danger-err);
+}
+
+.adm-pulse-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+
+.adm-pulse-breakdown strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   CAPA 2 & 3: Bandeja de Decisiones + Expediente Contextual
+   ========================================================================== */
+.adm-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(350px, 0.85fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.adm-panel {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-warm-sm);
+}
+
+.adm-queue-header {
+  padding: 0.9rem 1.05rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.adm-queue-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.adm-section-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.32rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.adm-kbd-hint {
+  font-size: 0.74rem;
+  color: var(--color-ink-muted);
+}
+
+.adm-filters-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.adm-sev-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.adm-sev-tab {
+  min-height: 34px;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-white);
+  color: var(--color-ink-muted);
+  font-size: 0.79rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.adm-sev-tab:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-ink);
+}
+
+.adm-sev-tab.is-active {
+  background: var(--color-primary-espresso);
+  border-color: var(--color-primary-espresso);
+  color: var(--color-header-text);
+}
+
+.adm-area-select {
+  min-height: 34px;
+  font-size: 0.8rem;
+  padding: 0.25rem 1.8rem 0.25rem 0.6rem;
+  width: auto;
+  max-width: 190px;
+}
+
+.adm-queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.adm-decision-row {
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface-white);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 4px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.72rem 0.85rem;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 0.85rem;
+  align-items: center;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.adm-decision-row.sev-bloqueante {
+  border-left-color: var(--color-accent-terracotta);
+}
+
+.adm-decision-row.sev-atencion {
+  border-left-color: var(--color-warning-low);
+}
+
+.adm-decision-row.sev-observacion {
+  border-left-color: var(--color-border-strong);
+}
+
+.adm-decision-row.is-acknowledged {
+  opacity: 0.72;
+  background: var(--color-surface-subtle);
+  border-left-color: var(--color-success-ok);
+}
+
+.adm-decision-row:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-card);
+}
+
+.adm-decision-row.is-selected {
+  border-color: var(--color-primary-espresso);
+  background: var(--color-terracotta-soft);
+}
+
+.adm-decision-meta-top {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.2rem;
+}
+
+.adm-area-tag {
+  font-size: 0.71rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+}
+
+.adm-rule-tag {
+  font-size: 0.71rem;
+  font-weight: 600;
+  padding: 0.08rem 0.4rem;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.adm-decision-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.3;
+}
+
+.adm-decision-summary {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+
+.adm-decision-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.22rem;
+}
+
+.adm-decision-impact {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.adm-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.14rem 0.48rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-card);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.adm-status-pill.is-bloqueante {
+  background: var(--color-terracotta-soft);
+  border-color: var(--color-accent-terracotta);
+  color: var(--color-primary-espresso);
+}
+
+.adm-status-pill.is-atencion {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-low);
+}
+
+.adm-status-pill.is-ok {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
+  color: var(--color-success-ok);
+}
+
+.adm-empty-queue {
+  padding: 2.2rem 1.25rem;
+  text-align: center;
+  color: var(--color-ink-muted);
+}
+
+.adm-empty-queue h3 {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--color-ink);
+}
+
+.adm-empty-queue p {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+/* ==========================================================================
+   CAPA 3: Panel Contextual de Resolución (Sticky)
+   ========================================================================== */
+.adm-detail-panel {
+  position: sticky;
+  top: 66px;
+  padding: 1.05rem 1.15rem;
+  border-top: 4px solid var(--color-primary-espresso);
+}
+
+.adm-detail-panel.sev-bloqueante {
+  border-top-color: var(--color-accent-terracotta);
+}
+
+.adm-detail-panel.sev-atencion {
+  border-top-color: var(--color-warning-low);
+}
+
+.adm-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 0.85rem;
+}
+
+.adm-detail-title {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.42rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  line-height: 1.18;
+}
+
+.adm-facts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem 0.85rem;
+  background: var(--color-surface-white);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.adm-fact-label {
+  display: block;
+  font-size: 0.71rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+}
+
+.adm-fact-val {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-top: 0.1rem;
+}
+
+.adm-subtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-bottom: 0.85rem;
+  background: var(--color-surface-white);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.adm-subtable th,
+.adm-subtable td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  text-align: left;
+}
+
+.adm-subtable th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+  background: var(--color-surface-subtle);
+}
+
+.adm-subtable td.is-num,
+.adm-subtable th.is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-pokayoke-box {
+  background: var(--color-surface-white);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.adm-pokayoke-box.is-danger {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-bg);
+}
+
+.adm-pokayoke-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.adm-pokayoke-desc {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+
+.adm-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.85rem;
+}
+
+.adm-btn-primary {
+  min-height: var(--touch-min);
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary-espresso);
+  background: var(--color-primary-espresso);
+  color: var(--color-header-text);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.adm-btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.adm-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.adm-btn-secondary {
+  min-height: var(--touch-min);
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-white);
+  color: var(--color-ink);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.adm-btn-secondary:hover {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-primary-espresso);
+  color: var(--color-ink);
+}
+
+.adm-btn-danger-outline {
+  min-height: var(--touch-min);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-surface-white);
+  color: var(--color-danger-err);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.adm-btn-danger-outline:hover {
+  background: var(--color-danger-bg);
+}
+
+.adm-feedback-banner {
+  margin-bottom: 0.9rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+.adm-feedback-banner.is-ok {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
+  color: var(--color-success-ok);
+}
+
+.adm-feedback-banner.is-err {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-err);
+}
+
+.adm-feedback-banner.is-warn {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-low);
+}
+
+/* ==========================================================================
+   CAPA 4: Bitácora de Trazabilidad
+   ========================================================================== */
+.adm-audit-section {
+  margin-top: 1.25rem;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-warm-sm);
+  overflow: hidden;
+}
+
+.adm-audit-summary {
+  padding: 0.85rem 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  cursor: pointer;
+  list-style: none;
+}
+
+.adm-audit-summary::-webkit-details-marker {
+  display: none;
+}
+
+.adm-audit-body {
+  border-top: 1px solid var(--color-border-subtle);
+  padding: 0.75rem 1.05rem 1rem;
+  background: var(--color-surface-white);
+}
+
+.adm-audit-table-wrap {
+  overflow-x: auto;
+}
+
+.adm-audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.81rem;
+}
+
+.adm-audit-table th,
+.adm-audit-table td {
+  padding: 0.48rem 0.6rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.adm-audit-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+}
+
+/* ==========================================================================
+   Responsive (375px / 768px / 1280px y zoom 200%)
+   ========================================================================== */
+@media (max-width: 1080px) {
+  .adm-pulse-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-detail-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .adm-shell {
+    padding: 0.75rem 0.75rem 1.5rem;
+  }
+
+  .adm-decision-row {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-decision-right {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .adm-facts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-pulse-meter-fill,
+  .adm-sev-tab,
+  .adm-decision-row,
+  .adm-btn-primary,
+  .adm-btn-secondary,
+  .adm-view-tab,
+  .adm-bar-fill {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   Pestañas de Vista Superior (Mesa de Control / Analítica / Altas)
+   ========================================================================== */
+.adm-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 0.65rem;
+}
+
+.adm-view-tab {
+  min-height: var(--touch-min);
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-card);
+  color: var(--color-ink-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.adm-view-tab:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-ink);
+}
+
+.adm-view-tab.is-active {
+  background: var(--color-primary-espresso);
+  border-color: var(--color-primary-espresso);
+  color: var(--color-header-text);
+}
+
+/* ==========================================================================
+   Paneles Acordeón por Área (5 Áreas del Negocio)
+   ========================================================================== */
+.adm-areas-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.65rem;
+}
+
+.adm-area-accordion {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-white);
+  overflow: hidden;
+}
+
+.adm-area-accordion.has-bloqueante {
+  border-color: var(--color-accent-terracotta);
+}
+
+.adm-area-head {
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface-subtle);
+  border: none;
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.adm-area-head:hover {
+  background: var(--color-surface-card);
+}
+
+.adm-area-head-left {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.adm-area-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.adm-area-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.adm-area-empty-line {
+  font-size: 0.78rem;
+  color: var(--color-ink-muted);
+}
+
+.adm-area-body {
+  border-top: 1px solid var(--color-border-subtle);
+  padding: 0.45rem;
+}
+
+/* ==========================================================================
+   Analítica y Tendencias (Barras Espresso & Piedra)
+   ========================================================================== */
+.adm-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.adm-chart-card {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow-warm-sm);
+}
+
+.adm-chart-title {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-display);
+  font-size: 1.28rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.adm-chart-sub {
+  margin: 0 0 0.85rem;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+
+.adm-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.adm-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.adm-bar-label-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.81rem;
+  color: var(--color-ink);
+}
+
+.adm-bar-track {
+  height: 9px;
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-subtle);
+  overflow: hidden;
+}
+
+.adm-bar-fill {
+  height: 100%;
+  background: var(--color-primary-espresso);
+  transition: width var(--dur-base) var(--ease-out);
+}
+
+.adm-bar-fill.is-terracotta {
+  background: var(--color-accent-terracotta);
+}
+
+.adm-bar-fill.is-ok {
+  background: var(--color-success-ok);
+}
+
+/* ==========================================================================
+   Altas de Dirección (Modelos de Ropa y Proveedores)
+   ========================================================================== */
+.adm-altas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.adm-size-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.9rem;
+}
+
+@media (max-width: 992px) {
+  .adm-analytics-grid,
+  .adm-altas-grid {
+    grid-template-columns: 1fr;
+  }
+}

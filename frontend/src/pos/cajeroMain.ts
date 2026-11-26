@@ -146,6 +146,11 @@ function renderStaticShell(): void {
           <span><span class="pos-kbd">F7</span> Imprimir</span>
           <span><span class="pos-kbd">Esc</span> Cerrar</span>
         </div>
+        ${
+          currentSession.role === 'administrador'
+            ? '<a href="/admin.html" class="pos-topbar-btn text-decoration-none">Dirección</a>'
+            : ''
+        }
         <button type="button" id="btn-open-arqueo" class="pos-topbar-btn">
           Arqueo (F6)
         </button>

@@ -14,6 +14,7 @@ import {
   WarehouseLoan,
   WarehouseLoanItem,
   WarehouseStoreState,
+  WarehouseSupplier,
 } from './almacenTypes';
 
 const STORAGE_KEY = 'io_almacen_state_v1';
@@ -290,6 +291,48 @@ function buildSeedLoans(inv: PosInventoryItem[]): WarehouseLoan[] {
   ];
 }
 
+function createSeedSuppliers(): WarehouseSupplier[] {
+  return [
+    {
+      id: 'PROV-001',
+      ruc: '20548796321',
+      razonSocial: 'Textiles Andinos del Sur SAC',
+      contacto: 'Rosa Valverde',
+      telefono: '987654321',
+      rubro: 'Algodón Pima y tejido de punto',
+      status: 'aprobado',
+      creadoPor: 'Lucía Benavides (Admin)',
+      creadoEn: addDaysIso(-3),
+      validadoPor: 'Lucía Benavides (Admin)',
+      validadoEn: addDaysIso(-3),
+    },
+    {
+      id: 'PROV-002',
+      ruc: '20601234567',
+      razonSocial: 'Confecciones Lima Centro EIRL',
+      contacto: 'Carlos Paredes',
+      telefono: '991234567',
+      rubro: 'Denim, cargos y casacas urbanas',
+      status: 'aprobado',
+      creadoPor: 'Mateo Quispe (Almacenero)',
+      creadoEn: addDaysIso(-2),
+      validadoPor: 'Lucía Benavides (Admin)',
+      validadoEn: addDaysIso(-2),
+    },
+    {
+      id: 'PROV-003',
+      ruc: '20601984512',
+      razonSocial: 'Confecciones Miraflores EIRL',
+      contacto: 'Elena Chávez',
+      telefono: '984512369',
+      rubro: 'Vestidos satinados y sastrería femenina',
+      status: 'pendiente_validacion',
+      creadoPor: 'Mateo Quispe (Almacenero)',
+      creadoEn: addDaysIso(0),
+    },
+  ];
+}
+
 function createInitialState(): WarehouseStoreState {
   const inv = getInventoryList(loadPosState());
   return {
@@ -297,9 +340,11 @@ function createInitialState(): WarehouseStoreState {
     nextDispatchSeq: 4,
     nextPurchaseSeq: 21,
     nextLoanSeq: 3,
+    nextSupplierSeq: 4,
     dispatches: buildSeedDispatches(inv),
     purchases: buildSeedPurchases(inv),
     loans: buildSeedLoans(inv),
+    suppliers: createSeedSuppliers(),
     auditLog: [
       {
         id: 'AUD-INIT-01',
@@ -332,9 +377,14 @@ export function loadWarehouseState(): WarehouseStoreState {
       nextDispatchSeq: typeof parsed.nextDispatchSeq === 'number' ? parsed.nextDispatchSeq : 4,
       nextPurchaseSeq: typeof parsed.nextPurchaseSeq === 'number' ? parsed.nextPurchaseSeq : 21,
       nextLoanSeq: typeof parsed.nextLoanSeq === 'number' ? parsed.nextLoanSeq : 3,
+      nextSupplierSeq: typeof parsed.nextSupplierSeq === 'number' ? parsed.nextSupplierSeq : 4,
       dispatches: parsed.dispatches,
       purchases: Array.isArray(parsed.purchases) ? parsed.purchases : [],
       loans: Array.isArray(parsed.loans) ? parsed.loans : [],
+      suppliers:
+        Array.isArray(parsed.suppliers) && parsed.suppliers.length > 0
+          ? parsed.suppliers
+          : createSeedSuppliers(),
       auditLog: Array.isArray(parsed.auditLog) ? parsed.auditLog : [],
     };
   } catch {
@@ -633,6 +683,36 @@ export function approvePurchaseOrder(
   return { ok: true, purchase };
 }
 
+export function rejectPurchaseOrder(
+  purchaseId: string,
+  motivo: string,
+  adminNombre = 'Lucía Benavides (Admin)'
+): { ok: true; purchase: PurchaseOrder } | { ok: false; error: string } {
+  const cleanReason = motivo.trim();
+  if (cleanReason.length < 5) {
+    return { ok: false, error: 'Indica un motivo de rechazo de al menos 5 caracteres.' };
+  }
+
+  const state = loadWarehouseState();
+  const purchase = state.purchases.find((p) => p.id === purchaseId);
+  if (!purchase) return { ok: false, error: 'Orden de compra no encontrada.' };
+  if (purchase.status !== 'pendiente_aprobacion') {
+    return { ok: false, error: `La orden ${purchase.id} no está pendiente de aprobación.` };
+  }
+
+  purchase.status = 'rechazada';
+  purchase.notaInconformidad = cleanReason;
+  addAudit(
+    state,
+    adminNombre,
+    'M04-Compras',
+    'RN-COM-01',
+    `Orden ${purchase.id} rechazada desde Dashboard. Motivo: ${cleanReason}`
+  );
+  saveWarehouseState(state);
+  return { ok: true, purchase };
+}
+
 export function receivePurchaseOrder(params: {
   purchaseId: string;
   guiaRemision: string;
@@ -862,4 +942,122 @@ export function closeWarehouseLoan(params: {
 
   saveWarehouseState(state);
   return { ok: true, loan };
+}
+
+export function registerSupplier(payload: {
+  ruc: string;
+  razonSocial: string;
+  contacto: string;
+  telefono: string;
+  rubro: string;
+  usuario: string;
+  autoApprove?: boolean;
+}): { ok: true; supplier: WarehouseSupplier } | { ok: false; error: string } {
+  const ruc = payload.ruc.trim();
+  const razonSocial = payload.razonSocial.trim();
+  const contacto = payload.contacto.trim();
+  const telefono = payload.telefono.trim();
+  const rubro = payload.rubro.trim();
+
+  if (!/^\d{11}$/.test(ruc)) {
+    return { ok: false, error: 'El RUC del proveedor debe tener exactamente 11 dígitos.' };
+  }
+  if (razonSocial.length < 3) {
+    return { ok: false, error: 'Ingresa la razón social del proveedor (mín. 3 caracteres).' };
+  }
+
+  const state = loadWarehouseState();
+  const list = state.suppliers ?? createSeedSuppliers();
+  if (list.some((s) => s.ruc === ruc)) {
+    return { ok: false, error: `Ya existe un proveedor registrado con el RUC ${ruc}.` };
+  }
+
+  const seq = state.nextSupplierSeq ?? list.length + 1;
+  state.nextSupplierSeq = seq + 1;
+  const now = new Date().toISOString();
+  const supplier: WarehouseSupplier = {
+    id: `PROV-${String(seq).padStart(3, '0')}`,
+    ruc,
+    razonSocial,
+    contacto: contacto || 'Sin contacto asignado',
+    telefono: telefono || '—',
+    rubro: rubro || 'Confección general',
+    status: payload.autoApprove ? 'aprobado' : 'pendiente_validacion',
+    creadoPor: payload.usuario,
+    creadoEn: now,
+    ...(payload.autoApprove ? { validadoPor: payload.usuario, validadoEn: now } : {}),
+  };
+
+  state.suppliers = [supplier, ...list];
+  addAudit(
+    state,
+    payload.usuario,
+    'M04-Compras',
+    'RN-COM-01',
+    payload.autoApprove
+      ? `Proveedor ${supplier.razonSocial} (${supplier.ruc}) dado de alta y aprobado por Dirección.`
+      : `Proveedor ${supplier.razonSocial} (${supplier.ruc}) registrado por Almacén — pendiente de validación.`
+  );
+  saveWarehouseState(state);
+  return { ok: true, supplier };
+}
+
+export function approveSupplier(
+  supplierId: string,
+  adminNombre = 'Lucía Benavides (Admin)'
+): { ok: true; supplier: WarehouseSupplier } | { ok: false; error: string } {
+  const state = loadWarehouseState();
+  const list = state.suppliers ?? createSeedSuppliers();
+  const supplier = list.find((s) => s.id === supplierId);
+  if (!supplier) return { ok: false, error: 'Proveedor no encontrado.' };
+  if (supplier.status !== 'pendiente_validacion') {
+    return { ok: false, error: `El proveedor ${supplier.razonSocial} no está pendiente.` };
+  }
+
+  supplier.status = 'aprobado';
+  supplier.validadoPor = adminNombre;
+  supplier.validadoEn = new Date().toISOString();
+  state.suppliers = list;
+  addAudit(
+    state,
+    adminNombre,
+    'M04-Compras',
+    'RN-SEG-03',
+    `Proveedor ${supplier.razonSocial} (${supplier.ruc}) validado y habilitado para compras.`
+  );
+  saveWarehouseState(state);
+  return { ok: true, supplier };
+}
+
+export function rejectSupplier(
+  supplierId: string,
+  motivo: string,
+  adminNombre = 'Lucía Benavides (Admin)'
+): { ok: true; supplier: WarehouseSupplier } | { ok: false; error: string } {
+  const cleanReason = motivo.trim();
+  if (cleanReason.length < 5) {
+    return { ok: false, error: 'Indica el motivo de rechazo (mín. 5 caracteres).' };
+  }
+  const state = loadWarehouseState();
+  const list = state.suppliers ?? createSeedSuppliers();
+  const supplier = list.find((s) => s.id === supplierId);
+  if (!supplier) return { ok: false, error: 'Proveedor no encontrado.' };
+  if (supplier.status !== 'pendiente_validacion') {
+    return { ok: false, error: `El proveedor ${supplier.razonSocial} no está pendiente.` };
+  }
+
+  supplier.status = 'rechazado';
+  supplier.motivoRechazo = cleanReason;
+  supplier.validadoPor = adminNombre;
+  supplier.validadoEn = new Date().toISOString();
+  state.suppliers = list;
+  addAudit(
+    state,
+    adminNombre,
+    'M04-Compras',
+    'RN-COM-01',
+    `Proveedor ${supplier.razonSocial} rechazado. Motivo: ${cleanReason}`
+  );
+  saveWarehouseState(state);
+  return { ok: true, supplier };
 }

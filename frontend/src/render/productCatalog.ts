@@ -82,7 +82,7 @@ export function renderProductVisualContent(
   activeVariant: ProductVariant
 ): string {
   const slot = IMAGE_SLOTS[activeVariant.imageSlotKey];
-  const imgSrc = slot?.src?.trim() ?? '';
+  const imgSrc = product.customImageUrl?.trim() || slot?.src?.trim() || '';
 
   const logoFallbackHtml = `
     <div
