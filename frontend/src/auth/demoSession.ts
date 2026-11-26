@@ -78,7 +78,7 @@ export const DEMO_ROLE_PROFILES: readonly RoleProfileConfig[] = [
     label: 'Almacenero',
     area: 'Almacén y envíos',
     defaultName: 'Mateo Quispe',
-    destination: '/zona-preparacion.html?zona=almacen',
+    destination: '/almacen.html',
     group: 'equipo',
     description: 'Despacho courier, compras a proveedores y préstamos.',
   },
@@ -262,7 +262,8 @@ export function sanitizeNextPath(rawNext: string | null): string | null {
     if (
       pathname === '/index.html' ||
       pathname === '/pos-vendedor.html' ||
-      pathname === '/pos-cajero.html'
+      pathname === '/pos-cajero.html' ||
+      pathname === '/almacen.html'
     ) {
       return `${pathname}${safeHash}`;
     }
@@ -288,6 +289,7 @@ export function getRequiredRoleForPath(path: string): DemoRole | null {
   if (pathname === '/index.html') return 'cliente';
   if (pathname === '/pos-vendedor.html') return 'vendedor';
   if (pathname === '/pos-cajero.html') return 'cajero';
+  if (pathname === '/almacen.html') return 'almacenero';
 
   if (pathname.startsWith('/zona-preparacion.html')) {
     const url = new URL(pathname, 'http://localhost');

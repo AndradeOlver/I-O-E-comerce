@@ -17,6 +17,7 @@ export default defineConfig({
         zonaPreparacion: resolve(rootDir, 'zona-preparacion.html'),
         posVendedor: resolve(rootDir, 'pos-vendedor.html'),
         posCajero: resolve(rootDir, 'pos-cajero.html'),
+        almacen: resolve(rootDir, 'almacen.html'),
       },
     },
   },

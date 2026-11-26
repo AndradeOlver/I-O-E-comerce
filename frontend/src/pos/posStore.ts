@@ -315,6 +315,19 @@ export function getInventoryList(state: PosStoreState): PosInventoryItem[] {
   }));
 }
 
+export function adjustSkuStock(sku: string, delta: number): boolean {
+  if (!BASE_BY_SKU.has(sku) || !Number.isFinite(delta) || delta === 0) {
+    return false;
+  }
+  const state = loadPosState();
+  const current = getSkuStock(state, sku);
+  const next = Math.max(0, Math.round(current + delta));
+  state.inventory[sku] = next;
+  savePosState(state);
+  emitEvent({ type: 'STATE_SYNC', timestamp: new Date().toISOString() });
+  return true;
+}
+
 export function getSkuStock(state: PosStoreState, sku: string): number {
   if (sku in state.inventory) {
     return state.inventory[sku];
