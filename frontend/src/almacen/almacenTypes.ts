@@ -1,6 +1,6 @@
 import { PosUiMode } from '../pos/posTypes';
 
-export type WarehouseTab = 'despachos' | 'compras' | 'prestamos' | 'critico';
+export type WarehouseTab = 'despachos' | 'compras' | 'prestamos';
 
 export type WarehouseDispatchStatus =
   | 'esperando_pago'

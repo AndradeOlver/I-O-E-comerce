@@ -9,7 +9,6 @@ import {
   getPosUiMode,
   loadPosState,
   setPosUiMode,
-  subscribePosEvents,
   subscribePosMode,
 } from '../pos/posStore';
 import { PosUiMode } from '../pos/posTypes';
@@ -19,7 +18,6 @@ import {
   approvePurchaseOrder,
   closeWarehouseLoan,
   confirmDispatchPaymentSim,
-  createPurchaseRequest,
   createWarehouseLoan,
   generateDispatchGuide,
   loadWarehouseState,
@@ -47,9 +45,6 @@ interface AlmacenLocalState {
   selectedDispatchId: string | null;
   selectedPurchaseId: string | null;
   selectedLoanId: string | null;
-  showAllInventory: boolean;
-  isPurchaseModalOpen: boolean;
-  prefillPurchaseSku: string;
   isLoanModalOpen: boolean;
   isAuditModalOpen: boolean;
   printDoc: WarehousePrintDoc | null;
@@ -74,9 +69,6 @@ const local: AlmacenLocalState = {
   selectedDispatchId: whState.dispatches[0]?.id ?? null,
   selectedPurchaseId: whState.purchases[0]?.id ?? null,
   selectedLoanId: whState.loans[0]?.id ?? null,
-  showAllInventory: false,
-  isPurchaseModalOpen: false,
-  prefillPurchaseSku: '',
   isLoanModalOpen: false,
   isAuditModalOpen: false,
   printDoc: null,
@@ -121,9 +113,8 @@ function renderStaticShell(): void {
         <span class="pos-brand-mark">${renderBrandMark()}</span>
         <nav class="pos-nav-tabs" aria-label="Frentes de Almacén">
           <button type="button" class="pos-nav-tab is-active" data-nav-tab="despachos">Despachos</button>
-          <button type="button" class="pos-nav-tab" data-nav-tab="compras">Compras</button>
+          <button type="button" class="pos-nav-tab" data-nav-tab="compras">Recepción Compras</button>
           <button type="button" class="pos-nav-tab" data-nav-tab="prestamos">Préstamos</button>
-          <button type="button" class="pos-nav-tab" data-nav-tab="critico">Stock Crítico</button>
         </nav>
         <span class="pos-topbar-staff">Almacén: <strong>${escapeHtml(currentSession.displayName)}</strong></span>
       </div>
@@ -227,7 +218,6 @@ function renderPulseStrip(): void {
   const pendingApproval = whState.purchases.filter((p) => p.status === 'pendiente_aprobacion').length;
   const activeLoans = whState.loans.filter((l) => l.status === 'en_consignacion');
   const overdueLoans = activeLoans.filter((l) => getDaysRemaining(l.fechaLimite) < 0).length;
-  const criticalCount = getInventoryList(posState).filter((i) => i.stock <= i.stock_minimo).length;
 
   slot.innerHTML = `
     <div class="alm-pulse-strip">
@@ -240,8 +230,8 @@ function renderPulseStrip(): void {
       </button>
       <button type="button" class="alm-pulse-btn ${local.activeTab === 'compras' ? 'is-active' : ''}" data-nav-tab="compras">
         <div>
-          <div class="alm-pulse-label">Compras (M04)</div>
-          <div class="alm-pulse-sub">${approvedPurchases} aprobada(s) · ${pendingApproval} por aprobar</div>
+          <div class="alm-pulse-label">Recepción de Compras (M04)</div>
+          <div class="alm-pulse-sub">${approvedPurchases} aprobada(s) · ${pendingApproval} pendiente(s) Admin</div>
         </div>
         <div class="alm-pulse-count pos-num">${approvedPurchases}</div>
       </button>
@@ -251,13 +241,6 @@ function renderPulseStrip(): void {
           <div class="alm-pulse-sub">${overdueLoans > 0 ? `${overdueLoans} plazo vencido` : 'En consignación'}</div>
         </div>
         <div class="alm-pulse-count pos-num ${overdueLoans > 0 ? 'is-err' : ''}">${activeLoans.length}</div>
-      </button>
-      <button type="button" class="alm-pulse-btn ${local.activeTab === 'critico' ? 'is-active' : ''}" data-nav-tab="critico">
-        <div>
-          <div class="alm-pulse-label">Stock Crítico (≤ 5)</div>
-          <div class="alm-pulse-sub">Umbral RN-INV-03</div>
-        </div>
-        <div class="alm-pulse-count pos-num ${criticalCount > 0 ? 'is-err' : ''}">${criticalCount}</div>
       </button>
     </div>
   `;
@@ -272,25 +255,13 @@ function renderTopActions(): void {
   if (!slot) return;
 
   if (local.activeTab === 'compras') {
-    slot.innerHTML = `
-      <button type="button" id="btn-open-purchase-modal" class="pos-btn-md pos-btn-primary">
-        + Solicitar reposición a Admin
-      </button>
-    `;
+    slot.innerHTML =
+      '<span class="small pos-text-muted">Solo se recepcionan órdenes aprobadas previamente por el Administrador (RN-COM-03).</span>';
   } else if (local.activeTab === 'prestamos') {
     slot.innerHTML = `
       <button type="button" id="btn-open-loan-modal" class="pos-btn-md pos-btn-primary">
         + Nuevo préstamo / consignación
       </button>
-    `;
-  } else if (local.activeTab === 'critico') {
-    slot.innerHTML = `
-      <div class="form-check mb-0 d-flex align-items-center gap-2">
-        <input class="form-check-input mt-0" type="checkbox" id="alm-show-all-inv" ${local.showAllInventory ? 'checked' : ''} />
-        <label class="form-check-label small fw-semibold" for="alm-show-all-inv">
-          Mostrar todo el inventario
-        </label>
-      </div>
     `;
   } else {
     slot.innerHTML = '<span class="small pos-text-muted">Solo pedidos con pago confirmado pasan a empaque (RN-ECO-01).</span>';
@@ -921,70 +892,6 @@ function renderLoanDetail(l: WarehouseLoan): string {
   `;
 }
 
-function renderCriticalView(slot: HTMLElement): void {
-  const all = getInventoryList(posState);
-  const rows = all.filter((item) => {
-    if (!local.showAllInventory && item.stock > item.stock_minimo) return false;
-    return matchesSearch([item.sku, item.nombre, item.marca, item.color, item.talla]);
-  });
-
-  slot.innerHTML = `
-    <section class="pos-panel">
-      <div class="pos-panel-header">
-        <h2 class="pos-panel-title pos-display">${local.showAllInventory ? 'Inventario General de Almacén' : 'Alertas de Stock Crítico (≤ 5 unidades · RN-INV-03)'}</h2>
-        <span class="small pos-text-muted pos-num">${rows.length} SKUs</span>
-      </div>
-      <div class="pos-panel-body">
-        ${
-          rows.length === 0
-            ? '<div class="pos-subbox pos-subbox--muted p-4 text-center pos-text-muted">No hay SKUs en estado crítico bajo este filtro.</div>'
-            : `<div class="pos-table-wrap">
-                <table class="pos-table">
-                  <thead>
-                    <tr>
-                      <th>SKU</th>
-                      <th>Prenda</th>
-                      <th>Talla · Color</th>
-                      <th class="text-center">Stock Actual</th>
-                      <th class="text-center">Mínimo</th>
-                      <th class="text-end">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${rows
-                      .map(
-                        (it) => `
-                      <tr class="${it.stock <= 0 ? 'pos-row-agotado' : ''}">
-                        <td><span class="pos-sku-code">${escapeHtml(it.sku)}</span></td>
-                        <td>
-                          <div class="fw-semibold">${escapeHtml(it.nombre)}</div>
-                          <div class="small pos-text-muted">${escapeHtml(it.marca)}</div>
-                        </td>
-                        <td>${escapeHtml(it.talla)} · ${escapeHtml(it.color)}</td>
-                        <td class="text-center">
-                          <span class="pos-stock-badge ${it.stock <= 0 ? 'pos-stock-zero' : it.stock <= it.stock_minimo ? 'pos-stock-low' : 'pos-stock-ok'} pos-num">
-                            ${it.stock} u.
-                          </span>
-                        </td>
-                        <td class="text-center pos-num">${it.stock_minimo}</td>
-                        <td class="text-end">
-                          <button type="button" class="pos-btn-md pos-btn-primary" data-request-sku="${escapeHtml(it.sku)}">
-                            Solicitar compra
-                          </button>
-                        </td>
-                      </tr>
-                    `
-                      )
-                      .join('')}
-                  </tbody>
-                </table>
-              </div>`
-        }
-      </div>
-    </section>
-  `;
-}
-
 function renderWorkspace(): void {
   const slot = document.getElementById('alm-workspace-slot');
   if (!slot) return;
@@ -993,64 +900,14 @@ function renderWorkspace(): void {
     renderDispatchesView(slot);
   } else if (local.activeTab === 'compras') {
     renderPurchasesView(slot);
-  } else if (local.activeTab === 'prestamos') {
-    renderLoansView(slot);
   } else {
-    renderCriticalView(slot);
+    renderLoansView(slot);
   }
 }
 
 function renderModals(): void {
   const slot = document.getElementById('alm-modal-slot');
   if (!slot) return;
-
-  if (local.isPurchaseModalOpen) {
-    const inv = getInventoryList(posState);
-    const defaultSku = local.prefillPurchaseSku || inv.find((i) => i.stock <= i.stock_minimo)?.sku || inv[0]?.sku || '';
-    slot.innerHTML = `
-      <div class="pos-modal-backdrop" id="alm-modal-backdrop">
-        <div class="pos-modal-card" style="max-width:560px;" role="dialog" aria-modal="true">
-          <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-            <h2 class="h5 pos-display mb-0">Nueva Solicitud de Compra (Requiere Aprobación Admin)</h2>
-            <button type="button" class="pos-btn-md pos-btn-secondary" id="btn-close-alm-modal">Cerrar</button>
-          </div>
-          <form id="form-new-purchase" class="d-flex flex-column gap-2">
-            <div>
-              <label for="pur-prov" class="form-label small fw-semibold mb-1">Proveedor *</label>
-              <input id="pur-prov" type="text" class="form-control form-control-sm" required value="Textiles Pima Perú S.A.C." />
-            </div>
-            <div class="row g-2">
-              <div class="col-5">
-                <label for="pur-ruc" class="form-label small fw-semibold mb-1">RUC (11 dígitos) *</label>
-                <input id="pur-ruc" type="text" maxlength="11" class="form-control form-control-sm pos-num" required value="20541122334" />
-              </div>
-              <div class="col-7">
-                <label for="pur-qty" class="form-label small fw-semibold mb-1">Cantidad solicitada *</label>
-                <input id="pur-qty" type="number" min="1" class="form-control form-control-sm pos-num" required value="12" />
-              </div>
-            </div>
-            <div>
-              <label for="pur-sku" class="form-label small fw-semibold mb-1">SKU a reponer *</label>
-              <select id="pur-sku" class="form-select form-select-sm">
-                ${inv
-                  .map(
-                    (i) =>
-                      `<option value="${escapeHtml(i.sku)}" ${i.sku === defaultSku ? 'selected' : ''}>${escapeHtml(i.sku)} · ${escapeHtml(i.nombre)} (${escapeHtml(i.talla)} / ${escapeHtml(i.color)}) [Stock: ${i.stock}]</option>`
-                  )
-                  .join('')}
-              </select>
-            </div>
-            ${local.modalError ? `<div class="pos-inline-error">${escapeHtml(local.modalError)}</div>` : ''}
-            <div class="d-flex justify-content-end gap-2 mt-2">
-              <button type="button" class="pos-btn-md pos-btn-secondary" id="btn-cancel-alm-modal">Cancelar</button>
-              <button type="submit" class="pos-btn-md pos-btn-primary">Enviar a aprobación del Admin</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
-    return;
-  }
 
   if (local.isLoanModalOpen) {
     const inv = getInventoryList(posState).filter((i) => i.stock > 0);
@@ -1360,14 +1217,6 @@ function bindEvents(): void {
     renderModals();
   });
 
-  root!.addEventListener('change', (ev) => {
-    const target = ev.target as HTMLInputElement | null;
-    if (target?.id === 'alm-show-all-inv') {
-      local.showAllInventory = target.checked;
-      renderWorkspace();
-    }
-  });
-
   root!.addEventListener('keydown', (ev) => {
     const target = ev.target as HTMLInputElement | null;
     if (target?.id === 'alm-dispatch-sku-scan' && ev.key === 'Enter') {
@@ -1656,23 +1505,6 @@ function bindEvents(): void {
       return;
     }
 
-    const reqSkuBtn = target.closest<HTMLElement>('[data-request-sku]');
-    if (reqSkuBtn?.dataset.requestSku) {
-      local.prefillPurchaseSku = reqSkuBtn.dataset.requestSku;
-      local.isPurchaseModalOpen = true;
-      local.modalError = '';
-      renderModals();
-      return;
-    }
-
-    if (target.closest('#btn-open-purchase-modal')) {
-      local.prefillPurchaseSku = '';
-      local.isPurchaseModalOpen = true;
-      local.modalError = '';
-      renderModals();
-      return;
-    }
-
     if (target.closest('#btn-open-loan-modal')) {
       local.isLoanModalOpen = true;
       local.modalError = '';
@@ -1685,7 +1517,6 @@ function bindEvents(): void {
       target.closest('#btn-close-alm-modal') ||
       target.closest('#btn-cancel-alm-modal')
     ) {
-      local.isPurchaseModalOpen = false;
       local.isLoanModalOpen = false;
       local.isAuditModalOpen = false;
       local.modalError = '';
@@ -1727,38 +1558,6 @@ function bindEvents(): void {
   root!.addEventListener('submit', (ev) => {
     const form = ev.target as HTMLFormElement | null;
     if (!form) return;
-
-    if (form.id === 'form-new-purchase') {
-      ev.preventDefault();
-      const prov = (document.getElementById('pur-prov') as HTMLInputElement | null)?.value ?? '';
-      const ruc = (document.getElementById('pur-ruc') as HTMLInputElement | null)?.value ?? '';
-      const qty = Number((document.getElementById('pur-qty') as HTMLInputElement | null)?.value ?? 0);
-      const sku = (document.getElementById('pur-sku') as HTMLSelectElement | null)?.value ?? '';
-
-      const res = createPurchaseRequest({
-        proveedorNombre: prov,
-        proveedorRuc: ruc,
-        sku,
-        cantidad: qty,
-        usuario: currentSession.displayName,
-      });
-      if (!res.ok) {
-        local.modalError = res.error;
-        renderModals();
-        return;
-      }
-      whState = loadWarehouseState();
-      local.isPurchaseModalOpen = false;
-      local.modalError = '';
-      local.activeTab = 'compras';
-      local.selectedPurchaseId = res.purchase.id;
-      local.feedback = {
-        kind: 'ok',
-        text: `Solicitud ${res.purchase.id} enviada a aprobación del Administrador.`,
-      };
-      renderAll();
-      return;
-    }
 
     if (form.id === 'form-new-loan') {
       ev.preventDefault();
@@ -1819,8 +1618,7 @@ function bindEvents(): void {
       if (local.printDoc) {
         local.printDoc = null;
         renderPrintModal();
-      } else if (local.isPurchaseModalOpen || local.isLoanModalOpen || local.isAuditModalOpen) {
-        local.isPurchaseModalOpen = false;
+      } else if (local.isLoanModalOpen || local.isAuditModalOpen) {
         local.isLoanModalOpen = false;
         local.isAuditModalOpen = false;
         renderModals();
@@ -1833,10 +1631,6 @@ function bindEvents(): void {
 
   subscribeWarehouseEvents(() => {
     whState = loadWarehouseState();
-    renderAll();
-  });
-  subscribePosEvents(() => {
-    posState = loadPosState();
     renderAll();
   });
   subscribePosMode((mode) => {
