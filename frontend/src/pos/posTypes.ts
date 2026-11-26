@@ -139,7 +139,11 @@ export interface PosDailySummary {
 }
 
 export interface PosAlternativeSuggestion {
-  motivo: 'Otra talla disponible' | 'Otro color disponible' | 'Prenda similar disponible';
+  motivo:
+    | 'Talla similar disponible'
+    | 'Misma talla en otro color'
+    | 'Otro color disponible'
+    | 'Prenda similar disponible';
   item: PosInventoryItem;
 }
 

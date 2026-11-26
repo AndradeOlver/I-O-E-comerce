@@ -992,6 +992,37 @@ body.pos-body {
   flex-wrap: wrap;
 }
 
+/* Selector compacto para productos con 5+ colores */
+.pos-color-select-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 155px;
+  max-width: 220px;
+}
+
+.pos-color-select {
+  min-height: 32px;
+  font-size: 0.8rem;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+/* Fila desplegable de alternativas debajo del producto */
+.pos-alt-row td {
+  background: var(--color-warning-bg);
+  padding: 0.6rem 0.75rem;
+  border-bottom: 2px solid var(--color-warning-border);
+}
+
+.pos-alt-row .pos-alt-box {
+  margin-bottom: 0;
+  background: transparent;
+  border: none;
+  border-left: 4px solid var(--color-warning-low);
+  padding: 0.15rem 0 0.15rem 0.75rem;
+}
+
 /* Impresión limpia de comprobante o arqueo */
 @media print {
   body.pos-body {

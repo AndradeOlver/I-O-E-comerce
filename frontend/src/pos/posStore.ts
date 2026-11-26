@@ -343,6 +343,28 @@ export function calculateOrderTotals(
   return { subtotalBruto, descuentoMonto, total, opGravada, igv };
 }
 
+const ALPHA_SIZE_SCALE = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'] as const;
+
+function getSizeDistance(a: string, b: string): number {
+  const normA = a.trim().toUpperCase();
+  const normB = b.trim().toUpperCase();
+  if (normA === normB) return 0;
+
+  const numA = Number(normA);
+  const numB = Number(normB);
+  if (Number.isFinite(numA) && Number.isFinite(numB) && normA !== '' && normB !== '') {
+    return Math.abs(numA - numB);
+  }
+
+  const idxA = ALPHA_SIZE_SCALE.indexOf(normA as (typeof ALPHA_SIZE_SCALE)[number]);
+  const idxB = ALPHA_SIZE_SCALE.indexOf(normB as (typeof ALPHA_SIZE_SCALE)[number]);
+  if (idxA !== -1 && idxB !== -1) {
+    return Math.abs(idxA - idxB);
+  }
+
+  return 99;
+}
+
 export function findAlternativesForSku(
   sku: string,
   state: PosStoreState
@@ -354,30 +376,32 @@ export function findAlternativesForSku(
   const suggestions: PosAlternativeSuggestion[] = [];
   const usedSkus = new Set<string>();
 
-  // 1. Otras tallas disponibles del mismo modelo y color
-  for (const item of all) {
-    if (item.groupId === target.groupId && item.color === target.color) {
-      suggestions.push({ motivo: 'Otra talla disponible', item });
-      usedSkus.add(item.sku);
-    }
-  }
-
-  // 2. Otros colores del mismo modelo (priorizando misma talla)
-  const sameModelOtherColor = all
-    .filter((item) => item.groupId === target.groupId && !usedSkus.has(item.sku))
-    .sort((a, b) => {
-      const aMatch = a.talla === target.talla ? 0 : 1;
-      const bMatch = b.talla === target.talla ? 0 : 1;
-      return aMatch - bMatch;
-    });
-  for (const item of sameModelOtherColor) {
-    suggestions.push({ motivo: 'Otro color disponible', item });
+  // 1. Tallas más cercanas del mismo modelo y color
+  const sameColorBySize = all
+    .filter((item) => item.groupId === target.groupId && item.color === target.color)
+    .sort((a, b) => getSizeDistance(a.talla, target.talla) - getSizeDistance(b.talla, target.talla));
+  for (const item of sameColorBySize) {
+    suggestions.push({ motivo: 'Talla similar disponible', item });
     usedSkus.add(item.sku);
   }
 
-  // 3. Prendas similares de la misma categoría
+  // 2. Otros colores del mismo modelo (primero misma talla, luego talla más cercana)
+  const sameModelOtherColor = all
+    .filter((item) => item.groupId === target.groupId && !usedSkus.has(item.sku))
+    .sort((a, b) => getSizeDistance(a.talla, target.talla) - getSizeDistance(b.talla, target.talla));
+  for (const item of sameModelOtherColor) {
+    const isExactSize = item.talla.trim().toUpperCase() === target.talla.trim().toUpperCase();
+    suggestions.push({
+      motivo: isExactSize ? 'Misma talla en otro color' : 'Otro color disponible',
+      item,
+    });
+    usedSkus.add(item.sku);
+  }
+
+  // 3. Prendas similares de la misma categoría ordenadas por talla más cercana
   const sameCategory = all
     .filter((item) => item.categorySlug === target.categorySlug && !usedSkus.has(item.sku))
+    .sort((a, b) => getSizeDistance(a.talla, target.talla) - getSizeDistance(b.talla, target.talla))
     .slice(0, 4);
   for (const item of sameCategory) {
     suggestions.push({ motivo: 'Prenda similar disponible', item });

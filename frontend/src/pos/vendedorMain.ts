@@ -172,6 +172,12 @@ function resolveActiveVariant(group: ProductGroupEntry): PosInventoryItem {
     if (exactSku) return exactSku;
     const partialSku = group.variants.find((v) => v.sku.toLowerCase().includes(q));
     if (partialSku) return partialSku;
+    const colorMatchWithStock = group.variants.find(
+      (v) => v.color.toLowerCase().includes(q) && v.stock > 0
+    );
+    if (colorMatchWithStock) return colorMatchWithStock;
+    const colorMatch = group.variants.find((v) => v.color.toLowerCase().includes(q));
+    if (colorMatch) return colorMatch;
   }
 
   const chosenSku = local.selectedSkuByGroup[group.groupId];
@@ -352,7 +358,6 @@ function renderStaticShell(): void {
             </div>
           </div>
 
-          <div id="pos-alternatives-container"></div>
           <div id="pos-results-container"></div>
         </div>
       </section>
@@ -426,32 +431,24 @@ function renderTopCounters(): void {
   }
 }
 
-function renderAlternatives(): void {
-  const container = document.getElementById('pos-alternatives-container');
-  if (!container) return;
-
-  if (!local.alternativesForSku) {
-    container.innerHTML = '';
-    return;
-  }
-
+function renderInlineAlternativesHtml(sku: string): string {
   const all = getInventoryList(storeState);
-  const original = all.find((i) => i.sku === local.alternativesForSku);
-  const alternatives = findAlternativesForSku(local.alternativesForSku, storeState);
+  const original = all.find((i) => i.sku === sku);
+  const alternatives = findAlternativesForSku(sku, storeState);
 
-  container.innerHTML = `
+  return `
     <div class="pos-alt-box">
       <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
         <div>
           <span class="fw-bold">
-            Prenda agotada: ${escapeHtml(original ? `${original.nombre} (${original.talla} · ${original.color})` : local.alternativesForSku)}
+            Prenda agotada: ${escapeHtml(original ? `${original.nombre} (${original.talla} · ${original.color})` : sku)}
           </span>
           <div class="small pos-text-muted">
-            Alternativas disponibles en tienda (RN-VEN-02):
+            Alternativas disponibles en tienda priorizando talla similar (RN-VEN-02):
           </div>
         </div>
         <button type="button" class="pos-btn-md pos-btn-secondary" id="btn-close-alternatives">
-          Cerrar alternativas
+          Ocultar alternativas
         </button>
       </div>
       ${
@@ -549,20 +546,31 @@ function renderResults(): void {
               }
 
               const sizesForActiveColor = group.variants.filter((v) => v.color === active.color);
+              const isAltOpenForRow = isZero && local.alternativesForSku === active.sku;
 
-              return `
-                <tr class="${isZero ? 'pos-row-agotado' : ''}">
-                  <td>
-                    <div class="pos-product-cell">
-                      ${renderThumbHtml(active)}
-                      <div class="min-w-0">
-                        <div class="fw-semibold">${escapeHtml(group.nombre)}</div>
-                        <div class="small pos-text-muted">${escapeHtml(group.marca)}</div>
-                        <div class="pos-sku-code">${escapeHtml(active.sku)}</div>
-                      </div>
+              const colorSelectorHtml =
+                uniqueColors.length >= 5
+                  ? `
+                    <div class="pos-color-select-wrap">
+                      <span class="pos-color-dot me-0" style="background-color:${escapeHtml(active.colorHex)}"></span>
+                      <select
+                        class="form-select form-select-sm pos-color-select"
+                        data-select-color-group="${escapeHtml(group.groupId)}"
+                        aria-label="Color de ${escapeHtml(group.nombre)}"
+                      >
+                        ${uniqueColors
+                          .map(
+                            (c) => `
+                            <option value="${escapeHtml(c.targetSku)}" ${c.color === active.color ? 'selected' : ''}>
+                              ${escapeHtml(c.color)}
+                            </option>
+                          `
+                          )
+                          .join('')}
+                      </select>
                     </div>
-                  </td>
-                  <td>
+                  `
+                  : `
                     <div class="pos-variant-group">
                       ${uniqueColors
                         .map(
@@ -580,7 +588,21 @@ function renderResults(): void {
                         )
                         .join('')}
                     </div>
+                  `;
+
+              return `
+                <tr class="${isZero ? 'pos-row-agotado' : ''}">
+                  <td>
+                    <div class="pos-product-cell">
+                      ${renderThumbHtml(active)}
+                      <div class="min-w-0">
+                        <div class="fw-semibold">${escapeHtml(group.nombre)}</div>
+                        <div class="small pos-text-muted">${escapeHtml(group.marca)}</div>
+                        <div class="pos-sku-code">${escapeHtml(active.sku)}</div>
+                      </div>
+                    </div>
                   </td>
+                  <td>${colorSelectorHtml}</td>
                   <td>
                     <div class="pos-variant-group">
                       ${sizesForActiveColor
@@ -605,11 +627,18 @@ function renderResults(): void {
                   <td class="text-end">
                     ${
                       isZero
-                        ? `<button type="button" class="pos-btn-md pos-btn-warn" data-show-alt="${escapeHtml(active.sku)}">Ver alternativas</button>`
+                        ? `<button type="button" class="pos-btn-md pos-btn-warn" data-show-alt="${escapeHtml(active.sku)}">${isAltOpenForRow ? 'Ocultar alternativas' : 'Ver alternativas'}</button>`
                         : `<button type="button" class="pos-btn-md pos-btn-primary" data-add-sku="${escapeHtml(active.sku)}" ${remaining <= 0 ? 'disabled' : ''}>${inDraft > 0 ? `+1 (${inDraft})` : '+ Agregar'}</button>`
                     }
                   </td>
                 </tr>
+                ${
+                  isAltOpenForRow
+                    ? `<tr class="pos-alt-row">
+                        <td colspan="6">${renderInlineAlternativesHtml(active.sku)}</td>
+                      </tr>`
+                    : ''
+                }
               `;
             })
             .join('')}
@@ -848,7 +877,6 @@ function renderDynamic(): void {
   renderFeedback();
   renderPracticeBar();
   renderTopCounters();
-  renderAlternatives();
   renderResults();
   renderOrderDrawer();
 }
@@ -1125,8 +1153,16 @@ function bindEvents(): void {
   });
 
   root!.addEventListener('change', (ev) => {
-    const target = ev.target as HTMLInputElement | null;
-    if (target?.id === 'pos-descuento-auth') {
+    const target = ev.target as HTMLElement | null;
+    if (!target) return;
+
+    if (target instanceof HTMLSelectElement && target.dataset.selectColorGroup) {
+      local.selectedSkuByGroup[target.dataset.selectColorGroup] = target.value;
+      renderResults();
+      return;
+    }
+
+    if (target instanceof HTMLInputElement && target.id === 'pos-descuento-auth') {
       local.descuentoAutorizado = target.checked;
       if (local.descuentoAutorizado) {
         local.discountError = '';
@@ -1160,14 +1196,15 @@ function bindEvents(): void {
 
     const altBtn = target.closest<HTMLElement>('[data-show-alt]');
     if (altBtn?.dataset.showAlt) {
-      local.alternativesForSku = altBtn.dataset.showAlt;
-      renderAlternatives();
+      const sku = altBtn.dataset.showAlt;
+      local.alternativesForSku = local.alternativesForSku === sku ? null : sku;
+      renderResults();
       return;
     }
 
     if (target.closest('#btn-close-alternatives')) {
       local.alternativesForSku = null;
-      renderAlternatives();
+      renderResults();
       return;
     }
 
