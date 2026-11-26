@@ -111,11 +111,7 @@ function renderStaticShell(): void {
     <header class="pos-topbar pos-no-print">
       <div class="pos-topbar-left">
         <span class="pos-brand-mark">${renderBrandMark()}</span>
-        <nav class="pos-nav-tabs" aria-label="Frentes de Almacén">
-          <button type="button" class="pos-nav-tab is-active" data-nav-tab="despachos">Despachos</button>
-          <button type="button" class="pos-nav-tab" data-nav-tab="compras">Recepción Compras</button>
-          <button type="button" class="pos-nav-tab" data-nav-tab="prestamos">Préstamos</button>
-        </nav>
+        <h1 class="pos-topbar-title pos-display">Gestión de Almacén</h1>
         <span class="pos-topbar-staff">Almacén: <strong>${escapeHtml(currentSession.displayName)}</strong></span>
       </div>
       <div class="pos-topbar-right">
@@ -244,10 +240,6 @@ function renderPulseStrip(): void {
       </button>
     </div>
   `;
-
-  root!.querySelectorAll<HTMLElement>('.pos-nav-tab[data-nav-tab]').forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.navTab === local.activeTab);
-  });
 }
 
 function renderTopActions(): void {
