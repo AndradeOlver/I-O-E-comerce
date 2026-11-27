@@ -243,7 +243,7 @@ components:
 
     AuthRegisterRequest:
       type: object
-      required: [nombres, email, password]
+      required: [nombres, email, password, dni_ruc]
       properties:
         nombres:
           type: string
@@ -688,7 +688,7 @@ components:
 
     CreatePosOrderRequest:
       type: object
-      required: [items, descuento_pct, descuento_autorizado, tipo_comprobante]
+      required: [cliente_doc, items, descuento_pct, descuento_autorizado, tipo_comprobante]
       properties:
         cliente_referencia:
           type: string
@@ -704,6 +704,11 @@ components:
               cantidad:
                 type: integer
                 minimum: 1
+        cliente_doc:
+          type: string
+          minLength: 8
+          maxLength: 11
+          pattern: '^\d{8}(\d{3})?$'
         descuento_pct:
           type: number
           format: double

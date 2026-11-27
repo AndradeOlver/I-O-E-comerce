@@ -13,7 +13,7 @@ import {
 } from '../pos/posStore';
 import { PosUiMode } from '../pos/posTypes';
 import { bindBrandLogo, renderBrandMark } from '../render/brand';
-import { escapeHtml } from '../utils/icons';
+import { escapeHtml, icons } from '../utils/icons';
 import {
   approvePurchaseOrder,
   closeWarehouseLoan,
@@ -100,7 +100,7 @@ function playBeep(freq = 920, duration = 0.08): void {
     osc.start();
     osc.stop(ctx.currentTime + duration);
   } catch {
-    // Sin audio disponible
+
   }
 }
 
@@ -446,7 +446,7 @@ function renderDispatchDetail(d: WarehouseDispatch): string {
                       it.verificado
                         ? '<span class="pos-verify-chip is-verified">Verificado</span>'
                         : d.pagoConfirmado && d.status === 'listo_empaque'
-                          ? `<button type="button" class="pos-variant-pill" data-manual-verify-sku="${escapeHtml(it.sku)}">✓ Confirmar</button>`
+                          ? `<button type="button" class="pos-variant-pill" data-manual-verify-sku="${escapeHtml(it.sku)}">${icons.fontAwesomeCheck()} Confirmar</button>`
                           : '<span class="pos-verify-chip is-unverified">Pendiente</span>'
                     }
                   </td>

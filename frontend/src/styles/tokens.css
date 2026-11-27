@@ -1,106 +1,106 @@
 :root {
-  /* ==========================================================================
-     Paleta Espresso & Piedra (Propuesta 5) — I&O Retail
-     Cumplimiento estricto W3C WCAG 2.1 Nivel AA
-     ========================================================================== */
+                                                                               
+                                                        
+                                                
+                                                                                  
 
-  /* Barras superiores y Navbar */
+                                  
   --color-top-strip-bg: #1a1512;
-  /* Espresso tostado profundo */
+                                 
   --color-top-strip-text: #faf7f2;
-  /* Blanco marfil cálido (15.6:1 sobre #1A1512) */
+                                                   
   --color-header-bg: #261e1b;
-  /* Espresso mate */
+                     
   --color-header-bg-translucent: rgba(38, 30, 27, 0.96);
   --color-header-bg-scrolled: rgba(38, 30, 27, 0.84);
   --color-header-text: #faf7f2;
-  /* Contraste ~13.8:1 sobre #261E1B */
+                                       
   --color-header-text-muted: rgba(250, 247, 242, 0.72);
   --color-header-divider: rgba(250, 247, 242, 0.1);
 
-  /* Identidad principal y Acentos */
+                                     
   --color-primary-espresso: #261e1b;
-  /* Primario institucional */
+                              
   --color-primary-hover: #3d312c;
-  /* Espresso ligeramente aclarado */
+                                     
   --color-accent-terracotta: #c98a7b;
-  /* Terracota suave (5.76:1 sobre #261E1B, cumple WCAG AA) */
+                                                              
   --color-accent-terracotta-hover: #b8796a;
   --color-accent-ink: #1a1512;
-  /* Texto sobre terracota para alto contraste */
+                                                 
 
-  /* Fondos generales y Superficies */
+                                      
   --bg-page: #f4f0ea;
-  /* Beige piedra cálido */
+                           
   --color-surface-bg: #f4f0ea;
   --color-surface-card: #faf7f2;
-  /* Marfil cálido */
+                     
   --color-surface-white: #ffffff;
   --color-surface-subtle: #ede7de;
-  /* Tono neutro piedra intermedio */
+                                     
 
-  /* Bordes y Delimitadores (WCAG 1.4.11 Contraste no textual >= 3:1) */
+                                                                        
   --color-border-subtle: #d6cec2;
-  /* Divisores finos y separadores */
+                                     
   --color-border-strong: #7a6f68;
-  /* Controles interactivos, inputs y bordes activos (>= 3:1) */
+                                                                
 
-  /* Tipografía y Color de Texto sobre fondos claros */
+                                                       
   --color-ink: #261e1b;
-  /* Primario (~14.2:1 sobre #F4F0EA, AAA) */
+                                             
   --color-ink-muted: #574c46;
-  /* Secundario (> 7.1:1 sobre #F4F0EA, AAA) */
+                                               
 
-  /* Estados semánticos accesibles */
+                                     
   --color-success-ok: #23684a;
-  /* Verde bosque accesible (> 4.5:1) */
+                                        
   --color-success-bg: #eef5f1;
   --color-success-border: rgba(35, 104, 74, 0.35);
   --color-warning-low: #8d4f10;
-  /* Ámbar tierra accesible (> 4.5:1) */
+                                        
   --color-warning-bg: #f8f1e6;
   --color-warning-border: rgba(141, 79, 16, 0.4);
   --color-danger-err: #a32222;
-  /* Carmín terroso accesible (> 4.5:1) */
+                                          
   --color-danger-bg: #f9eded;
   --color-danger-border: rgba(163, 34, 34, 0.38);
   --color-terracotta-soft: rgba(201, 138, 123, 0.16);
 
-  /* Tipografía */
+                  
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
 
-  /* Geometría: botones 4px, tarjetas con esquinas suaves */
+                                                            
   --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-md: 4px;
   --radius-lg: 8px;
   --touch-min: 44px;
-  /* WCAG 2.5.5 / 2.5.8 */
+                          
   --touch-tactile: 48px;
 
-  /* Movimiento (se neutraliza con prefers-reduced-motion) */
+                                                             
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 160ms;
   --dur-base: 280ms;
   --dur-slow: 560ms;
 
-  /* Profundidad con sombras cálidas (en lugar de bordes duros) */
+                                                                  
   --shadow-warm-sm: 0 1px 2px rgba(38, 30, 27, 0.06), 0 2px 10px rgba(38, 30, 27, 0.05);
   --shadow-warm-md: 0 10px 28px -8px rgba(38, 30, 27, 0.18), 0 2px 6px rgba(38, 30, 27, 0.06);
   --shadow-warm-lg: 0 24px 48px -16px rgba(38, 30, 27, 0.32);
 
-  /* Estados de foco (:focus-visible) - WCAG 2.4.7 */
+                                                     
   --focus-color: #c98a7b;
   --focus-ring: 2px solid var(--focus-color);
   --focus-offset: 2px;
-  /* Banda interior espresso: asegura >= 3:1 del anillo sobre fondos claros */
+                                                                              
   --focus-inner: 0 0 0 2px #261e1b;
 
-  /* Ruta del logo (documentada en imageSlots.ts) */
+                                                    
   --header-h: 68px;
 
-  /* Sobrescritura de tokens nativos de Bootstrap 5.3 */
+                                                        
   --bs-primary: #261e1b;
   --bs-primary-rgb: 38, 30, 27;
   --bs-body-bg: #f4f0ea;
@@ -139,7 +139,7 @@ body.io-scroll-lock {
   color: var(--color-accent-ink);
 }
 
-/* Enlace de salto para teclado (WCAG 2.4.1) */
+                                               
 .skip-link {
   position: absolute;
   top: -120px;
@@ -158,14 +158,14 @@ body.io-scroll-lock {
   top: 1rem;
 }
 
-/* Foco visible uniforme (RN-ACC-03 / WCAG 2.4.7): anillo terracota + banda interior espresso */
+                                                                                                
 :focus-visible {
   outline: var(--focus-ring) !important;
   outline-offset: var(--focus-offset) !important;
   box-shadow: var(--focus-inner);
 }
 
-/* Sobrescribir focus por defecto de Bootstrap */
+                                                 
 .form-control:focus,
 .form-select:focus,
 .btn:focus,
@@ -177,7 +177,7 @@ body.io-scroll-lock {
   outline-offset: var(--focus-offset) !important;
 }
 
-/* Controles de formulario de Bootstrap en la paleta Espresso & Piedra */
+                                                                         
 .form-control,
 .form-select {
   min-height: var(--touch-min);
@@ -215,7 +215,7 @@ body.io-scroll-lock {
   opacity: 1;
 }
 
-/* Soporte nativo de alto contraste del SO (RN-ACC-01 — 19.56:1 AAA, exclusivo de la tienda del comprador) */
+                                                                                                             
 @media (prefers-contrast: more) {
   body.io-storefront {
     --color-top-strip-bg: #000000;
@@ -292,7 +292,7 @@ body.io-scroll-lock {
   }
 }
 
-/* Reducción de movimiento nativo (RN-ACC-05 / WCAG 2.3.3) */
+                                                             
 @media (prefers-reduced-motion: reduce) {
 
   *,

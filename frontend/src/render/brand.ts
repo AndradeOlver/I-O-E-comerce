@@ -1,11 +1,11 @@
 import { IMAGE_SLOTS } from '../data/imageSlots';
 import { escapeHtml } from '../utils/icons';
 
-/**
- * Marca I&O: contenedor limpio, sin marco ni adornos.
- * Intenta cargar el logo definido en IMAGE_SLOTS['brand-logo'] (SVG y luego PNG).
- * Si ningún archivo existe, muestra el texto simple "I&O".
- */
+
+
+
+
+
 
 type LogoStatus = 'pending' | 'ready' | 'missing';
 
@@ -21,7 +21,7 @@ export function getBrandRecommendedPath(): string {
   return slot?.recommendedPath ?? 'public/img/brand/logo-io.svg';
 }
 
-/** HTML del logo (imagen + texto de respaldo). Se reutiliza en header y menú móvil. */
+
 export function renderBrandMark(): string {
   const textMark = `<span class="io-brand-text" data-brand-text ${status === 'ready' ? 'hidden' : ''}>I&amp;O</span>`;
 
@@ -54,7 +54,7 @@ function applyStatus(scope: ParentNode): void {
   });
 }
 
-/** Conecta los eventos load/error del logo tras cada render. */
+                                                                
 export function bindBrandLogo(scope: ParentNode): void {
   const images = scope.querySelectorAll<HTMLImageElement>('img[data-brand-img]');
 
@@ -64,7 +64,7 @@ export function bindBrandLogo(scope: ParentNode): void {
   };
 
   const handleError = (img: HTMLImageElement): void => {
-    // Ignora errores de una fuente que ya fue reemplazada por el siguiente candidato
+                                                                                     
     if (status === 'ready' || img.getAttribute('src') !== candidates[candidateIndex]) return;
 
     candidateIndex += 1;

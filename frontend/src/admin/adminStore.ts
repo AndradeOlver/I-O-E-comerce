@@ -152,7 +152,6 @@ export function saveAdminState(state: AdminStoreState, broadcast = true): void {
   try {
     window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(state));
   } catch {
-    // Ignorar si localStorage está restringido
   }
   if (broadcast) {
     adminChannel?.postMessage({ type: 'ADMIN_SYNC', timestamp: state.lastRefreshedAt });
@@ -348,7 +347,7 @@ export function buildAdminSnapshot(): AdminSnapshot {
 
   const decisions: AdminDecisionItem[] = [];
 
-  // 1. Marketing y Catálogo
+                            
   for (const camp of mktState.campaigns) {
     if (camp.status !== 'pendiente_aprobacion') continue;
     decisions.push({
@@ -396,7 +395,7 @@ export function buildAdminSnapshot(): AdminSnapshot {
     });
   }
 
-  // 2. Compras e Inventario
+                            
   for (const sup of suppliers) {
     if (sup.status !== 'pendiente_validacion') continue;
     decisions.push({
@@ -490,7 +489,7 @@ export function buildAdminSnapshot(): AdminSnapshot {
     });
   }
 
-  // 3. Finanzas y Planilla
+                           
   if (adminState.payroll.estado === 'pendiente_cierre') {
     const canPay = liquidezEfectiva >= adminState.payroll.totalNeto;
     decisions.push({
@@ -515,7 +514,7 @@ export function buildAdminSnapshot(): AdminSnapshot {
     });
   }
 
-  // 4. Almacén, Envíos y Préstamos
+                                   
   for (const loan of activeLoans) {
     const dias = daysUntilDate(loan.fechaLimite);
     const sinGerente = !loan.gerenteDisponible;
@@ -571,7 +570,7 @@ export function buildAdminSnapshot(): AdminSnapshot {
     });
   }
 
-  // 5. Ventas y Caja
+                     
   for (const ord of posState.orders) {
     if (ord.status !== 'cancelado') continue;
     const decisionId = `pos-canc-${ord.id}`;
@@ -627,7 +626,7 @@ export function buildAdminSnapshot(): AdminSnapshot {
     return b.timestamp.localeCompare(a.timestamp);
   });
 
-  // Analítica por categoría, campañas y consignaciones
+                                                       
   const categorias: AdminCategoryAnalytic[] = CATEGORIAS_TIENDA.map((cat) => {
     const models = allProducts.filter((p) => p.categorySlug === cat.slug);
     const catInv = inventory.filter((i) => i.categorySlug === cat.slug);
@@ -678,7 +677,7 @@ export function buildAdminSnapshot(): AdminSnapshot {
     },
   };
 
-  // Capa 4: Bitácora unificada
+                               
   const unifiedAudit: AdminAuditEntry[] = [
     ...adminState.auditLog,
     ...whState.auditLog.map((entry) => ({

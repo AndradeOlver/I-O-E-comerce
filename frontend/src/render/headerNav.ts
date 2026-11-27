@@ -105,7 +105,7 @@ function renderDesktopCascadePanel(
     onlyOffers: item.onlyOffers,
   });
 
-  // Flujo Niños: Nivel 1 (Edad) -> clic -> Nivel 2 (Categoría) -> clic -> Nivel 3 (Subcategoría)
+
   if (item.ageNodes && item.ageNodes.length > 0) {
     const selectedAgeNode =
       (isOpen && activeMenuAge
@@ -197,7 +197,7 @@ function renderDesktopCascadePanel(
     `;
   }
 
-  // Flujo directo sin subcategorías (Ofertas: solo la lista de ofertas activas)
+                                                                                
   if (item.directLinks) {
     return `
       <div class="io-cascade-stage io-cascade-stage--single">
@@ -225,7 +225,7 @@ function renderDesktopCascadePanel(
     `;
   }
 
-  // Flujo Hombre y Mujer: Nivel 1 (Categoría) -> clic -> Nivel 2 (Subcategoría)
+                                                                                
   const categories = item.categories ?? [];
   const selectedCatNode =
     (isOpen && activeMenuCategory
@@ -294,7 +294,7 @@ function renderMobileDrawerItem(
 
   if (isExpanded) {
     if (item.ageNodes && item.ageNodes.length > 0) {
-      // Móvil Niños: Edad -> Categoría -> Subcategoría
+                                                       
       innerLevelsHtml = item.ageNodes
         .map((ageNode) => {
           const isAgeOpen = mobileAgeKey === ageNode.ageKey;
@@ -364,7 +364,7 @@ function renderMobileDrawerItem(
         })
         .join('');
     } else if (item.directLinks) {
-      // Móvil Ofertas: lista directa de ofertas sin subcategorías
+                                                                  
       innerLevelsHtml = item.directLinks
         .map(
           (offer) => `
@@ -376,7 +376,7 @@ function renderMobileDrawerItem(
         )
         .join('');
     } else {
-      // Móvil Hombre y Mujer: Categoría -> Subcategoría
+
       innerLevelsHtml = (item.categories ?? [])
         .map((catNode) => {
           const isCatOpen = mobileCategoryKey === catNode.key;

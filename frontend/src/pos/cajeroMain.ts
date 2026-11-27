@@ -103,7 +103,7 @@ function playBeep(): void {
     osc.start();
     osc.stop(ctx.currentTime + 0.12);
   } catch {
-    // Sin audio disponible en este navegador
+
   }
 }
 

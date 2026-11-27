@@ -44,11 +44,11 @@ export interface NavMenuItem {
   gender: GenderFilter;
   onlyOffers?: boolean;
   isAccent?: boolean;
-  /** Lista plana directa sin subcategorías (usado en Ofertas) */
+
   directLinks?: NavMenuLink[];
-  /** Nivel 1 -> Nivel 2 para Hombre y Mujer (Categoría -> Subcategoría) */
+
   categories?: NavCategoryNode[];
-  /** Nivel 1 -> Nivel 2 -> Nivel 3 exclusivo para Niños (Edad -> Categoría -> Subcategoría) */
+
   ageNodes?: NavAgeNode[];
 }
 

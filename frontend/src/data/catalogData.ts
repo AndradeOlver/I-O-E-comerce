@@ -133,47 +133,47 @@ export const CATEGORIAS_TIENDA: Categoria[] = [
 ];
 
 export const SUBCATEGORIAS_TIENDA: Subcategoria[] = [
-  // 1. Tops & Esenciales Pima
+
   { subcategoria_id: 101, categoria_id: 1, categorySlug: 'prendas-superiores', slug: 'polos-pima', nombre: 'Polos Pima', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 102, categoria_id: 1, categorySlug: 'prendas-superiores', slug: 'camisas-blusas', nombre: 'Camisas & Blusas', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 103, categoria_id: 1, categorySlug: 'prendas-superiores', slug: 'poleras-hoodies', nombre: 'Poleras & Hoodies', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 104, categoria_id: 1, categorySlug: 'prendas-superiores', slug: 'tops-bodies', nombre: 'Tops & Bodies', aplicaHombre: false, aplicaMujer: true, aplicaNinos: true },
 
-  // 2. Denim & Cortes Cargo
+
   { subcategoria_id: 201, categoria_id: 2, categorySlug: 'pantalones', slug: 'jeans-cargo', nombre: 'Jeans Cargo', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 202, categoria_id: 2, categorySlug: 'pantalones', slug: 'joggers-buzos', nombre: 'Joggers & Buzos', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 203, categoria_id: 2, categorySlug: 'pantalones', slug: 'pantalones-vestir', nombre: 'Pantalones de Vestir', aplicaHombre: true, aplicaMujer: true, aplicaNinos: false },
   { subcategoria_id: 204, categoria_id: 2, categorySlug: 'pantalones', slug: 'shorts-bermudas', nombre: 'Shorts & Bermudas', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
 
-  // 3. Vestidos de Autor (excluye Hombre)
+
   { subcategoria_id: 301, categoria_id: 3, categorySlug: 'vestidos', slug: 'vestidos-midi', nombre: 'Vestidos Midi', aplicaHombre: false, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 302, categoria_id: 3, categorySlug: 'vestidos', slug: 'vestidos-noche', nombre: 'Vestidos de Noche', aplicaHombre: false, aplicaMujer: true, aplicaNinos: false },
   { subcategoria_id: 303, categoria_id: 3, categorySlug: 'vestidos', slug: 'vestidos-casuales', nombre: 'Vestidos Casuales', aplicaHombre: false, aplicaMujer: true, aplicaNinos: true },
 
-  // 4. Bombers & Capas Urbanas
+
   { subcategoria_id: 401, categoria_id: 4, categorySlug: 'casacas', slug: 'bomber-urbanas', nombre: 'Bomber Urbanas', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 402, categoria_id: 4, categorySlug: 'casacas', slug: 'denim-abrigos', nombre: 'Denim & Abrigos', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 403, categoria_id: 4, categorySlug: 'casacas', slug: 'cortavientos', nombre: 'Cortavientos', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 404, categoria_id: 4, categorySlug: 'casacas', slug: 'chalecos', nombre: 'Chalecos', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
 
-  // 5. Total Looks & Sets
+
   { subcategoria_id: 501, categoria_id: 5, categorySlug: 'conjuntos', slug: 'sets-urbanos', nombre: 'Sets Urbanos', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 502, categoria_id: 5, categorySlug: 'conjuntos', slug: 'sets-casuales', nombre: 'Sets Casuales', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 503, categoria_id: 5, categorySlug: 'conjuntos', slug: 'sets-bebe-infantil', nombre: 'Sets Bebé & Infantil', aplicaHombre: false, aplicaMujer: false, aplicaNinos: true },
 
-  // 6. Acentos & Marroquinería
+
   { subcategoria_id: 601, categoria_id: 6, categorySlug: 'accesorios', slug: 'gorras-sombreros', nombre: 'Gorras & Sombreros', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 602, categoria_id: 6, categorySlug: 'accesorios', slug: 'correas-billeteras', nombre: 'Correas & Billeteras', aplicaHombre: true, aplicaMujer: true, aplicaNinos: false },
   { subcategoria_id: 603, categoria_id: 6, categorySlug: 'accesorios', slug: 'mochilas-bolsos', nombre: 'Mochilas & Bolsos', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 604, categoria_id: 6, categorySlug: 'accesorios', slug: 'medias-complementos', nombre: 'Medias & Complementos', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
 
-  // 7. Sneakers & Pisada Urbana
+
   { subcategoria_id: 701, categoria_id: 7, categorySlug: 'calzado', slug: 'zapatillas-urbanas', nombre: 'Zapatillas Urbanas', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 702, categoria_id: 7, categorySlug: 'calzado', slug: 'botines-botas', nombre: 'Botines & Botas', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 703, categoria_id: 7, categorySlug: 'calzado', slug: 'calzado-casual', nombre: 'Calzado Casual', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 704, categoria_id: 7, categorySlug: 'calzado', slug: 'sandalias', nombre: 'Sandalias', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
 
-  // 8. Active & Movimiento
+
   { subcategoria_id: 801, categoria_id: 8, categorySlug: 'sports', slug: 'polos-dry-fit', nombre: 'Polos Dry-Fit', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 802, categoria_id: 8, categorySlug: 'sports', slug: 'leggings-shorts', nombre: 'Leggings & Shorts', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
   { subcategoria_id: 803, categoria_id: 8, categorySlug: 'sports', slug: 'buzos-training', nombre: 'Buzos Training', aplicaHombre: true, aplicaMujer: true, aplicaNinos: true },
@@ -319,7 +319,7 @@ export const COLECCIONES_BANNERS: CollectionBanner[] = [
   },
 ];
 
-// Catálogo enriquecido con paleta completa de colores por prenda para selectores circulares y modo daltonismo
+
 export const CATALOGO_PRODUCTOS: ProductGroup[] = [
   {
     groupId: 'polo-oversize-pima',

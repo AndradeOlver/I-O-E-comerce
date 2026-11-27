@@ -442,9 +442,9 @@ function renderTopActions(): void {
   `;
 }
 
-// =============================================================================
-// Vista 1 & 5: Recién llegados por vestir / Catálogo Web
-// =============================================================================
+
+
+
 
 function renderProductEditorialWorkspace(onlyNewArrivals: boolean): string {
   const q = local.searchQuery.trim().toLowerCase();
@@ -617,9 +617,9 @@ function renderProductEditorialWorkspace(onlyNewArrivals: boolean): string {
   `;
 }
 
-// =============================================================================
-// Vista 2: Portada Web (Hero) con enlace automático
-// =============================================================================
+                                                                                
+                                                    
+                                                                                
 
 function renderHeroWorkspace(): string {
   const q = local.searchQuery.trim().toLowerCase();
@@ -828,9 +828,9 @@ function renderHeroWorkspace(): string {
   `;
 }
 
-// =============================================================================
-// Vista 3: Colecciones
-// =============================================================================
+                                                                                
+                       
+                                                                                
 
 function renderCollectionsWorkspace(): string {
   const q = local.searchQuery.trim().toLowerCase();
@@ -1086,9 +1086,9 @@ function renderCollectionsWorkspace(): string {
   `;
 }
 
-// =============================================================================
-// Vista 4: Campañas de descuento (Único flujo con aprobación Admin)
-// =============================================================================
+                                                                                
+                                                                    
+                                                                                
 
 function renderCampaignsWorkspace(): string {
   const q = local.searchQuery.trim().toLowerCase();
@@ -1509,7 +1509,7 @@ function bindDynamicForms(): void {
     renderAll();
   });
 
-  // Hero
+
   const heroInput = document.getElementById('input-hero-image') as HTMLInputElement | null;
   heroInput?.addEventListener('change', async () => {
     const file = heroInput.files?.[0];
@@ -1586,7 +1586,7 @@ function bindDynamicForms(): void {
     renderAll();
   });
 
-  // Colecciones
+
   const colInput = document.getElementById('input-collection-image') as HTMLInputElement | null;
   colInput?.addEventListener('change', async () => {
     const file = colInput.files?.[0];
@@ -1746,7 +1746,7 @@ function bindDynamicForms(): void {
     renderAll();
   });
 
-  // Campañas
+             
   document.getElementById('camp-status-filter')?.addEventListener('change', (ev) => {
     local.campaignFilter = (ev.target as HTMLSelectElement).value as 'todas' | CampaignStatus;
     renderWorkspace();

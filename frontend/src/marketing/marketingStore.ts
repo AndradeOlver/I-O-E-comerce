@@ -44,7 +44,7 @@ function buildInitialState(): MarketingStoreState {
 
   for (const product of CATALOGO_PRODUCTOS) {
     if (product.recienLlegado) {
-      // Dejamos dos recién llegados pendientes de completar ficha editorial para mostrar la cola prioritaria real
+
       const pendingDemo =
         product.groupId === 'set-infantil-algodon' ||
         product.groupId === 'hoodie-capas-studio';
@@ -315,7 +315,6 @@ export function setMarketingUiMode(mode: MarketingUiMode): MarketingUiMode {
     window.localStorage.setItem(MARKETING_UI_MODE_KEY, mode);
     channel?.postMessage({ type: 'marketing_mode_updated', mode });
   } catch {
-    // Ignorar si no hay localStorage
   }
   return mode;
 }
@@ -824,9 +823,9 @@ export function compressImageFile(file: File, maxWidth = 1280): Promise<string> 
   });
 }
 
-// =============================================================================
-// Selectores efectivos consumidos por la Tienda Web (index.html)
-// =============================================================================
+                                                                                
+                                                                 
+                                                                                
 
 export function getEffectiveCatalogProducts(state?: MarketingStoreState): ProductGroup[] {
   const current = state ?? loadMarketingState();

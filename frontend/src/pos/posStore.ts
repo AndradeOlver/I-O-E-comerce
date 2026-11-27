@@ -275,7 +275,6 @@ export function setPosUiMode(mode: PosUiMode): PosUiMode {
   try {
     window.localStorage.setItem(MODE_STORAGE_KEY, normalized);
   } catch {
-    // Ignorar si localStorage está restringido
   }
   const now = new Date().toISOString();
   emitEvent({ type: 'MODE_CHANGED', mode: normalized, timestamp: now });
@@ -392,7 +391,7 @@ export function findAlternativesForSku(
   const suggestions: PosAlternativeSuggestion[] = [];
   const usedSkus = new Set<string>();
 
-  // 1. Tallas más cercanas del mismo modelo y color
+                                                    
   const sameColorBySize = all
     .filter((item) => item.groupId === target.groupId && item.color === target.color)
     .sort((a, b) => getSizeDistance(a.talla, target.talla) - getSizeDistance(b.talla, target.talla));
@@ -401,7 +400,7 @@ export function findAlternativesForSku(
     usedSkus.add(item.sku);
   }
 
-  // 2. Otros colores del mismo modelo (primero misma talla, luego talla más cercana)
+                                                                                     
   const sameModelOtherColor = all
     .filter((item) => item.groupId === target.groupId && !usedSkus.has(item.sku))
     .sort((a, b) => getSizeDistance(a.talla, target.talla) - getSizeDistance(b.talla, target.talla));
@@ -414,7 +413,7 @@ export function findAlternativesForSku(
     usedSkus.add(item.sku);
   }
 
-  // 3. Prendas similares de la misma categoría ordenadas por talla más cercana
+                                                                               
   const sameCategory = all
     .filter((item) => item.categorySlug === target.categorySlug && !usedSkus.has(item.sku))
     .sort((a, b) => getSizeDistance(a.talla, target.talla) - getSizeDistance(b.talla, target.talla))
@@ -617,7 +616,7 @@ export function recordPaymentOrAbono(params: {
     return { ok: false, error: billingError };
   }
 
-  // Verificar stock real antes de liquidar (RN-VEN-06)
+                                                       
   const willSettle = roundMoney(order.montoPagado + monto) >= order.total;
   if (willSettle) {
     for (const line of order.items) {
@@ -674,7 +673,7 @@ export function recordPaymentOrAbono(params: {
       state.nextBoletaSeq += 1;
     }
 
-    // Descuento definitivo de stock por SKU (RN-VEN-06)
+                                                        
     for (const line of order.items) {
       const current = getSkuStock(state, line.sku);
       state.inventory[line.sku] = Math.max(0, current - line.cantidad);

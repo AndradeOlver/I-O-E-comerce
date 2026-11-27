@@ -4,8 +4,8 @@
 > **Autores del Proyecto General y del Desarrollo (`frontend/`, `backend/`, `DB/`):**  
 > 1. **ANDRADE CHIRINOS, Olver Daniel** (`N00401718`)  
 > 2. **RAZURI PAREDES, Josue Daniel** (`N00421512`)  
-> **Fase Global Actual:** `03. Desarrollo Frontend Iniciado — Migración visual completa a Espresso & Piedra (Propuesta 5) bajo Vite + TypeScript + HTML5 Semántico + CSS3 puro + Bootstrap 5.3 (WCAG 2.1 AA solo en páginas del comprador)`  
-> **Última Actualización:** `26/11/2026` (Cierre de verificación documental R1/R3: `frontend/` verificado intacto con `tsc`/`vite build` y documentado en [VERIFICACION_FRONTEND_R1.md](file:///d:/equipo/Escritorio/IO%20E-Comerce/frontend/docs_ui/VERIFICACION_FRONTEND_R1.md); contratos `backend/docs_api/` completos —`openapi.yaml`, `MATRIZ_RBAC_ENDPOINTS.md` y `CATALOGO_CODIGOS_RN.md`—; repositorios `documentos/Model Soft Proyecto/` y `documentos/Interaccion Humano Com Proyecto/` alineados en `main` con aprobación de **Olver**)
+> **Fase Global Actual:** `04. Desarrollo Backend Fase 1 — alternativas y creación de órdenes POS M01; cobro y E-commerce M02 pendientes`
+> **Ultima actualizacion:** `27/11/2026` (M01: alternativas SKU y creación transaccional de órdenes POS, con integración en vendedor autenticado por API; comentarios retirados del código TypeScript y UI sin emojis detectados).
 
 ---
 
@@ -18,7 +18,7 @@ Este tablero maestro conecta la **documentación académica UPN** (en `documento
 | **1.1.1** | `documentos/Model Soft Proyecto/` | Curso MOANSO (`ISOF1301`) — RUP / UML 2.5 | 5 integrantes: Andrade, Arias, Medina, Razuri, Restan | `.git` independiente (`origin/main` → `MoAnSo_G2.git`, ramas `dev-*`) | ✅ **Artefactos (`00`–`07`) y `.docx` alineados al `frontend/` real y aprobados por Olver en `main`** *(pendiente `06_Finanzas_IO.xlsx`)* | [ESTADO_PROYECTO.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/documentos/Model%20Soft%20Proyecto/ESTADO_PROYECTO.md) |
 | **1.1.2** | `documentos/Interaccion Humano Com Proyecto/` | Curso IHC — UX/UI, Design Sprint, WCAG 2.1 AA y Rúbrica RE3 (v1.5) | **2 integrantes exclusivos:** Olver Andrade (`N00401718`) y Josue Razuri (`N00421512`) | `.git` independiente (`origin/main` → `IHC_G3.git`, ramas `dev-*`) | ✅ **Documentos `00`–`05` y 2 `.docx` alineados al `frontend/` real y aprobados por Olver en `main`** *(pendientes capturas `evidencias_ux_img/`)* | [ESTADO_PROYECTO_IHC.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/documentos/Interaccion%20Humano%20Com%20Proyecto/ESTADO_PROYECTO_IHC.md) |
 | **1.2** | `frontend/` | Capa de Presentación, UI POS/Web, Dashboard y Accesibilidad Nativa WCAG 2.1 AA (solo comprador `AN01`) | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | 🟢 **8 vistas HTML verificadas intactas (`tsc`/`vite build` OK) en [VERIFICACION_FRONTEND_R1.md](file:///d:/equipo/Escritorio/IO%20E-Comerce/frontend/docs_ui/VERIFICACION_FRONTEND_R1.md); `frontend/README.md` y `docs_ui/` actualizados** | [frontend/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/frontend/README.md) |
-| **1.3** | `backend/` | Capa de Lógica de Negocio, APIs, RBAC (5 roles) y 49 Reglas | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | ✅ **Stack, arquitectura y contratos `docs_api/` completos (`openapi.yaml`, `MATRIZ_RBAC_ENDPOINTS.md`, `CATALOGO_CODIGOS_RN.md`)** | [backend/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/backend/README.md) |
+| **1.3** | `backend/` | Capa de logica de negocio, APIs, RBAC y reglas | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raiz (`origin/main` -> `I-O-E-comerce.git`; ignora `documentos/` y `.agents/`) | **Fase 0 iniciada**: health, config, autenticacion, catalogo publico e inventario RBAC implementados; resto de modulos pendiente | [backend/README.md](backend/README.md) |
 | **1.4** | `DB/` | Capa de Persistencia (12 Entidades aprobadas con herencia) | **Exclusivo:** Olver Andrade & Josue Razuri | `.git` raíz (`origin/main` → `I-O-E-comerce.git` privado; ignora `documentos/` y `.agents/`) | ✅ **Microsoft SQL Server — DDL, extensión de taxonomía (8 categorías, `dbo.Subcategoria`, género/edad, `vw_OfertasActivas`) y seeds generados** (`esquemas/01_esquema_io_sqlserver.sql`, `esquemas/02_extension_catalogo_taxonomia.sql`, `seeds/01_datos_iniciales_io.sql`); DER MOANSO `06_Modelo_Datos_ER_IO.md` sincronizado con la extensión el 24/11/2026 | [DB/README.md](file:///d:/equipo/Escritorio/I&O%20E-Comerce/DB/README.md) |
 
 ---
@@ -105,3 +105,25 @@ Con los stacks aprobados, los **8 módulos** integrarán de forma trazable los *
 3. **Siguientes Pasos de Implementación (`M01`–`M08`):**
    * Iniciar `backend/src/` siguiendo `backend/README.md` (`Fase 0` a `Fase 3`) y resolver en `frontend/` el backlog priorizado de `VERIFICACION_FRONTEND_R1.md` (fuga de stock `AN01`, flete `S/ 10` vs `S/ 12`, cambio `7` vs `15` días, RUC y promo POS).
 4. **Coordinación de escritura documental (acuerdo 24/11/2026):** un solo agente escribe `.md` por pasada. El agente de código implementa `frontend/` y reporta; el agente documental actualiza `ESTADO_GLOBAL_PROYECTO.md`, `inicio.txt` y los tableros/requerimientos de `documentos/` para evitar pérdida de cambios o contradicción entre tableros.
+
+
+Se inicializ? `backend/src/` siguiendo la Fase 0: configuraci?n de entorno y pool SQL Server, transacciones, errores de dominio/SQL, JWT y autorizaci?n por rol, autenticaci?n de empleados/clientes, consulta p?blica del cat?logo y taxonom?a, inventario interno y endpoints de salud/configuraci?n. `frontend/src/api/client.ts` incorpora los contratos base para salud, cat?logo y login. El registro de clientes requiere aplicar `DB/esquemas/03_auth_cliente_password.sql` a instalaciones existentes. La compilaci?n TypeScript del backend pas?; queda conectar la UI de acceso demo y terminar m?dulos conforme a OpenAPI.
+
+
+Se inicializo `backend/src/` siguiendo la Fase 0: configuracion de entorno y pool SQL Server, transacciones, errores de dominio/SQL, JWT y autorizacion por rol, autenticacion de empleados/clientes, consulta publica de catalogo y taxonomia, inventario interno y endpoints de salud/configuracion. `frontend/src/api/client.ts` incorpora los contratos base de salud, catalogo y login. El registro requiere aplicar `DB/esquemas/03_auth_cliente_password.sql` a bases existentes. La compilacion TypeScript del backend paso; queda conectar la UI de acceso demo y completar modulos segun OpenAPI.
+
+## 3.2 Avance tecnico del backend -- 27/11/2026
+
+Fase 0 inicializada en `backend/src/`: configuracion del entorno y pool SQL Server, transacciones, errores de dominio/SQL, JWT y autorizacion por rol, autenticacion de empleados/clientes, catalogo publico y taxonomia, inventario interno y endpoints de salud/configuracion. `frontend/src/api/client.ts` expone salud, catalogo y login; el acceso integra login API y conserva el JWT en `sessionStorage`. Las bases existentes requieren `DB/esquemas/03_auth_cliente_password.sql` antes del registro de clientes. La compilacion TypeScript del backend paso; falta conectar la UI de acceso demo y completar el resto de rutas OpenAPI.
+
+## 3.3 Limpieza de comentarios y verificacion -- 27/11/2026
+
+Se retiraron comentarios de `frontend/src/` (TypeScript y CSS) y `backend/src/` (TypeScript); el escaneo léxico registró cero comentarios TypeScript y cero emojis de UI. `npm run build` pasó en `frontend/` (TypeScript + Vite) y `backend/` (TypeScript).
+
+## 3.4 Fase 1 M01 POS — 27/11/2026
+
+Se implementó `GET /api/pos/inventario/{sku}/alternativas` en el módulo `m01-ventas-pos`, con autenticación y roles internos TN01–TN05. La consulta usa parámetros SQL Server y prioriza variantes disponibles por talla/color/modelo/categoría conforme a `RN-VEN-02`. `frontend/src/api/client.ts` tipa el contrato y la vista de vendedor consume las alternativas del servidor cuando existe sesión API, manteniendo el inventario demo como respaldo. M02 y el resto de operaciones POS siguen pendientes.
+
+## 3.5 Fase 1 M01 creación de órdenes POS — 27/11/2026
+
+Se añadió `POST /api/pos/ordenes` para Administrador y Vendedor, con validación Zod, verificación de cliente y stock, cálculo decimal, persistencia de Pedido/PedidoCliente/DetallePedido en una transacción SQL Server y registro atómico en AuditLog (`RN-SEG-03`). La vista del vendedor envía órdenes al backend al iniciar sesión por API; el contrato OpenAPI exige documento del cliente para respetar la relación física con `RegistroCliente`. El cobro, el consumo en la cola de Caja vía API y los demás endpoints POS todavía no están implementados.

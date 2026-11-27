@@ -3,6 +3,7 @@ import '../styles/tokens.css';
 import '../styles/access.css';
 import { bindBrandLogo, renderBrandMark } from '../render/brand';
 import { escapeHtml, icons } from '../utils/icons';
+import { API_TOKEN_STORAGE_KEY, ioApi } from '../api/client';
 import {
   AccessRedirectReason,
   DEMO_ROLE_PROFILES,
@@ -105,6 +106,7 @@ const state: {
   displayName: string;
   displayNameEdited: boolean;
   loginError: string;
+  apiLoginError: string;
   register: RegisterFields;
   registerErrors: RegisterErrors;
   submitting: boolean;
@@ -117,6 +119,7 @@ const state: {
   displayName: initialProfile.defaultName,
   displayNameEdited: false,
   loginError: '',
+  apiLoginError: '',
   register: {
     name: '',
     email: '',
@@ -293,6 +296,23 @@ function renderLoginPanel(): string {
           }
         </button>
       </form>
+      <div class="io-field-group mt-4">
+        <h2 class="io-field-label">Acceso con cuenta</h2>
+        <form id="form-api-login" novalidate>
+          <div class="io-field-group">
+            <label for="api-login-email" class="io-field-label">Correo electronico</label>
+            <input id="api-login-email" name="email" type="email" class="form-control io-form-input" autocomplete="username" required />
+          </div>
+          <div class="io-field-group">
+            <label for="api-login-password" class="io-field-label">Contrasena</label>
+            <input id="api-login-password" name="password" type="password" class="form-control io-form-input" autocomplete="current-password" minlength="6" required />
+          </div>
+          ${state.apiLoginError ? `<p class="io-field-error" role="alert">${escapeHtml(state.apiLoginError)}</p>` : ''}
+          <button type="submit" class="io-access-submit" ${state.submitting ? 'disabled aria-busy="true"' : ''}>
+            ${state.submitting ? '<span class="io-access-spinner" aria-hidden="true"></span><span>Validando...</span>' : '<span>Iniciar sesion</span>'}
+          </button>
+        </form>
+      </div>
     </div>
   `;
 }
@@ -602,6 +622,7 @@ root.addEventListener('click', (event) => {
     }
   } else if (action === 'clear-existing-session') {
     clearDemoSession();
+    ioApi.logout();
     state.activeSession = null;
     state.banner = {
       kind: 'success',
@@ -701,6 +722,33 @@ root.addEventListener('submit', (event) => {
     window.setTimeout(() => {
       window.location.assign(destination);
     }, 200);
+  } else if (form.id === 'form-api-login') {
+    const data = new FormData(form);
+    const email = String(data.get('email') ?? '').trim();
+    const password = String(data.get('password') ?? '');
+    if (!email || password.length < 6) {
+      state.apiLoginError = 'Ingresa un correo valido y una contrasena de al menos 6 caracteres.';
+      render();
+      return;
+    }
+    state.submitting = true;
+    state.apiLoginError = '';
+    render();
+    void ioApi.login(email, password).then(({ token, user }) => {
+      const roles: Record<string, DemoRole> = { TN01: 'administrador', TN02: 'vendedor', TN03: 'community_manager', TN04: 'almacenero', TN05: 'cajero', AN01: 'cliente' };
+      const role = roles[user.rolCodigo];
+      if (!role) throw new Error('El rol de esta cuenta no tiene un destino habilitado.');
+      sessionStorage.setItem(API_TOKEN_STORAGE_KEY, token);
+      startDemoSession(role, user.displayName);
+      window.location.assign(resolvePostLoginDestination(role, safeNext));
+    }).catch((error: unknown) => {
+      state.submitting = false;
+      state.apiLoginError = error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+        ? error.message
+        : 'No se pudo iniciar sesion. Revisa la conexion e intenta nuevamente.';
+      render();
+      document.getElementById('api-login-email')?.focus();
+    });
   } else if (form.id === 'form-demo-register') {
     const errs = validateRegister();
     if (Object.keys(errs).length > 0) {

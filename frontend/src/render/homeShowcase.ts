@@ -9,9 +9,9 @@ interface ShowcaseSectionOptions {
   wishlistGroups?: Set<string>;
 }
 
-/**
- * Sección independiente 1: Recién Llegados
- */
+
+
+
 export function renderNewArrivalsSection({
   products,
   selectedVariants,
@@ -69,9 +69,9 @@ export function renderNewArrivalsSection({
   `;
 }
 
-/**
- * Sección independiente 2: Lo Más Destacado
- */
+   
+                                            
+   
 export function renderFeaturedSection({
   products,
   selectedVariants,

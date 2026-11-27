@@ -309,7 +309,7 @@ function attachImageFallbacks(): void {
     );
   });
 
-  // Respaldo de imagen de producto hacia el logo de la empresa I&O
+                                                                   
   root.querySelectorAll<HTMLImageElement>('img[data-product-photo]').forEach((img) => {
     img.addEventListener(
       'error',
@@ -345,9 +345,9 @@ function attachFallbackLogoHandlers(scope: ParentNode): void {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Utilidades de presentación: header con scroll, overlays y cierre animado
-// ---------------------------------------------------------------------------
+                                                                              
+                                                                           
+                                                                              
 let headerScrolled = false;
 let lastOverlayKey = 'none';
 let lastViewKey = '';
@@ -1014,7 +1014,6 @@ root.addEventListener('click', (event) => {
       try {
         window.localStorage.setItem('io_colorblind_mode', state.colorblindMode ? '1' : '0');
       } catch {
-        // Ignorar si localStorage está restringido
       }
       state.liveFeedback = state.colorblindMode
         ? 'Modo Daltonismo y Lectura Ampliada activado.'

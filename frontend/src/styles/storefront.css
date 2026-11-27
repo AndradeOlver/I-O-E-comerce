@@ -1,10 +1,10 @@
-/* Estética editorial Espresso & Piedra (Propuesta 5) — Retail I&O
-   Cumplimiento estricto W3C WCAG 2.1 AA — Sin barras flotantes invasivas
-   Todas las animaciones se neutralizan con @media (prefers-reduced-motion: reduce) en tokens.css */
+                                                                  
+                                                                         
+                                                                                                    
 
-/* ==========================================================================
-   0. Utilidades editoriales
-   ========================================================================== */
+                                                                             
+                            
+                                                                                
 .io-display {
   font-family: var(--font-display);
   font-weight: 600;
@@ -39,9 +39,9 @@
   color: var(--color-ink-muted);
 }
 
-/* ==========================================================================
-   1. Barra Superior de Anuncios
-   ========================================================================== */
+                                                                             
+                                
+                                                                                
 .io-top-strip {
   background-color: var(--color-top-strip-bg);
   color: var(--color-top-strip-text);
@@ -79,7 +79,7 @@
   letter-spacing: 0.06em;
 }
 
-/* Zona habilitable de Modo Daltonismo (sin barras flotantes) */
+                                                                
 .io-a11y-switch {
   min-height: var(--touch-min);
   padding: 0.35rem 0.85rem;
@@ -108,9 +108,9 @@
   color: var(--color-top-strip-text);
 }
 
-/* ==========================================================================
-   2. Header & Navbar Principal
-   ========================================================================== */
+                                                                             
+                               
+                                                                                
 .io-header {
   --header-h: 68px;
   background-color: var(--color-header-bg-translucent);
@@ -130,7 +130,7 @@
   }
 }
 
-/* Estado tras hacer scroll: más compacto, translúcido y con elevación cálida */
+                                                                                
 .io-header.is-scrolled {
   --header-h: 56px;
   background-color: var(--color-header-bg-scrolled);
@@ -174,7 +174,7 @@
   flex-shrink: 0;
 }
 
-/* Logo: contenedor limpio sin marco ni adornos */
+                                                  
 .io-brand-logo-link {
   position: relative;
   display: inline-flex;
@@ -204,14 +204,14 @@
   height: 26px;
 }
 
-/* Mientras el archivo del logo se resuelve, no ocupa espacio ni se ve */
+                                                                         
 .io-brand-logo-img.is-pending {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
-/* Fallback de texto simple (solo si no existe el archivo del logo) */
+                                                                      
 .io-brand-text {
   font-family: var(--font-sans);
   font-size: 1.5rem;
@@ -228,9 +228,9 @@
   display: none;
 }
 
-/* ==========================================================================
-   3. Navegación Central & Enlace OFERTAS (WCAG 1.4.1 Cumplido)
-   ========================================================================== */
+                                                                             
+                                                               
+                                                                                
 .io-nav-list {
   list-style: none;
   margin: 0;
@@ -281,7 +281,7 @@
   opacity: 1;
 }
 
-/*Subrayado animado desde el centro*/
+                                     
 .io-nav-trigger::after {
   content: '';
   position: absolute;
@@ -301,7 +301,7 @@
   transform: scaleX(1);
 }
 
-/* OFERTAS: terracota + punto + subrayado permanente (WCAG 1.4.1: no depende solo del color) */
+                                                                                               
 .io-nav-trigger.is-accent {
   color: var(--color-accent-terracotta);
 }
@@ -326,7 +326,7 @@
   flex-shrink: 0;
 }
 
-/* Mega-menú a ancho completo */
+                                
 .io-megamenu-panel {
   position: absolute;
   left: 0;
@@ -353,7 +353,7 @@
   pointer-events: auto;
 }
 
-/* Cascada progresiva por clic en desktop (Categoría -> Subcategoría y Edad -> Categoría -> Subcategoría) */
+                                                                                                            
 .io-cascade-stage {
   display: grid;
   grid-template-columns: minmax(260px, 440px) minmax(240px, 340px);
@@ -472,7 +472,7 @@
   color: var(--color-accent-terracotta);
 }
 
-/* Dropdown compacto */
+                       
 .io-dropdown-panel {
   position: absolute;
   left: 0;
@@ -532,7 +532,7 @@
   transition: color var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-out);
 }
 
-/* Subrayado animado desde la izquierda */
+                                          
 .io-menu-link::after {
   content: '';
   position: absolute;
@@ -555,7 +555,7 @@
   transform: scaleX(1);
 }
 
-/* Botones de acción del header (iconos de trazo fino) */
+                                                         
 .io-icon-action-btn {
   position: relative;
   min-width: var(--touch-min);
@@ -599,14 +599,14 @@
   pointer-events: none;
 }
 
-/* Contador en cero: contorno marfil (sigue visible y con buen contraste) */
+                                                                            
 .io-bag-badge.is-empty {
   background-color: transparent;
   color: var(--color-header-text);
   box-shadow: inset 0 0 0 1px rgba(250, 247, 242, 0.55);
 }
 
-/* Buscador desplegable */
+                          
 .io-search-overlay {
   background-color: var(--color-top-strip-bg);
   border-top: 1px solid var(--color-header-divider);
@@ -617,7 +617,7 @@
   background-color: var(--color-surface-card);
 }
 
-/* Menú lateral móvil */
+                        
 .io-mobile-nav-drawer {
   position: fixed;
   top: 0;
@@ -748,9 +748,9 @@
   animation: io-drop-in var(--dur-base) var(--ease-out) both;
 }
 
-/* ==========================================================================
-   4. Botones Rectangulares y Minimalistas (border-radius 4px)
-   ========================================================================== */
+                                                                             
+                                                              
+                                                                                
 .io-btn-primary,
 .io-btn-accent,
 .io-btn-outline {
@@ -776,7 +776,7 @@
   transition: transform var(--dur-base) var(--ease-out);
 }
 
-/* Desplazamiento sutil de flechas en hover */
+                                              
 .io-btn-primary:hover:not(:disabled) svg:last-child:not(:first-child),
 .io-btn-accent:hover:not(:disabled) svg:last-child:not(:first-child),
 .io-btn-outline:hover svg:last-child:not(:first-child),
@@ -830,7 +830,7 @@
   color: var(--color-accent-ink);
 }
 
-/* Botón sobrio de bordes limpios (p. ej. "Todas") */
+                                                     
 .io-btn-outline {
   padding: 0.5rem 1.05rem;
   background-color: transparent;
@@ -851,9 +851,9 @@
   transform: scale(0.985);
 }
 
-/* ==========================================================================
-   5. Slots de Imágenes y Marcadores
-   ========================================================================== */
+                                                                             
+                                    
+                                                                                
 .io-image-slot {
   position: relative;
   width: 100%;
@@ -870,14 +870,14 @@
   color: var(--color-ink-muted);
 }
 
-/* Con fotografía: sin borde discontinuo ni caja, la imagen es la protagonista */
+                                                                                 
 .io-image-slot.is-filled {
   border: 0;
   padding: 0;
   border-radius: 0;
 }
 
-/* Shimmer discreto mientras la imagen carga (queda oculto tras la foto) */
+                                                                           
 .io-image-slot.is-filled::before {
   content: '';
   position: absolute;
@@ -920,9 +920,9 @@
   word-break: break-all;
 }
 
-/* ==========================================================================
-   6. Hero / Carrusel Editorial de Campañas
-   ========================================================================== */
+                                                                             
+                                           
+                                                                                
 .io-home-section {
   margin-bottom: 4rem;
 }
@@ -1031,7 +1031,7 @@
   }
 }
 
-/* Degradado editorial envolvente que asegura lectura nítida incluso sobre fondos de estudio claros */
+                                                                                                      
 .io-carousel-scrim {
   position: absolute;
   inset: 0;
@@ -1403,9 +1403,9 @@
   }
 }
 
-/* ==========================================================================
-   7. Tarjetas de Categorías con Nombres Llamativos
-   ========================================================================== */
+                                                                             
+                                                   
+                                                                                
 .io-category-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1535,7 +1535,7 @@
   }
 }
 
-/* Chips de categoría */
+                        
 .io-cat-chip {
   min-height: 40px;
   padding: 0.4rem 1.05rem;
@@ -1570,9 +1570,9 @@
   color: #faf7f2;
 }
 
-/* ==========================================================================
-   8. Tarjetas de Producto (Imagen/Logo I&O, Descripción Izquierda, Círculos +colores y Ver Detalles)
-   ========================================================================== */
+                                                                             
+                                                                                                     
+                                                                                
 .io-product-card {
   background-color: var(--color-surface-card);
   border: 1px solid rgba(214, 206, 194, 0.68);
@@ -1627,7 +1627,7 @@
   transform: scale(1.05);
 }
 
-/* Respaldo estético con el logo oficial de la empresa cuando la prenda no tiene foto cargada */
+                                                                                                
 .io-product-logo-fallback {
   position: absolute;
   inset: 0;
@@ -1763,7 +1763,7 @@
   fill: currentColor;
 }
 
-/* Bloque de descripción alineado estrictamente a la izquierda debajo de la imagen */
+                                                                                     
 .io-product-body {
   text-align: left;
   display: flex;
@@ -1868,7 +1868,7 @@
   opacity: 0.75;
 }
 
-/* Barra inferior de tarjeta: fila superior selector de colores (con wrap), fila inferior "Ver detalles" ancho completo */
+                                                                                                                          
 .io-product-footer-bar {
   margin-top: auto;
   padding-top: 0.68rem;
@@ -2052,7 +2052,7 @@
   background-color: var(--color-danger-err);
 }
 
-/* Botones de selección de talla */
+                                   
 .io-size-btn {
   min-width: var(--touch-tactile);
   min-height: var(--touch-tactile);
@@ -2101,7 +2101,7 @@
   cursor: not-allowed;
 }
 
-/* Botones de opción de color (multimodal daltonismo) */
+                                                        
 .io-color-option {
   min-height: var(--touch-tactile);
   padding: 0.45rem 0.65rem;
@@ -2135,7 +2135,7 @@
   overflow: hidden;
 }
 
-/* Barra de filtros del catálogo */
+                                   
 .io-filterbar {
   display: flex;
   flex-wrap: wrap;
@@ -2147,9 +2147,9 @@
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
-/* ==========================================================================
-   9. Drawers, Modales & Carrito de Compras
-   ========================================================================== */
+                                                                             
+                                           
+                                                                                
 .io-drawer-backdrop {
   position: fixed;
   inset: 0;
@@ -2189,7 +2189,7 @@
   color: var(--color-ink);
 }
 
-/* Modal de cuenta */
+                     
 .io-modal {
   position: fixed;
   inset: 0;
@@ -2206,7 +2206,7 @@
   animation: io-modal-in var(--dur-slow) var(--ease-out) both;
 }
 
-/* Cierre animado (se aplica desde main.ts antes de desmontar) */
+                                                                 
 .io-drawer-backdrop.is-closing {
   animation: io-fade-out 200ms var(--ease-out) both;
   pointer-events: none;
@@ -2233,7 +2233,7 @@
   box-shadow: var(--shadow-warm-sm);
 }
 
-/* Línea del carrito */
+                       
 .io-cart-line {
   padding: 0.9rem;
   background-color: var(--color-surface-white);
@@ -2276,7 +2276,7 @@
   transition: width var(--dur-slow) var(--ease-out);
 }
 
-/* Estados vacíos */
+                    
 .io-empty {
   text-align: center;
   padding: 3rem 1.25rem;
@@ -2309,7 +2309,7 @@
   box-shadow: var(--shadow-warm-sm);
 }
 
-/* Avisos de estado (feedback accesible aria-live) */
+                                                     
 .io-alert {
   display: flex;
   align-items: center;
@@ -2327,9 +2327,9 @@
   animation: io-drop-in var(--dur-base) var(--ease-out) both;
 }
 
-/* ==========================================================================
-   10. Barra inferior móvil y Footer
-   ========================================================================== */
+                                                                             
+                                    
+                                                                                
 .io-mobile-bottom-nav {
   position: fixed;
   bottom: 0;
@@ -2509,7 +2509,7 @@
   color: var(--color-top-strip-bg);
 }
 
-/* Selector compacto de color cuando Modo Daltonismo está inactivo */
+                                                                     
 .io-product-brand {
   display: block;
   font-size: 0.72rem;
@@ -2611,7 +2611,7 @@
   color: rgba(250, 247, 242, 0.8);
 }
 
-/* Vitrina Destacados / Recién Llegados */
+                                          
 .io-showcase-tabs {
   display: inline-flex;
   border: 1px solid var(--color-border-strong);
@@ -2652,7 +2652,7 @@
   opacity: 0.78;
 }
 
-/* Banners editoriales de colecciones por estilo o público */
+                                                             
 .io-collection-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -2770,9 +2770,9 @@
   }
 }
 
-/* ==========================================================================
-   11. Animaciones de entrada (solo en cambios de vista, nunca en re-render menor)
-   ========================================================================== */
+                                                                             
+                                                                                  
+                                                                                
 .io-reveal {
   animation: io-rise var(--dur-slow) var(--ease-out) both;
 }
@@ -2792,7 +2792,7 @@
 .io-category-grid > :nth-child(n + 7),
 .io-product-grid > :nth-child(n + 7) { animation-delay: 420ms; }
 
-/* Re-render por interacción (talla, carrito…): sin repetir animaciones */
+                                                                          
 .io-steady-view .io-reveal,
 .io-steady-view .io-alert {
   animation: none;
@@ -2917,11 +2917,11 @@
   to { background-position: -120% 0; }
 }
 
-/* ==========================================================================
-   12. Pequeña Sección de Marcas, Banda Destacados, Modal Detalles & Modo Daltonismo
-   ========================================================================== */
+                                                                             
+                                                                                    
+                                                                                
 
-/* Pequeña Sección de Marcas */
+                               
 .io-brands-strip {
   margin-bottom: 4rem;
   padding: 1.65rem 1.75rem;
@@ -3056,7 +3056,7 @@
   color: var(--color-primary-espresso);
 }
 
-/* Banda sutil para diferenciar Lo Más Destacado de Recién Llegados */
+                                                                      
 .io-featured-band {
   padding: 2.25rem 1.75rem;
   border-radius: var(--radius-lg);
@@ -3071,7 +3071,7 @@
   }
 }
 
-/* Fondo arquitectónico para banners de colección sin foto */
+                                                             
 .io-collection-architectural-bg {
   position: absolute;
   inset: 0;
@@ -3093,7 +3093,7 @@
   user-select: none;
 }
 
-/* Modal de Ver Detalles del Producto */
+                                        
 .io-product-detail-modal {
   width: min(94vw, 860px);
   padding: 1.5rem;
@@ -3288,9 +3288,9 @@
   font-weight: 600;
 }
 
-/* ==========================================================================
-   Modo Daltonismo y Lectura Ampliada (activable por el comprador)
-   ========================================================================== */
+                                                                             
+                                                                  
+                                                                                
 .io-daltonism-global-banner {
   padding: 0.9rem 1.15rem;
   margin-bottom: 1.75rem;

@@ -192,7 +192,7 @@ export function getActiveDemoSession(): { session: DemoSession | null; expired: 
     try {
       window.localStorage.removeItem(DEMO_SESSION_STORAGE_KEY);
     } catch {
-      // Ignorar si localStorage no está disponible
+
     }
     return { session: null, expired: false };
   }
@@ -207,7 +207,7 @@ function persistSession(session: DemoSession): DemoSession {
   try {
     window.localStorage.setItem(DEMO_SESSION_STORAGE_KEY, JSON.stringify(minimalSession));
   } catch {
-    // Ignorar si localStorage está restringido
+
   }
   return minimalSession;
 }
@@ -235,11 +235,12 @@ export function clearDemoSession(): void {
   try {
     window.localStorage.removeItem(DEMO_SESSION_STORAGE_KEY);
   } catch {
-    // Ignorar si localStorage está restringido
+
   }
 }
 
 export function logoutToAccess(): void {
+  window.sessionStorage.removeItem('io_api_token_v1');
   clearDemoSession();
   window.location.assign('/acceso.html?reason=logout');
 }

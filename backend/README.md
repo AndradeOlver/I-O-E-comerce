@@ -1,6 +1,7 @@
 # ⚙️ Backend – Sistema Omnicanal I&O (`1.3 backend/`)
 
 > **Estado Actual:** ✅ **Stack Aprobado: Node.js + Express (TypeScript)** — Aprobado el `20/11/2026` en [ESTADO_GLOBAL_PROYECTO.md](../ESTADO_GLOBAL_PROYECTO.md)  
+> **Avance de implementación (`27/11/2026`):** Fase 0 iniciada; configuración, SQL Server, errores, JWT/RBAC, autenticación, catálogo y salud implementados. Fase 1 M01 incluye alternativas SKU y creación autenticada de órdenes POS con transacción y auditoría.
 > **Contratos API (`docs_api/`):** ✅ Completados (`openapi.yaml`, `MATRIZ_RBAC_ENDPOINTS.md`, `CATALOGO_CODIGOS_RN.md`) y alineados con el `frontend/` implementado y `DB/esquemas/*.sql`.  
 > **Autores Exclusivos:** **ANDRADE CHIRINOS, Olver Daniel (`N00401718`)** y **RAZURI PAREDES, Josue Daniel (`N00421512`)**  
 > **Fuentes de Verdad:**
@@ -10,6 +11,10 @@
 > * Código fuente frontend verificado (solo lectura): `../frontend/*.html` y `../frontend/src/**`
 
 ---
+
+## Estado de implementación
+
+La Fase 0 tiene implementados `/api/health`, `/api/config/empresa`, autenticación de empleados y clientes, consulta pública de catálogo y taxonomía, e inventario con JWT y RBAC. En M01 se implementaron las alternativas de SKU y la creación de órdenes en transacción SQL con auditoría. Configura SQL Server y JWT mediante `.env`; aplicar `DB/esquemas/03_auth_cliente_password.sql` a bases existentes antes de habilitar registro de clientes. El cobro y la cola de Caja vía API siguen pendientes.
 
 ## 📂 Organización y Árbol Arquitectónico de `backend/`
 

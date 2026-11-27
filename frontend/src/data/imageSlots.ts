@@ -1,20 +1,20 @@
 export interface ImageSlotConfig {
-  /** Ruta principal de la imagen (en ofertas corresponde a PC panorámica) */
+
   src: string;
-  /** Ruta opcional para celular (< 768px) en <picture> */
+
   mobileSrc?: string;
-  /** Ruta sugerida dentro de frontend/public/ */
+
   recommendedPath: string;
-  /** Ruta sugerida para versión celular */
+
   mobileRecommendedPath?: string;
-  /** Alternativa si `src` no existe (p. ej. PNG cuando no hay SVG). Solo el logo la usa. */
+
   fallbackSrc?: string;
   dimensions: string;
   slotLabel: string;
 }
 
 export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
-  // Logo institucional sobre el header espresso (#261E1B) y respaldo en tarjetas de producto
+
   'brand-logo': {
     src: '/img/brand/logo-io.svg',
     fallbackSrc: '/img/brand/logo-io.png',
@@ -23,7 +23,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
     slotLabel: 'Logo',
   },
 
-  // Carrusel hero editorial (conecta las fotografías reales disponibles en public/img/ofertas/)
+
   'oferta-01': {
     src: '/img/ofertas/oferta-01.WebP',
     mobileSrc: '/img/ofertas/oferta-01.WebP',
@@ -57,7 +57,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
     slotLabel: 'Archivo Streetwear',
   },
 
-  // Categorías
+
   'cat-vestidos': {
     src: '/img/categorias/vestidos.WebP',
     recommendedPath: 'public/img/categorias/vestidos.WebP',
@@ -107,7 +107,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
     slotLabel: 'Active & Movimiento',
   },
 
-  // Banners de colecciones por estilo o público
+
   'col-hombre': {
     src: '',
     recommendedPath: 'public/img/colecciones/coleccion-hombre.WebP',
@@ -133,7 +133,7 @@ export const IMAGE_SLOTS: Record<string, ImageSlotConfig> = {
     slotLabel: 'Active & Movimiento',
   },
 
-  // Productos de vitrina (cuando src está vacío, la tarjeta muestra automáticamente el logo de I&O)
+
   'prod-polo-pima': {
     src: '',
     recommendedPath: 'public/img/productos/polo-oversize-pima.WebP',

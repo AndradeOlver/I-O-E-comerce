@@ -1,7 +1,7 @@
-/* ==========================================================================
-   I&O Almacén · Gestión Operativa (TN04)
-   Estética Espresso & Piedra · Maestro-Detalle + Impresión Formal Hoja A4
-   ========================================================================== */
+                                                                             
+                                         
+                                                                          
+                                                                                
 
 .alm-pulse-strip {
   display: grid;
@@ -105,7 +105,7 @@
   }
 }
 
-/* Vista previa e impresión en Hoja A4 */
+                                         
 .alm-doc-backdrop {
   position: fixed;
   inset: 0;

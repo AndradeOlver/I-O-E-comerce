@@ -103,6 +103,7 @@ CREATE TABLE dbo.RegistroCliente (
     nombres          NVARCHAR(140)     NOT NULL,
     telefono         NVARCHAR(20)      NULL,
     email            NVARCHAR(120)     NULL,
+    password_hash    NVARCHAR(255)     NULL,
     direccion        NVARCHAR(250)     NULL,
     opt_in_marketing BIT               NOT NULL CONSTRAINT DF_Cliente_OptIn DEFAULT (0), -- RN-MKT-03 / RN-ACC-06
     fecha_registro   DATETIME2(0)      NOT NULL CONSTRAINT DF_Cliente_Fecha DEFAULT (SYSDATETIME()),

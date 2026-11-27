@@ -1,7 +1,7 @@
-/* ==========================================================================
-   I&O · Puerta Única de Acceso (Modo Demostración) y Zonas en Preparación
-   Estética editorial Espresso & Piedra — WCAG 2.1 Nivel AA
-   ========================================================================== */
+                                                                             
+                                                                          
+                                                           
+                                                                                
 
 .io-access-layout {
   min-height: 100dvh;
@@ -17,7 +17,7 @@
   }
 }
 
-/* Panel izquierdo: Espresso institucional */
+                                             
 .io-access-brand-pane {
   background-color: var(--color-primary-espresso);
   color: var(--color-header-text);
@@ -190,7 +190,7 @@
   }
 }
 
-/* Panel derecho: Superficie clara y serena */
+                                              
 .io-access-work-pane {
   padding: 1.5rem 1rem 2.5rem;
   display: flex;
@@ -239,7 +239,7 @@
   color: var(--color-ink-muted);
 }
 
-/* Conmutador de modos (Ingresar / Crear cuenta) */
+                                                   
 .io-access-tablist {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -289,7 +289,7 @@
   display: inline-block;
 }
 
-/* Banners contextuales */
+                          
 .io-access-banner {
   display: flex;
   align-items: flex-start;
@@ -337,7 +337,7 @@
   margin-top: 0.65rem;
 }
 
-/* Selector de perfiles */
+                          
 .io-role-fieldset {
   border: 0;
   padding: 0;
@@ -481,7 +481,7 @@
   line-height: 1.35;
 }
 
-/* Campos, etiquetas y estados de validación */
+                                               
 .io-field-group {
   margin-bottom: 1rem;
 }
@@ -533,7 +533,7 @@
   margin-top: 0.1rem;
 }
 
-/* Casilla opt-in accesible */
+                              
 .io-optin-row {
   display: flex;
   align-items: flex-start;
@@ -571,7 +571,7 @@
   margin-bottom: 1.1rem;
 }
 
-/* Botones de acción */
+                       
 .io-access-submit {
   width: 100%;
   min-height: var(--touch-tactile);
@@ -646,7 +646,7 @@
   }
 }
 
-/* Zona en preparación */
+                         
 .io-pending-page {
   min-height: 100dvh;
   display: flex;

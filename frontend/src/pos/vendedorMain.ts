@@ -1,6 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/tokens.css';
 import '../styles/pos.css';
+import { API_TOKEN_STORAGE_KEY, ioApi } from '../api/client';
 import { DemoSession, logoutToAccess, requireAnyZoneRole } from '../auth/demoSession';
 import { IMAGE_SLOTS } from '../data/imageSlots';
 import {
@@ -10,7 +11,7 @@ import {
   subscribeMarketingEvents,
 } from '../marketing/marketingStore';
 import { bindBrandLogo, renderBrandMark } from '../render/brand';
-import { escapeHtml } from '../utils/icons';
+import { escapeHtml, icons } from '../utils/icons';
 import {
   calculateOrderTotals,
   createAndSendOrder,
@@ -29,6 +30,7 @@ import {
 import {
   PosConsoleApi,
   PosInventoryItem,
+  PosAlternativeSuggestion,
   PosReceiptType,
   PosStoreState,
   PosUiMode,
@@ -65,6 +67,7 @@ interface VendedorLocalState {
   clienteDoc: string;
   clienteRazonSocial: string;
   alternativesForSku: string | null;
+  apiAlternatives: { sku: string; items: PosAlternativeSuggestion[] } | null;
   discountError: string;
   orderError: string;
   feedback: { kind: 'ok' | 'err' | 'warn'; text: string } | null;
@@ -87,6 +90,7 @@ const local: VendedorLocalState = {
   clienteDoc: '',
   clienteRazonSocial: '',
   alternativesForSku: null,
+  apiAlternatives: null,
   discountError: '',
   orderError: '',
   feedback: null,
@@ -124,7 +128,7 @@ function playBeep(freq = 880, duration = 0.1): void {
     osc.start();
     osc.stop(ctx.currentTime + duration);
   } catch {
-    // Sin audio disponible en este navegador
+
   }
 }
 
@@ -460,7 +464,9 @@ function renderTopCounters(): void {
 function renderInlineAlternativesHtml(sku: string): string {
   const all = getInventoryList(storeState);
   const original = all.find((i) => i.sku === sku);
-  const alternatives = findAlternativesForSku(sku, storeState);
+  const alternatives = local.apiAlternatives?.sku === sku
+    ? local.apiAlternatives.items
+    : findAlternativesForSku(sku, storeState);
 
   return `
     <div class="pos-alt-box">
@@ -800,7 +806,7 @@ function renderOrderDrawer(): void {
                             }
                             ${
                               !line.verificado
-                                ? `<button type="button" class="pos-variant-pill" data-verify-sku="${escapeHtml(item.sku)}">✓ Verificar manual</button>`
+                                ? `<button type="button" class="pos-variant-pill" data-verify-sku="${escapeHtml(item.sku)}">${icons.fontAwesomeCheck()} Verificar manual</button>`
                                 : ''
                             }
                           </div>
@@ -1026,13 +1032,40 @@ function clearDraft(): void {
   local.orderError = '';
 }
 
-function handleSendOrderToCaja(): void {
+async function handleSendOrderToCaja(): Promise<void> {
   if (local.draftItems.length === 0) return;
 
   const unverified = local.draftItems.filter((d) => !d.verificado);
   if (unverified.length > 0) {
     local.orderError = `Verifica las ${unverified.length} prenda(s) pendiente(s) antes de enviar a Caja.`;
     renderOrderDrawer();
+    return;
+  }
+
+  if (sessionStorage.getItem(API_TOKEN_STORAGE_KEY)) {
+    try {
+      const tokenPayload = sessionStorage.getItem(API_TOKEN_STORAGE_KEY)?.split('.')[1];
+      const apiUserId = tokenPayload ? Number(JSON.parse(atob(tokenPayload.replace(/-/g, '+').replace(/_/g, '/'))).id) : undefined;
+      const created = await ioApi.posCreateOrder({
+        cliente_referencia: local.clienteReferencia,
+        cliente_doc: local.clienteDoc,
+        cliente_razon_social: local.clienteRazonSocial,
+        items: local.draftItems.map((item) => ({ sku: item.sku, cantidad: item.cantidad })),
+        descuento_pct: local.descuentoPct,
+        descuento_autorizado: local.descuentoAutorizado,
+        autorizacion_admin_id: local.descuentoAutorizado && currentSession.role === 'administrador' ? apiUserId : undefined,
+        tipo_comprobante: local.tipoComprobante === 'factura' ? 'Factura' : 'Boleta',
+      });
+      clearDraft();
+      local.isOrderDrawerOpen = false;
+      local.feedback = { kind: 'ok', text: `Orden ${created.order.code} enviada a Caja (${formatPen(created.order.total)}).` };
+      renderDynamic();
+      (document.getElementById('pos-search-input') as HTMLInputElement | null)?.focus();
+    } catch (error) {
+      const apiError = error as { message?: string };
+      local.orderError = apiError.message ?? 'No se pudo registrar la orden en el servidor.';
+      renderOrderDrawer();
+    }
     return;
   }
 
@@ -1260,12 +1293,28 @@ function bindEvents(): void {
     if (altBtn?.dataset.showAlt) {
       const sku = altBtn.dataset.showAlt;
       local.alternativesForSku = local.alternativesForSku === sku ? null : sku;
+      local.apiAlternatives = null;
       renderResults();
+      if (local.alternativesForSku && sessionStorage.getItem(API_TOKEN_STORAGE_KEY)) {
+        void ioApi.posAlternatives(sku).then((response) => {
+          if (local.alternativesForSku !== sku) return;
+          const inventory = getInventoryList(storeState);
+          local.apiAlternatives = {
+            sku,
+            items: response.alternativas.flatMap(({ motivo, item }) => {
+              const existing = inventory.find((entry) => entry.sku === item.sku);
+              return existing ? [{ motivo: motivo as PosAlternativeSuggestion['motivo'], item: { ...existing, ...item, categorySlug: existing.categorySlug } }] : [];
+            })
+          };
+          renderResults();
+        }).catch(() => undefined);
+      }
       return;
     }
 
     if (target.closest('#btn-close-alternatives')) {
       local.alternativesForSku = null;
+      local.apiAlternatives = null;
       renderResults();
       return;
     }

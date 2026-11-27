@@ -1,7 +1,7 @@
-/* ==========================================================================
-   I&O Dirección · Mesa de Control por Excepción y Decisión (TN01)
-   Identidad Espresso & Piedra · Uso interno (sin componentes buyer-only)
-   ========================================================================== */
+                                                                             
+                                                                  
+                                                                         
+                                                                                
 
 .adm-shell {
   max-width: 1420px;
@@ -42,9 +42,9 @@
   color: var(--color-ink-muted);
 }
 
-/* ==========================================================================
-   CAPA 1: Franja de Pulso Vital
-   ========================================================================== */
+                                                                             
+                                
+                                                                                
 .adm-pulse-grid {
   display: grid;
   grid-template-columns: 1.15fr 1.15fr 1fr;
@@ -154,9 +154,9 @@
   font-weight: 600;
 }
 
-/* ==========================================================================
-   CAPA 2 & 3: Bandeja de Decisiones + Expediente Contextual
-   ========================================================================== */
+                                                                             
+                                                            
+                                                                                
 .adm-workspace {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(350px, 0.85fr);
@@ -408,9 +408,9 @@
   font-size: 0.86rem;
 }
 
-/* ==========================================================================
-   CAPA 3: Panel Contextual de Resolución (Sticky)
-   ========================================================================== */
+                                                                             
+                                                  
+                                                                                
 .adm-detail-panel {
   position: sticky;
   top: 66px;
@@ -635,9 +635,9 @@
   color: var(--color-warning-low);
 }
 
-/* ==========================================================================
-   CAPA 4: Bitácora de Trazabilidad
-   ========================================================================== */
+                                                                             
+                                   
+                                                                                
 .adm-audit-section {
   margin-top: 1.25rem;
   background: var(--color-surface-card);
@@ -693,9 +693,9 @@
   color: var(--color-ink-muted);
 }
 
-/* ==========================================================================
-   Responsive (375px / 768px / 1280px y zoom 200%)
-   ========================================================================== */
+                                                                             
+                                                  
+                                                                                
 @media (max-width: 1080px) {
   .adm-pulse-grid {
     grid-template-columns: 1fr;
@@ -743,9 +743,9 @@
   }
 }
 
-/* ==========================================================================
-   Pestañas de Vista Superior (Mesa de Control / Analítica / Altas)
-   ========================================================================== */
+                                                                             
+                                                                   
+                                                                                
 .adm-view-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -785,9 +785,9 @@
   color: var(--color-header-text);
 }
 
-/* ==========================================================================
-   Paneles Acordeón por Área (5 Áreas del Negocio)
-   ========================================================================== */
+                                                                             
+                                                  
+                                                                                
 .adm-areas-stack {
   display: flex;
   flex-direction: column;
@@ -854,9 +854,9 @@
   padding: 0.45rem;
 }
 
-/* ==========================================================================
-   Analítica y Tendencias (Barras Espresso & Piedra)
-   ========================================================================== */
+                                                                             
+                                                    
+                                                                                
 .adm-analytics-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -926,9 +926,9 @@
   background: var(--color-success-ok);
 }
 
-/* ==========================================================================
-   Altas de Dirección (Modelos de Ropa y Proveedores)
-   ========================================================================== */
+                                                                             
+                                                     
+                                                                                
 .adm-altas-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
