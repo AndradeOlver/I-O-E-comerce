@@ -1,0 +1,4537 @@
+openapi: 3.0.3
+info:
+  title: Sistema Omnicanal I&O — API REST
+  version: 1.0.0
+  description: |
+    Contrato REST oficial del backend Node.js + Express (TypeScript) + Microsoft SQL Server (`IO_Ecommerce`)
+    para el Sistema Omnicanal I&O (Módulos Auth, Catálogo y M01–M08).
+    Cubre los 7 Casos de Uso de Negocio (`CUN01`–`CUN07`), 49 códigos operativos `RN-*`
+    (documentados históricamente como 42 reglas operativas) y 6 reglas de accesibilidad `RN-ACC-01..06`.
+    Proyecta DTOs públicos sin exposición numérica de stock para `AN01` (regla del 24/11/2026) y DTOs internos con stock exacto para `TN01`–`TN05`.
+  contact:
+    name: Olver Daniel Andrade Chirinos (N00401718) & Josue Daniel Razuri Paredes (N00421512)
+servers:
+  - url: http://localhost:3000
+    description: Servidor local de desarrollo (Express + TypeScript)
+tags:
+  - name: Health
+    description: Estado de salud del servidor y pool SQL Server
+  - name: Config
+    description: Parámetros canónicos del negocio e identidad fiscal del emisor
+  - name: Auth
+    description: Autenticación JWT para roles internos (TN01-TN05) y clientes (AN01)
+  - name: Catalogo
+    description: Taxonomía 8x30, catálogo público sin stock numérico (AN01), inventario SKU interno y alta de modelos
+  - name: M01-POS
+    description: CUN01 Ventas presenciales en tienda, alternativas, cobros, Boleta/Factura/Nota de Crédito y arqueo
+  - name: M01-Aliados
+    description: Cuentas por cobrar y abonos de tiendas aliadas (enlace M06 -> Caja M01)
+  - name: M02-Ecommerce
+    description: CUN02 Reserva de carrito 15 min, checkout 3 pasos, 6 estados, webhook PCI-DSS y cancelación
+  - name: M03-Envios
+    description: CUN03 Picking post-pago, GuiaEnvio con tracking único y hasta 2 intentos de entrega
+  - name: M04-Compras
+    description: CUN04 Alertas stock <= 5, proveedores, órdenes de compra, reapertura, recepción y pagos
+  - name: M05-Marketing
+    description: CUN05 Editorial Recién Llegados, Hero, Colecciones y Campañas INDECOPI con opt-in Ley 29733
+  - name: M06-Prestamos
+    description: CUN06 Préstamos en consignación (<= 7 días), Constancia Formal RN-PRE-01 y cierre/deterioro
+  - name: M07-Finanzas
+    description: CUN07 Planilla mensual, verificación de liquidez, boletas firmadas, egresos y cierre inmutable
+  - name: M08-Dashboard
+    description: Mesa de Control, cola de decisiones gerenciales, analítica multicanal y bitácora AuditLog
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT emitido por /api/auth/login o /api/auth/register con rolCodigo (TN01-TN05 o AN01)
+
+  responses:
+    BadRequest:
+      description: Error de sintaxis o validación Zod de campos de entrada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessRuleError'
+    Unauthorized:
+      description: Token JWT ausente, expirado o firma de webhook inválida (RN-SEG-01 / RN-SEG-02)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessRuleError'
+    PaymentRequired:
+      description: Pago rechazado por pasarela con reintentos restantes o agotados (RN-ECO-02)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessRuleError'
+    Forbidden:
+      description: Rol sin privilegios suficientes o intento de mutar AuditLog (RN-SEG-01 / RN-SEG-03)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessRuleError'
+    NotFound:
+      description: Recurso o referencia foránea inexistente
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessRuleError'
+    Conflict:
+      description: Conflicto de estado, stock insuficiente, duplicado UNIQUE/INDEX o planilla cerrada (RN-VEN-06 / RN-FIN-05)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessRuleError'
+    UnprocessableEntity:
+      description: Violación de regla de negocio RN-* o CHECK constraint de SQL Server (Poka-Yoke / aria-live)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BusinessRuleError'
+
+  schemas:
+    BusinessRuleError:
+      type: object
+      required:
+        - ok
+        - ruleCode
+        - error
+        - message
+      properties:
+        ok:
+          type: boolean
+          enum: [false]
+        ruleCode:
+          type: string
+          example: RN-PRE-01
+        error:
+          type: string
+          example: CONSTANCIA_FORMAL_REQUERIDA
+        message:
+          type: string
+          example: Cuando el Gerente no está disponible, el Almacenero debe consignar el número de Constancia Formal de Préstamo.
+        field:
+          type: string
+          nullable: true
+          example: numero_constancia_formal
+
+    OkAck:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+
+    HealthResponse:
+      type: object
+      required: [ok, status, service, database, timestamp]
+      properties:
+        ok:
+          type: boolean
+        status:
+          type: string
+          enum: [healthy, degraded]
+        service:
+          type: string
+          example: io-omnicanal-backend
+        database:
+          type: string
+          enum: [connected, disconnected]
+        timestamp:
+          type: string
+          format: date-time
+
+    EmpresaConfig:
+      type: object
+      required:
+        - razon_social
+        - ruc
+        - direccion_fiscal
+        - tarifa_envio_urbano
+        - umbral_envio_gratis
+        - dias_cambio_tienda
+        - umbral_stock_bajo
+        - plazo_max_prestamo_dias
+        - descuento_max_pos_pct
+        - igv_pct
+        - ttl_reserva_carrito_min
+        - max_reintentos_pago
+        - max_intentos_envio
+      properties:
+        razon_social:
+          type: string
+          example: I&O MODA RETAIL S.A.C.
+        ruc:
+          type: string
+          example: "20609988771"
+        direccion_fiscal:
+          type: string
+          example: Av. Larco 450, Miraflores, Lima, Perú
+        tarifa_envio_urbano:
+          type: number
+          format: double
+          example: 10.0
+        umbral_envio_gratis:
+          type: number
+          format: double
+          example: 150.0
+        dias_cambio_tienda:
+          type: integer
+          example: 7
+        umbral_stock_bajo:
+          type: integer
+          example: 5
+        plazo_max_prestamo_dias:
+          type: integer
+          example: 7
+        descuento_max_pos_pct:
+          type: number
+          format: double
+          example: 10.0
+        igv_pct:
+          type: number
+          format: double
+          example: 18.0
+        ttl_reserva_carrito_min:
+          type: integer
+          example: 15
+        max_reintentos_pago:
+          type: integer
+          example: 3
+        max_intentos_envio:
+          type: integer
+          example: 2
+
+    AuthUser:
+      type: object
+      required: [id, rolCodigo, rol_rbac, displayName, destination]
+      properties:
+        id:
+          type: integer
+        rolCodigo:
+          type: string
+          enum: [TN01, TN02, TN03, TN04, TN05, AN01]
+        rol_rbac:
+          type: string
+          enum: [Administrador, Vendedor, Community Manager, Almacenero, Cajero, Cliente]
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+        destination:
+          type: string
+          example: /pos-vendedor.html
+        opt_in_marketing:
+          type: boolean
+
+    AuthLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+
+    AuthRegisterRequest:
+      type: object
+      required: [nombres, email, password]
+      properties:
+        nombres:
+          type: string
+          minLength: 3
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        dni_ruc:
+          type: string
+          pattern: "^(\\d{8}|\\d{11})$"
+        telefono:
+          type: string
+          pattern: "^\\d{7,9}$"
+        direccion:
+          type: string
+        opt_in_marketing:
+          type: boolean
+          default: false
+
+    AuthResponse:
+      type: object
+      required: [ok, token, expiresAt, user]
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+        token:
+          type: string
+        expiresAt:
+          type: integer
+          format: int64
+        user:
+          $ref: '#/components/schemas/AuthUser'
+
+    TaxonomiaMarca:
+      type: object
+      required: [id, nombre, monograma, especialidad]
+      properties:
+        id:
+          type: string
+        nombre:
+          type: string
+        monograma:
+          type: string
+        especialidad:
+          type: string
+        tagline:
+          type: string
+        categoryTarget:
+          type: string
+
+    TaxonomiaCategoria:
+      type: object
+      required: [categoria_id, slug, nombre, orden]
+      properties:
+        categoria_id:
+          type: integer
+        slug:
+          type: string
+        nombre:
+          type: string
+        subtitulo:
+          type: string
+        descripcion:
+          type: string
+        orden:
+          type: integer
+
+    TaxonomiaSubcategoria:
+      type: object
+      required: [subcategoria_id, categoria_id, categorySlug, slug, nombre, aplicaHombre, aplicaMujer, aplicaNinos]
+      properties:
+        subcategoria_id:
+          type: integer
+        categoria_id:
+          type: integer
+        categorySlug:
+          type: string
+        slug:
+          type: string
+        nombre:
+          type: string
+        aplicaHombre:
+          type: boolean
+        aplicaMujer:
+          type: boolean
+        aplicaNinos:
+          type: boolean
+
+    ProductPublicVariant:
+      type: object
+      description: Variante pública para AN01 — NUNCA expone stock numérico (regla 24/11/2026)
+      required: [producto_id, variante_id, sku, talla, color, colorHex, color_textura, alt_text, precio_venta, disponible, estado_stock]
+      properties:
+        producto_id:
+          type: integer
+        variante_id:
+          type: integer
+        sku:
+          type: string
+        talla:
+          type: string
+        color:
+          type: string
+        colorHex:
+          type: string
+        color_textura:
+          type: string
+        patternId:
+          type: string
+        alt_text:
+          type: string
+        precio_venta:
+          type: number
+          format: double
+        precio_regular:
+          type: number
+          format: double
+          nullable: true
+        disponible:
+          type: boolean
+        estado_stock:
+          type: string
+          enum: [disponible, agotado]
+
+    ProductPublicGroup:
+      type: object
+      description: Modelo agrupado público (sin cantidades numéricas de stock)
+      required: [producto_id, groupId, nombre, marca, categoriaSlug, genero, disponible, variants]
+      properties:
+        producto_id:
+          type: integer
+        groupId:
+          type: string
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        fraseCorta:
+          type: string
+        marca:
+          type: string
+        categoriaSlug:
+          type: string
+        subcategoriaSlug:
+          type: string
+          nullable: true
+        genero:
+          type: string
+          enum: [Hombre, Mujer, Ninos, Unisex]
+        rango_edad:
+          type: string
+          nullable: true
+          enum: [Bebes, Infantil, Junior, null]
+        imagen_url:
+          type: string
+        recien_llegado:
+          type: boolean
+        disponible:
+          type: boolean
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductPublicVariant'
+
+    PosInventoryItem:
+      type: object
+      description: Proyección interna de SKU para TN01-TN05 (expone stock numérico y stock_minimo)
+      required: [producto_id, variante_id, groupId, sku, nombre, marca, categorySlug, talla, color, colorHex, color_textura, precio_venta, stock, stock_minimo]
+      properties:
+        producto_id:
+          type: integer
+        variante_id:
+          type: integer
+        groupId:
+          type: string
+        sku:
+          type: string
+        nombre:
+          type: string
+        marca:
+          type: string
+        categorySlug:
+          type: string
+        talla:
+          type: string
+        color:
+          type: string
+        colorHex:
+          type: string
+        color_textura:
+          type: string
+        precio_compra:
+          type: number
+          format: double
+        precio_venta:
+          type: number
+          format: double
+        precio_promocional_activo:
+          type: number
+          format: double
+          nullable: true
+        stock:
+          type: integer
+          minimum: 0
+        stock_minimo:
+          type: integer
+          default: 5
+        activo:
+          type: boolean
+
+    CreateModelRequest:
+      type: object
+      required: [nombre, marca, categoria_slug, genero, precio_venta, stock_inicial, tallas, color, color_hex]
+      properties:
+        nombre:
+          type: string
+          minLength: 3
+        marca:
+          type: string
+        categoria_slug:
+          type: string
+        subcategoria_slug:
+          type: string
+        genero:
+          type: string
+          enum: [Hombre, Mujer, Ninos, Unisex]
+        rango_edad:
+          type: string
+          nullable: true
+          enum: [Bebes, Infantil, Junior, null]
+        precio_venta:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+        precio_compra:
+          type: number
+          format: double
+          minimum: 0
+        stock_inicial:
+          type: integer
+          minimum: 0
+        tallas:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        color:
+          type: string
+        color_hex:
+          type: string
+        color_textura:
+          type: string
+        pattern_id:
+          type: string
+        descripcion:
+          type: string
+        alt_text:
+          type: string
+
+    PosAlternativeSuggestion:
+      type: object
+      required: [motivo, item]
+      properties:
+        motivo:
+          type: string
+          enum:
+            - Talla similar disponible
+            - Misma talla en otro color
+            - Otro color disponible
+            - Prenda similar disponible
+        item:
+          $ref: '#/components/schemas/PosInventoryItem'
+
+    PosOrderItem:
+      type: object
+      required: [detalle_id, variante_id, sku, nombre, talla, color, cantidad, precio_unitario, descuento_linea, subtotal]
+      properties:
+        detalle_id:
+          type: integer
+        variante_id:
+          type: integer
+        sku:
+          type: string
+        nombre:
+          type: string
+        talla:
+          type: string
+        color:
+          type: string
+        cantidad:
+          type: integer
+          minimum: 1
+        precio_unitario:
+          type: number
+          format: double
+        precio_promo_aplicado:
+          type: boolean
+        descuento_linea:
+          type: number
+          format: double
+        subtotal:
+          type: number
+          format: double
+
+    ComprobantePago:
+      type: object
+      required: [comprobante_id, pedido_cliente_id, numero, tipo, fecha, subtotal_gravado, igv, total]
+      properties:
+        comprobante_id:
+          type: integer
+        pedido_cliente_id:
+          type: integer
+        numero:
+          type: string
+          example: B001-0000101
+        tipo:
+          type: string
+          enum: [Boleta, Factura, NotaCredito]
+        fecha:
+          type: string
+          format: date-time
+        subtotal_gravado:
+          type: number
+          format: double
+        igv:
+          type: number
+          format: double
+        total:
+          type: number
+          format: double
+        motivo_anulacion:
+          type: string
+          nullable: true
+        razon_social_emisor:
+          type: string
+          example: I&O MODA RETAIL S.A.C.
+        ruc_emisor:
+          type: string
+          example: "20609988771"
+
+    PosCashMovement:
+      type: object
+      required: [movimiento_id, fecha, tipo, metodo, concepto, monto]
+      properties:
+        movimiento_id:
+          type: integer
+        pedido_id:
+          type: integer
+          nullable: true
+        fecha:
+          type: string
+          format: date-time
+        tipo:
+          type: string
+          enum: [Ingreso, Egreso]
+        metodo:
+          type: string
+          enum: [efectivo, tarjeta, yape_plin, transferencia]
+        concepto:
+          type: string
+        monto:
+          type: number
+          format: double
+
+    PosOrder:
+      type: object
+      required:
+        - pedido_id
+        - code
+        - status
+        - vendedor_nombre
+        - cliente_referencia
+        - tipo_comprobante
+        - descuento_pct
+        - op_gravada
+        - igv
+        - total
+        - monto_pagado
+        - saldo_pendiente
+        - items
+        - created_at
+      properties:
+        pedido_id:
+          type: integer
+        code:
+          type: string
+        status:
+          type: string
+          enum: [pendiente_cobro, cobrado, cancelado, anulado_nc]
+        vendedor_nombre:
+          type: string
+        cliente_referencia:
+          type: string
+        tipo_comprobante:
+          type: string
+          enum: [Boleta, Factura]
+        cliente_doc:
+          type: string
+          nullable: true
+        cliente_razon_social:
+          type: string
+          nullable: true
+        metodo_pago_solicitado:
+          type: string
+          nullable: true
+          enum: [efectivo, tarjeta, yape_plin, transferencia, null]
+        descuento_pct:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10
+        descuento_autorizado:
+          type: boolean
+        op_gravada:
+          type: number
+          format: double
+        igv:
+          type: number
+          format: double
+        total:
+          type: number
+          format: double
+        monto_pagado:
+          type: number
+          format: double
+        saldo_pendiente:
+          type: number
+          format: double
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PosOrderItem'
+        comprobante:
+          $ref: '#/components/schemas/ComprobantePago'
+        created_at:
+          type: string
+          format: date-time
+
+    CreatePosOrderRequest:
+      type: object
+      required: [items, descuento_pct, descuento_autorizado, tipo_comprobante]
+      properties:
+        cliente_referencia:
+          type: string
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, cantidad]
+            properties:
+              sku:
+                type: string
+              cantidad:
+                type: integer
+                minimum: 1
+        descuento_pct:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 10
+        descuento_autorizado:
+          type: boolean
+        autorizacion_admin_id:
+          type: integer
+          nullable: true
+        tipo_comprobante:
+          type: string
+          enum: [Boleta, Factura]
+        cliente_doc:
+          type: string
+        cliente_razon_social:
+          type: string
+        metodo_pago_solicitado:
+          type: string
+          enum: [efectivo, tarjeta, yape_plin, transferencia]
+
+    PosPaymentRequest:
+      type: object
+      required: [monto, metodo, tipo]
+      properties:
+        monto:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+        metodo:
+          type: string
+          enum: [efectivo, tarjeta, yape_plin, transferencia]
+        tipo:
+          type: string
+          enum: [pago, abono_cuenta]
+        referencia_externa:
+          type: string
+        nota:
+          type: string
+
+    PosNotaCreditoRequest:
+      type: object
+      required: [motivo_anulacion]
+      properties:
+        motivo_anulacion:
+          type: string
+          minLength: 5
+          maxLength: 250
+        autorizacion_admin_id:
+          type: integer
+
+    PosDailySummary:
+      type: object
+      required: [fecha, total_cobrado, total_pendiente, por_metodo, comprobantes_emitidos]
+      properties:
+        fecha:
+          type: string
+          format: date
+        total_cobrado:
+          type: number
+          format: double
+        total_pendiente:
+          type: number
+          format: double
+        egresos_nc:
+          type: number
+          format: double
+        por_metodo:
+          type: object
+          properties:
+            efectivo:
+              type: number
+            tarjeta:
+              type: number
+            yape_plin:
+              type: number
+            transferencia:
+              type: number
+        comprobantes_emitidos:
+          type: integer
+
+    PosAllyDebt:
+      type: object
+      required: [id, negocio_nombre, ruc, contacto, tipo, dias_plazo, descripcion_prendas, monto_total, monto_pagado, saldo_pendiente, estado]
+      properties:
+        id:
+          type: integer
+        prestamo_id:
+          type: integer
+          nullable: true
+        negocio_nombre:
+          type: string
+        ruc:
+          type: string
+          pattern: "^\\d{11}$"
+        contacto:
+          type: string
+        tipo:
+          type: string
+          enum: [consignacion, credito]
+        dias_plazo:
+          type: integer
+          minimum: 1
+        descripcion_prendas:
+          type: string
+        monto_total:
+          type: number
+          format: double
+        monto_pagado:
+          type: number
+          format: double
+        saldo_pendiente:
+          type: number
+          format: double
+        estado:
+          type: string
+          enum: [pendiente, parcial, liquidado]
+        created_at:
+          type: string
+          format: date-time
+
+    CreateAllyDebtRequest:
+      type: object
+      required: [negocio_nombre, ruc, contacto, tipo, dias_plazo, descripcion_prendas, monto_total]
+      properties:
+        negocio_nombre:
+          type: string
+        ruc:
+          type: string
+          pattern: "^\\d{11}$"
+        contacto:
+          type: string
+        tipo:
+          type: string
+          enum: [consignacion, credito]
+        dias_plazo:
+          type: integer
+          minimum: 1
+        descripcion_prendas:
+          type: string
+        monto_total:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+
+    CartReserveRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, cantidad]
+            properties:
+              producto_id:
+                type: integer
+              sku:
+                type: string
+              cantidad:
+                type: integer
+                minimum: 1
+        opt_in_marketing:
+          type: boolean
+          default: false
+
+    CartReserveResponse:
+      type: object
+      required: [ok, reserva_id, reserva_expira_en, seconds_remaining, subtotal, costo_envio, envio_gratis, total]
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+        reserva_id:
+          type: string
+        reserva_expira_en:
+          type: string
+          format: date-time
+        seconds_remaining:
+          type: integer
+          example: 900
+        subtotal:
+          type: number
+          format: double
+        costo_envio:
+          type: number
+          format: double
+          example: 10.0
+        envio_gratis:
+          type: boolean
+        total:
+          type: number
+          format: double
+
+    CreateEcommerceOrderRequest:
+      type: object
+      required: [items, cliente, envio, comprobante, opt_in_marketing]
+      properties:
+        reserva_id:
+          type: string
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, cantidad]
+            properties:
+              sku:
+                type: string
+              cantidad:
+                type: integer
+                minimum: 1
+        cliente:
+          type: object
+          required: [dni_ruc, nombres, telefono, email]
+          properties:
+            dni_ruc:
+              type: string
+              pattern: "^(\\d{8}|\\d{11})$"
+            nombres:
+              type: string
+            telefono:
+              type: string
+              pattern: "^\\d{7,9}$"
+            email:
+              type: string
+              format: email
+        envio:
+          type: object
+          required: [modalidad_entrega]
+          properties:
+            modalidad_entrega:
+              type: string
+              enum: [Retiro en tienda, Envío courier]
+            distrito:
+              type: string
+            direccion:
+              type: string
+            referencia:
+              type: string
+        comprobante:
+          type: object
+          required: [tipo]
+          properties:
+            tipo:
+              type: string
+              enum: [Boleta, Factura]
+            ruc:
+              type: string
+              pattern: "^\\d{11}$"
+            razon_social:
+              type: string
+        opt_in_marketing:
+          type: boolean
+          default: false
+
+    EcommerceOrder:
+      type: object
+      required:
+        - pedido_id
+        - pedido_ref
+        - estado_online
+        - reintentos_pago
+        - subtotal
+        - costo_envio
+        - total
+        - modalidad_entrega
+      properties:
+        pedido_id:
+          type: integer
+        pedido_ref:
+          type: string
+          example: WEB-2026-0041
+        estado_online:
+          type: string
+          enum:
+            - Pendiente de pago
+            - Pago rechazado
+            - En preparación
+            - En envío
+            - Entregado
+            - Cancelado
+        reintentos_pago:
+          type: integer
+          minimum: 0
+          maximum: 3
+        reserva_expira_en:
+          type: string
+          format: date-time
+          nullable: true
+        modalidad_entrega:
+          type: string
+          enum: [Retiro en tienda, Envío courier]
+        subtotal:
+          type: number
+          format: double
+        costo_envio:
+          type: number
+          format: double
+        total:
+          type: number
+          format: double
+        pasarela_session_token:
+          type: string
+          nullable: true
+        tracking_code:
+          type: string
+          nullable: true
+        intentos_entrega:
+          type: integer
+          nullable: true
+        comprobante_numero:
+          type: string
+          nullable: true
+
+    EcommercePayRequest:
+      type: object
+      description: Tokenización PCI-DSS (RN-SEG-02). Prohibido enviar PAN o CVV.
+      required: [metodo, token_pasarela]
+      additionalProperties: false
+      properties:
+        metodo:
+          type: string
+          enum: [tarjeta, yape_plin, transferencia]
+        token_pasarela:
+          type: string
+          minLength: 8
+
+    GatewayWebhookRequest:
+      type: object
+      required: [pedido_id, token_pasarela_ref, status, signature]
+      properties:
+        pedido_id:
+          type: integer
+        token_pasarela_ref:
+          type: string
+        status:
+          type: string
+          enum: [approved, rejected]
+        signature:
+          type: string
+
+    WarehouseDispatch:
+      type: object
+      required:
+        - guia_id
+        - pedido_cliente_id
+        - order_code
+        - cliente_nombre
+        - cliente_dni
+        - distrito
+        - direccion
+        - subtotal
+        - flete
+        - pago_confirmado
+        - estado_envio
+        - intentos_entrega
+        - items
+      properties:
+        guia_id:
+          type: integer
+        pedido_cliente_id:
+          type: integer
+        order_code:
+          type: string
+        cliente_nombre:
+          type: string
+        cliente_dni:
+          type: string
+        distrito:
+          type: string
+        direccion:
+          type: string
+        subtotal:
+          type: number
+          format: double
+        flete:
+          type: number
+          format: double
+          example: 10.0
+        pago_confirmado:
+          type: boolean
+        estado_envio:
+          type: string
+          enum:
+            - En preparación
+            - En envío
+            - Primer intento fallido
+            - Entregado
+            - Retornado a almacén
+        codigo_seguimiento:
+          type: string
+          nullable: true
+          example: IO-TRK-2026-0091
+        empresa_courier:
+          type: string
+          nullable: true
+        intentos_entrega:
+          type: integer
+          minimum: 0
+          maximum: 2
+        dni_receptor:
+          type: string
+          nullable: true
+        firma_recepcion:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            type: object
+            required: [sku, nombre, cantidad, verificado]
+            properties:
+              sku:
+                type: string
+              nombre:
+                type: string
+              cantidad:
+                type: integer
+              verificado:
+                type: boolean
+
+    DeliveryAttemptRequest:
+      type: object
+      required: [resultado]
+      properties:
+        resultado:
+          type: string
+          enum: [entregado, fallido]
+        receptor_nombre:
+          type: string
+          minLength: 3
+        receptor_dni:
+          type: string
+          pattern: "^\\d{8}$"
+        firma_recepcion:
+          type: string
+        observacion:
+          type: string
+
+    WarehouseSupplier:
+      type: object
+      required: [proveedor_id, ruc, razon_social, contacto, telefono, rubro, estado, activo]
+      properties:
+        proveedor_id:
+          type: integer
+        ruc:
+          type: string
+          pattern: "^\\d{11}$"
+        razon_social:
+          type: string
+        contacto:
+          type: string
+        telefono:
+          type: string
+        email:
+          type: string
+          nullable: true
+        rubro:
+          type: string
+        estado:
+          type: string
+          enum: [pendiente_validacion, aprobado, rechazado]
+        motivo_rechazo:
+          type: string
+          nullable: true
+        activo:
+          type: boolean
+
+    CreateSupplierRequest:
+      type: object
+      required: [ruc, razon_social, contacto, telefono, rubro]
+      properties:
+        ruc:
+          type: string
+          pattern: "^\\d{11}$"
+        razon_social:
+          type: string
+        contacto:
+          type: string
+        telefono:
+          type: string
+        email:
+          type: string
+          format: email
+        rubro:
+          type: string
+        auto_approve:
+          type: boolean
+          default: false
+
+    PurchaseOrder:
+      type: object
+      required: [pedido_id, code, proveedor_id, proveedor_nombre, proveedor_ruc, estado, aprobado_dueno, conformidad_almacen, bloqueado_por_reclamo, total, items]
+      properties:
+        pedido_id:
+          type: integer
+        code:
+          type: string
+        proveedor_id:
+          type: integer
+        proveedor_nombre:
+          type: string
+        proveedor_ruc:
+          type: string
+        fecha_entrega_pactada:
+          type: string
+          format: date
+        condiciones_pago:
+          type: string
+        estado:
+          type: string
+          enum: [pendiente_aprobacion, aprobada, rechazada, en_cotizacion, recibida_conforme, bloqueada_inconformidad, pagada]
+        aprobado_dueno:
+          type: boolean
+        conformidad_almacen:
+          type: boolean
+        numero_guia_remision:
+          type: string
+          nullable: true
+        bloqueado_por_reclamo:
+          type: boolean
+        motivo_rechazo:
+          type: string
+          nullable: true
+        total:
+          type: number
+          format: double
+        items:
+          type: array
+          items:
+            type: object
+            required: [sku, cantidad, costo_unitario, cantidad_recibida, lote_conforme]
+            properties:
+              sku:
+                type: string
+              cantidad:
+                type: integer
+              costo_unitario:
+                type: number
+                format: double
+              cantidad_recibida:
+                type: integer
+              cantidad_danada:
+                type: integer
+              lote_conforme:
+                type: boolean
+
+    CreatePurchaseOrderRequest:
+      type: object
+      required: [proveedor_ruc, items]
+      properties:
+        proveedor_id:
+          type: integer
+        proveedor_ruc:
+          type: string
+          pattern: "^\\d{11}$"
+        fecha_entrega_pactada:
+          type: string
+          format: date
+        condiciones_pago:
+          type: string
+          default: Contado contra conformidad
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, cantidad]
+            properties:
+              sku:
+                type: string
+              cantidad:
+                type: integer
+                minimum: 1
+              costo_unitario:
+                type: number
+                format: double
+                minimum: 0
+
+    PurchaseReceptionRequest:
+      type: object
+      required: [guia_remision, items]
+      properties:
+        guia_remision:
+          type: string
+          minLength: 4
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, cantidad_recibida, cantidad_danada]
+            properties:
+              sku:
+                type: string
+              cantidad_recibida:
+                type: integer
+                minimum: 0
+              cantidad_danada:
+                type: integer
+                minimum: 0
+        nota_inconformidad:
+          type: string
+
+    ProductEditorialOverride:
+      type: object
+      required: [groupId, nombre, descripcion, frase_corta, alt_text, completado_editorial]
+      properties:
+        groupId:
+          type: string
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        frase_corta:
+          type: string
+        alt_text:
+          type: string
+        imagen_url:
+          type: string
+          nullable: true
+        completado_editorial:
+          type: boolean
+
+    MarketingHeroSlide:
+      type: object
+      required: [id, eyebrow, titulo, subtitulo, cta_label, image_slot_key, alt_text, target_type, target_id, activa, orden]
+      properties:
+        id:
+          type: string
+        eyebrow:
+          type: string
+        titulo:
+          type: string
+        titulo_secundario:
+          type: string
+          nullable: true
+        subtitulo:
+          type: string
+        cta_label:
+          type: string
+        image_slot_key:
+          type: string
+        imagen_url:
+          type: string
+          nullable: true
+        alt_text:
+          type: string
+        target_type:
+          type: string
+          enum: [coleccion, campana]
+        target_id:
+          type: string
+        activa:
+          type: boolean
+        orden:
+          type: integer
+
+    MarketingCollection:
+      type: object
+      required: [id, eyebrow, titulo, descripcion, cta_label, category, product_group_ids, activa]
+      properties:
+        id:
+          type: string
+        eyebrow:
+          type: string
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        cta_label:
+          type: string
+        category:
+          type: string
+        gender:
+          type: string
+          nullable: true
+        age_group:
+          type: string
+          nullable: true
+        only_offers:
+          type: boolean
+        product_group_ids:
+          type: array
+          items:
+            type: string
+        activa:
+          type: boolean
+
+    MarketingCampaignPublic:
+      type: object
+      description: Campaña pública para AN01 — omite stock_maximo y stock_consumido (regla 24/11/2026)
+      required: [campana_id, titulo, porcentaje_descuento, fecha_inicio, fecha_fin, vigente]
+      properties:
+        campana_id:
+          type: integer
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        porcentaje_descuento:
+          type: number
+          format: double
+        precio_promocional:
+          type: number
+          format: double
+        fecha_inicio:
+          type: string
+          format: date-time
+        fecha_fin:
+          type: string
+          format: date-time
+        vigente:
+          type: boolean
+
+    MarketingCampaign:
+      type: object
+      description: Campaña completa para TN03/TN01 con control de cuota INDECOPI
+      required:
+        - campana_id
+        - producto_id
+        - titulo
+        - porcentaje_descuento
+        - precio_promocional
+        - stock_maximo
+        - stock_consumido
+        - fecha_inicio
+        - fecha_fin
+        - aprobada_dueno
+        - activa
+        - estado
+        - aplica_tienda_fisica
+        - incluye_captura_optin
+        - optin_verificado
+      properties:
+        campana_id:
+          type: integer
+        producto_id:
+          type: integer
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        porcentaje_descuento:
+          type: number
+          format: double
+          minimum: 1
+          maximum: 70
+        precio_promocional:
+          type: number
+          format: double
+        stock_maximo:
+          type: integer
+          minimum: 1
+        stock_consumido:
+          type: integer
+          minimum: 0
+        fecha_inicio:
+          type: string
+          format: date-time
+        fecha_fin:
+          type: string
+          format: date-time
+        scope_type:
+          type: string
+          enum: [coleccion, categoria, productos]
+        collection_id:
+          type: string
+          nullable: true
+        categoria_target:
+          type: string
+          nullable: true
+        product_group_ids:
+          type: array
+          items:
+            type: string
+        genero_target:
+          type: string
+          nullable: true
+          enum: [Hombre, Mujer, Ninos, Todas, null]
+        rango_edad_target:
+          type: string
+          nullable: true
+          enum: [Bebes, Infantil, Junior, null]
+        aplica_tienda_fisica:
+          type: boolean
+        incluye_captura_optin:
+          type: boolean
+        optin_verificado:
+          type: boolean
+        aprobada_dueno:
+          type: boolean
+        activa:
+          type: boolean
+        estado:
+          type: string
+          enum: [borrador, pendiente_aprobacion, aprobada, rechazada, pausada, agotada]
+        motivo_rechazo:
+          type: string
+          nullable: true
+
+    SaveCampaignRequest:
+      type: object
+      required: [producto_id, titulo, porcentaje_descuento, precio_promocional, stock_maximo, fecha_inicio, fecha_fin, scope_type, submit_for_approval]
+      properties:
+        producto_id:
+          type: integer
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        porcentaje_descuento:
+          type: number
+          format: double
+          minimum: 1
+          maximum: 70
+        precio_promocional:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+        stock_maximo:
+          type: integer
+          minimum: 1
+        fecha_inicio:
+          type: string
+          format: date-time
+        fecha_fin:
+          type: string
+          format: date-time
+        scope_type:
+          type: string
+          enum: [coleccion, categoria, productos]
+        collection_id:
+          type: string
+        categoria_target:
+          type: string
+        product_group_ids:
+          type: array
+          items:
+            type: string
+        genero_target:
+          type: string
+          enum: [Hombre, Mujer, Ninos, Todas]
+        rango_edad_target:
+          type: string
+          enum: [Bebes, Infantil, Junior]
+        aplica_tienda_fisica:
+          type: boolean
+          default: false
+        incluye_captura_optin:
+          type: boolean
+          default: false
+        optin_verificado:
+          type: boolean
+          default: false
+        submit_for_approval:
+          type: boolean
+          default: true
+
+    WarehouseLoan:
+      type: object
+      required:
+        - prestamo_id
+        - variante_id
+        - sku
+        - tienda_aliada
+        - cantidad
+        - fecha_salida
+        - plazo_dias
+        - fecha_vencimiento
+        - estado
+        - gerente_disponible
+        - dni_receptor_tienda
+      properties:
+        prestamo_id:
+          type: integer
+        variante_id:
+          type: integer
+        sku:
+          type: string
+        empleado_autorizador_id:
+          type: integer
+        tienda_aliada:
+          type: string
+        ruc_aliada:
+          type: string
+        contacto:
+          type: string
+        cantidad:
+          type: integer
+          minimum: 1
+        fecha_salida:
+          type: string
+          format: date-time
+        plazo_dias:
+          type: integer
+          minimum: 1
+          maximum: 7
+        fecha_vencimiento:
+          type: string
+          format: date
+        estado:
+          type: string
+          enum:
+            - En Consignación
+            - Devuelto Intacto
+            - Liquidado
+            - Facturado por Deterioro
+        gerente_disponible:
+          type: boolean
+        numero_constancia_formal:
+          type: string
+          nullable: true
+          example: CONST-PRE-004
+        dni_receptor_tienda:
+          type: string
+          pattern: "^\\d{8}$"
+        observaciones:
+          type: string
+          nullable: true
+        ally_debt_id:
+          type: integer
+          nullable: true
+
+    CreateLoanRequest:
+      type: object
+      required: [tienda_aliada, dni_receptor_tienda, plazo_dias, gerente_disponible, items]
+      properties:
+        tienda_aliada:
+          type: string
+        ruc_aliada:
+          type: string
+          pattern: "^\\d{11}$"
+        contacto:
+          type: string
+        dni_receptor_tienda:
+          type: string
+          pattern: "^\\d{8}$"
+        plazo_dias:
+          type: integer
+          minimum: 1
+          maximum: 7
+        gerente_disponible:
+          type: boolean
+        numero_constancia_formal:
+          type: string
+          nullable: true
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, cantidad]
+            properties:
+              sku:
+                type: string
+              cantidad:
+                type: integer
+                minimum: 1
+        observacion:
+          type: string
+
+    CloseLoanRequest:
+      type: object
+      required: [resolution]
+      properties:
+        resolution:
+          type: string
+          enum: [devuelto, liquidado_caja, deterioro_mayorista]
+        precio_mayorista:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+        nota:
+          type: string
+
+    AdminPayrollEmployeeRow:
+      type: object
+      required:
+        - planilla_id
+        - empleado_id
+        - nombre
+        - rol_rbac
+        - dias_laborados
+        - remuneracion_base
+        - bonificaciones
+        - descuentos
+        - sueldo_neto
+        - boleta_firmada
+      properties:
+        planilla_id:
+          type: integer
+        empleado_id:
+          type: integer
+        nombre:
+          type: string
+        rol_rbac:
+          type: string
+        dias_laborados:
+          type: integer
+          minimum: 0
+          maximum: 31
+        remuneracion_base:
+          type: number
+          format: double
+        bonificaciones:
+          type: number
+          format: double
+        descuentos:
+          type: number
+          format: double
+        sueldo_neto:
+          type: number
+          format: double
+        boleta_firmada:
+          type: boolean
+
+    AdminPayrollPeriod:
+      type: object
+      required: [id, periodo, estado, total_neto, liquidez_verificada, cerrada, empleados]
+      properties:
+        id:
+          type: string
+          example: PLA-2026-11
+        periodo:
+          type: string
+          pattern: "^\\d{4}-\\d{2}$"
+        fecha_limite:
+          type: string
+          format: date
+        estado:
+          type: string
+          enum: [pendiente_cierre, pagada]
+        total_neto:
+          type: number
+          format: double
+        liquidez_verificada:
+          type: boolean
+        cerrada:
+          type: boolean
+        referencia_banco:
+          type: string
+          nullable: true
+        fecha_pago:
+          type: string
+          format: date-time
+          nullable: true
+        empleados:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPayrollEmployeeRow'
+
+    AdminDecisionItem:
+      type: object
+      required: [id, area, severity, title, description, acknowledged]
+      properties:
+        id:
+          type: string
+        area:
+          type: string
+          enum: [M01, M03, M04, M05, M06, M07]
+        severity:
+          type: string
+          enum: [bloqueante, atencion, observacion]
+        title:
+          type: string
+        description:
+          type: string
+        ruleCode:
+          type: string
+        acknowledged:
+          type: boolean
+        acknowledged_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    AdminSnapshot:
+      type: object
+      required: [ok, pulse, decisions, last_refreshed_at]
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+        pulse:
+          type: object
+          properties:
+            ventas_totales_hoy:
+              type: number
+              format: double
+            liquidez_efectiva:
+              type: number
+              format: double
+            compromisos_pendientes:
+              type: number
+              format: double
+            skus_criticos:
+              type: integer
+            prestamos_activos:
+              type: integer
+            prestamos_por_vencer:
+              type: integer
+        decisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminDecisionItem'
+        last_refreshed_at:
+          type: string
+          format: date-time
+
+    AdminAuditEntry:
+      type: object
+      required: [audit_id, modulo, rol_usuario, tabla_afectada, accion, registro_id, detalle, fecha_hora]
+      properties:
+        audit_id:
+          type: integer
+          format: int64
+        modulo:
+          type: string
+          enum: [M01, M02, M03, M04, M05, M06, M07, M08, Auth, Catalogo]
+        empleado_id:
+          type: integer
+          nullable: true
+        rol_usuario:
+          type: string
+        tabla_afectada:
+          type: string
+        accion:
+          type: string
+        registro_id:
+          type: string
+        detalle:
+          type: string
+        fecha_hora:
+          type: string
+          format: date-time
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Verificar salud del servidor y pool SQL Server
+      responses:
+        "200":
+          description: Servidor y base de datos operativos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/config/empresa:
+    get:
+      tags: [Config]
+      summary: Parámetros canónicos del negocio e identidad fiscal del emisor
+      description: Unifica Razón Social (I&O MODA RETAIL S.A.C.), RUC (20609988771), flete S/ 10.00 (> S/ 150.00 gratis) y ventana de cambios de 7 días.
+      responses:
+        "200":
+          description: Configuración canónica del sistema
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, empresa]
+                properties:
+                  ok:
+                    type: boolean
+                  empresa:
+                    $ref: '#/components/schemas/EmpresaConfig'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión (Empleados TN01-TN05 o Cliente AN01)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        "200":
+          description: Sesión iniciada con JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar cuenta de cliente externo (AN01) con opt-in desmarcado por defecto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRegisterRequest'
+      responses:
+        "201":
+          description: Cliente registrado (RN-MKT-03 opt_in_marketing = false por defecto)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Obtener perfil de la sesión JWT activa
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Usuario autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, user]
+                properties:
+                  ok:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/AuthUser'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Cerrar sesión activa e invalidar token si aplica
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Sesión cerrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkAck'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/catalogo/productos:
+    get:
+      tags: [Catalogo]
+      summary: Catálogo público agrupado por modelo (sin stock numérico para AN01)
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: categoria
+          schema:
+            type: string
+        - in: query
+          name: subcategoria
+          schema:
+            type: string
+        - in: query
+          name: genero
+          schema:
+            type: string
+            enum: [Hombre, Mujer, Ninos, Unisex]
+        - in: query
+          name: rango_edad
+          schema:
+            type: string
+            enum: [Bebes, Infantil, Junior]
+        - in: query
+          name: marca
+          schema:
+            type: string
+        - in: query
+          name: solo_ofertas
+          schema:
+            type: boolean
+        - in: query
+          name: talla
+          schema:
+            type: string
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [relevancia, precio-asc, precio-desc]
+      responses:
+        "200":
+          description: Lista pública de modelos y variantes con disponibilidad booleana
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, items]
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductPublicGroup'
+
+  /api/catalogo/taxonomia:
+    get:
+      tags: [Catalogo]
+      summary: Obtener marcas (6), categorías (8) y subcategorías (30)
+      responses:
+        "200":
+          description: Taxonomía oficial del catálogo I&O
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, marcas, categorias, subcategorias]
+                properties:
+                  ok:
+                    type: boolean
+                  marcas:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaxonomiaMarca'
+                  categorias:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaxonomiaCategoria'
+                  subcategorias:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaxonomiaSubcategoria'
+
+  /api/catalogo/inventario:
+    get:
+      tags: [Catalogo]
+      summary: Inventario operativo por SKU con stock numérico exacto (TN01-TN05)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: talla
+          schema:
+            type: string
+        - in: query
+          name: color
+          schema:
+            type: string
+        - in: query
+          name: solo_stock
+          schema:
+            type: boolean
+        - in: query
+          name: solo_ofertas
+          schema:
+            type: boolean
+        - in: query
+          name: stock_critico
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Lista de variantes SKU con stock exacto
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, items]
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosInventoryItem'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/catalogo/modelos:
+    post:
+      tags: [Catalogo]
+      summary: Crear nuevo modelo base y variantes iniciales (TN01 Administrador)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateModelRequest'
+      responses:
+        "201":
+          description: Modelo y variantes creadas con stock inicial en SQL Server
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, producto_id, variantes]
+                properties:
+                  ok:
+                    type: boolean
+                  producto_id:
+                    type: integer
+                  variantes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosInventoryItem'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/pos/inventario/{sku}/alternativas:
+    get:
+      tags: [M01-POS]
+      summary: Consultar stock de SKU y prendas/tallas alternativas disponibles (RN-VEN-02)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sku
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Disponibilidad del SKU y sugerencias alternativas con stock > 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, sku, disponible, stock, alternativas]
+                properties:
+                  ok:
+                    type: boolean
+                  sku:
+                    type: string
+                  disponible:
+                    type: boolean
+                  stock:
+                    type: integer
+                  alternativas:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosAlternativeSuggestion'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /api/pos/ordenes:
+    get:
+      tags: [M01-POS]
+      summary: Listar órdenes POS por estado o fecha
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pendiente_cobro, cobrado, cancelado, anulado_nc]
+        - in: query
+          name: fecha
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Órdenes POS
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, orders]
+                properties:
+                  ok:
+                    type: boolean
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [M01-POS]
+      summary: Registrar orden POS con precios promocionales vigentes y descuento <= 10% (RN-VEN-03)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePosOrderRequest'
+      responses:
+        "201":
+          description: Orden POS creada y enviada a Caja
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, order]
+                properties:
+                  ok:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/PosOrder'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/pos/ordenes/{id}/comprobante:
+    patch:
+      tags: [M01-POS]
+      summary: Actualizar tipo de comprobante (Boleta/Factura) y datos fiscales antes del cobro
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo_comprobante]
+              properties:
+                tipo_comprobante:
+                  type: string
+                  enum: [Boleta, Factura]
+                cliente_doc:
+                  type: string
+                cliente_razon_social:
+                  type: string
+      responses:
+        "200":
+          description: Datos tributarios de la orden actualizados
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, order]
+                properties:
+                  ok:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/PosOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/pos/ordenes/{id}/pagos:
+    post:
+      tags: [M01-POS]
+      summary: Registrar cobro total o abono parcial POS con descuento atómico de stock y emisión de comprobante
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PosPaymentRequest'
+      responses:
+        "200":
+          description: Pago o abono registrado en transacción ACID
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, order, settled, movimiento]
+                properties:
+                  ok:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/PosOrder'
+                  settled:
+                    type: boolean
+                  comprobante:
+                    $ref: '#/components/schemas/ComprobantePago'
+                  movimiento:
+                    $ref: '#/components/schemas/PosCashMovement'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/pos/ordenes/{id}/cancelar:
+    post:
+      tags: [M01-POS]
+      summary: Cancelar orden POS en estado pendiente_cobro
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo]
+              properties:
+                motivo:
+                  type: string
+                  minLength: 4
+      responses:
+        "200":
+          description: Orden pendiente cancelada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, order]
+                properties:
+                  ok:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/PosOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+
+  /api/pos/ordenes/{id}/nota-credito:
+    post:
+      tags: [M01-POS]
+      summary: Emitir Nota de Crédito y restituir stock por anulación post-venta (RN-TRI-03 — solo TN01)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PosNotaCreditoRequest'
+      responses:
+        "201":
+          description: Nota de Crédito emitida, stock restituido y egreso registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, nota_credito, movimiento_egreso, order]
+                properties:
+                  ok:
+                    type: boolean
+                  nota_credito:
+                    $ref: '#/components/schemas/ComprobantePago'
+                  movimiento_egreso:
+                    $ref: '#/components/schemas/PosCashMovement'
+                  order:
+                    $ref: '#/components/schemas/PosOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/pos/comprobantes/{id}:
+    get:
+      tags: [M01-POS]
+      summary: Consultar copia histórica digital de ComprobantePago (RN-TRI-04)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comprobante de pago histórico (inmutable)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, comprobante]
+                properties:
+                  ok:
+                    type: boolean
+                  comprobante:
+                    $ref: '#/components/schemas/ComprobantePago'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /api/pos/arqueo:
+    get:
+      tags: [M01-POS]
+      summary: Obtener arqueo diario de caja, comprobantes y movimientos
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: fecha
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Resumen de arqueo diario
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, summary, comprobantes, movimientos_caja]
+                properties:
+                  ok:
+                    type: boolean
+                  summary:
+                    $ref: '#/components/schemas/PosDailySummary'
+                  comprobantes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ComprobantePago'
+                  movimientos_caja:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosCashMovement'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/pos/aliados:
+    get:
+      tags: [M01-Aliados]
+      summary: Listar cuentas por cobrar de tiendas aliadas (consignación M06 / crédito)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Cuentas de tiendas aliadas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, debts]
+                properties:
+                  ok:
+                    type: boolean
+                  debts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosAllyDebt'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [M01-Aliados]
+      summary: Registrar cuenta por cobrar de tienda aliada en Caja
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAllyDebtRequest'
+      responses:
+        "201":
+          description: Cuenta aliada creada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, debt]
+                properties:
+                  ok:
+                    type: boolean
+                  debt:
+                    $ref: '#/components/schemas/PosAllyDebt'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/pos/aliados/{id}/abonos:
+    post:
+      tags: [M01-Aliados]
+      summary: Registrar abono o liquidación de deuda de tienda aliada
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [monto, metodo]
+              properties:
+                monto:
+                  type: number
+                  format: double
+                  exclusiveMinimum: 0
+                metodo:
+                  type: string
+                  enum: [efectivo, tarjeta, yape_plin, transferencia]
+                nota:
+                  type: string
+      responses:
+        "200":
+          description: Abono registrado en Caja y vinculado a PrestamoProductos si aplica
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, debt, settled, movimiento]
+                properties:
+                  ok:
+                    type: boolean
+                  debt:
+                    $ref: '#/components/schemas/PosAllyDebt'
+                  settled:
+                    type: boolean
+                  movimiento:
+                    $ref: '#/components/schemas/PosCashMovement'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/ecommerce/carrito/reservar:
+    post:
+      tags: [M02-Ecommerce]
+      summary: Reservar stock de carrito por 15 minutos y calcular flete autoritativo (RN-ECO-03 / RN-ENV-04)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartReserveRequest'
+      responses:
+        "200":
+          description: Reserva temporal creada (TTL 900 segundos)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartReserveResponse'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/ecommerce/pedidos:
+    post:
+      tags: [M02-Ecommerce]
+      summary: Crear pedido online de 3 pasos (RN-ECO-06) en estado 'Pendiente de pago'
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEcommerceOrderRequest'
+      responses:
+        "201":
+          description: Pedido online creado y sesión de pasarela tokenizada emitida
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, order]
+                properties:
+                  ok:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/EcommerceOrder'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/ecommerce/pedidos/{id}:
+    get:
+      tags: [M02-Ecommerce]
+      summary: Consultar detalle y estado (6 estados RN-ECO-04) de un pedido online
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Estado del pedido online
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, order]
+                properties:
+                  ok:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/EcommerceOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /api/ecommerce/mis-pedidos:
+    get:
+      tags: [M02-Ecommerce]
+      summary: Listar historial de pedidos online del cliente autenticado (AN01)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Historial de pedidos del cliente
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, orders]
+                properties:
+                  ok:
+                    type: boolean
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EcommerceOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/ecommerce/pedidos/{id}/pagar:
+    post:
+      tags: [M02-Ecommerce]
+      summary: Procesar o reintentar pago tokenizado PCI-DSS (máx. 3 reintentos RN-ECO-02)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EcommercePayRequest'
+      responses:
+        "200":
+          description: Pago aprobado, stock de campaña consumido y despacho habilitado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, order]
+                properties:
+                  ok:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/EcommerceOrder'
+                  comprobante:
+                    $ref: '#/components/schemas/ComprobantePago'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "402":
+          $ref: '#/components/responses/PaymentRequired'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/ecommerce/webhooks/pasarela:
+    post:
+      tags: [M02-Ecommerce]
+      summary: Webhook idempotente firmado de pasarela externa (Yape/Culqi/Niubiz — RN-SEG-02)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GatewayWebhookRequest'
+      responses:
+        "200":
+          description: Evento procesado idempotemente
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, estado_online]
+                properties:
+                  ok:
+                    type: boolean
+                  estado_online:
+                    type: string
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/ecommerce/pedidos/{id}/cancelar:
+    post:
+      tags: [M02-Ecommerce]
+      summary: Cancelar pedido online antes de pasar a 'En envío' (RN-ECO-05)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo]
+              properties:
+                motivo:
+                  type: string
+                  minLength: 4
+      responses:
+        "200":
+          description: Pedido cancelado y stock restituido
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, order]
+                properties:
+                  ok:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/EcommerceOrder'
+                  nota_credito:
+                    $ref: '#/components/schemas/ComprobantePago'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+
+  /api/envios/despachos:
+    get:
+      tags: [M03-Envios]
+      summary: Listar despachos de Almacén y Courier
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de despachos
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, dispatches]
+                properties:
+                  ok:
+                    type: boolean
+                  dispatches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WarehouseDispatch'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/envios/despachos/{id}/verificar-sku:
+    post:
+      tags: [M03-Envios]
+      summary: Verificar SKU durante el picking post-pago (RN-ECO-01)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sku]
+              properties:
+                sku:
+                  type: string
+      responses:
+        "200":
+          description: SKU verificado en el paquete
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, dispatch]
+                properties:
+                  ok:
+                    type: boolean
+                  dispatch:
+                    $ref: '#/components/schemas/WarehouseDispatch'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/envios/despachos/{id}/guia:
+    post:
+      tags: [M03-Envios]
+      summary: Emitir GuiaEnvio con código de seguimiento único (RN-ENV-01) y despachar
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [courier]
+              properties:
+                courier:
+                  type: string
+                  example: Olva / Urbano Express
+      responses:
+        "200":
+          description: Guía generada y pedido transicionado a 'En envío'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, dispatch, tracking_code]
+                properties:
+                  ok:
+                    type: boolean
+                  dispatch:
+                    $ref: '#/components/schemas/WarehouseDispatch'
+                  tracking_code:
+                    type: string
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/envios/despachos/{id}/intentos:
+    post:
+      tags: [M03-Envios]
+      summary: Registrar intento de entrega (máx. 2) con firma y DNI 8 dígitos (RN-ENV-02 / RN-ENV-03)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryAttemptRequest'
+      responses:
+        "200":
+          description: Intento de entrega registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, dispatch]
+                properties:
+                  ok:
+                    type: boolean
+                  dispatch:
+                    $ref: '#/components/schemas/WarehouseDispatch'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/compras/alertas-stock:
+    get:
+      tags: [M04-Compras]
+      summary: Consultar SKUs con stock <= 5 unidades (RN-INV-03)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Alertas de stock crítico
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, critical_items, agotados_count]
+                properties:
+                  ok:
+                    type: boolean
+                  critical_items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosInventoryItem'
+                  agotados_count:
+                    type: integer
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/compras/proveedores:
+    get:
+      tags: [M04-Compras]
+      summary: Listar proveedores registrados y candidatos
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de proveedores
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, suppliers]
+                properties:
+                  ok:
+                    type: boolean
+                  suppliers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WarehouseSupplier'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [M04-Compras]
+      summary: Postular o registrar proveedor (auto_approve exclusivo de TN01)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSupplierRequest'
+      responses:
+        "201":
+          description: Proveedor registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, supplier]
+                properties:
+                  ok:
+                    type: boolean
+                  supplier:
+                    $ref: '#/components/schemas/WarehouseSupplier'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/compras/proveedores/{id}/aprobar:
+    patch:
+      tags: [M04-Compras]
+      summary: Aprobar proveedor candidato (TN01 Administrador)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Proveedor aprobado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, supplier]
+                properties:
+                  ok:
+                    type: boolean
+                  supplier:
+                    $ref: '#/components/schemas/WarehouseSupplier'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /api/compras/proveedores/{id}/rechazar:
+    patch:
+      tags: [M04-Compras]
+      summary: Rechazar proveedor candidato con motivo (TN01 Administrador)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo]
+              properties:
+                motivo:
+                  type: string
+                  minLength: 5
+      responses:
+        "200":
+          description: Proveedor rechazado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, supplier]
+                properties:
+                  ok:
+                    type: boolean
+                  supplier:
+                    $ref: '#/components/schemas/WarehouseSupplier'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/compras/ordenes:
+    get:
+      tags: [M04-Compras]
+      summary: Listar órdenes de compra a proveedor (PedidoProveedor)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Órdenes de compra
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, purchases]
+                properties:
+                  ok:
+                    type: boolean
+                  purchases:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PurchaseOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [M04-Compras]
+      summary: Crear solicitud/cotización de compra a proveedor (RN-COM-01)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePurchaseOrderRequest'
+      responses:
+        "201":
+          description: Orden de compra creada en estado pendiente_aprobacion
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, purchase]
+                properties:
+                  ok:
+                    type: boolean
+                  purchase:
+                    $ref: '#/components/schemas/PurchaseOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/compras/ordenes/{id}/aprobar:
+    patch:
+      tags: [M04-Compras]
+      summary: Aprobar orden de compra por el Dueño/Administrador (RN-COM-01)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Orden de compra aprobada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, purchase]
+                properties:
+                  ok:
+                    type: boolean
+                  purchase:
+                    $ref: '#/components/schemas/PurchaseOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+
+  /api/compras/ordenes/{id}/rechazar:
+    patch:
+      tags: [M04-Compras]
+      summary: Rechazar orden de compra / cotización (RN-COM-02)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo]
+              properties:
+                motivo:
+                  type: string
+                  minLength: 5
+      responses:
+        "200":
+          description: Orden de compra rechazada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, purchase]
+                properties:
+                  ok:
+                    type: boolean
+                  purchase:
+                    $ref: '#/components/schemas/PurchaseOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/compras/ordenes/{id}/reabrir:
+    patch:
+      tags: [M04-Compras]
+      summary: Reabrir cotización rechazada con nuevas condiciones (RN-COM-02)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [condiciones_pago, items]
+              properties:
+                condiciones_pago:
+                  type: string
+                fecha_entrega_pactada:
+                  type: string
+                  format: date
+                items:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [sku, cantidad, costo_unitario]
+                    properties:
+                      sku:
+                        type: string
+                      cantidad:
+                        type: integer
+                        minimum: 1
+                      costo_unitario:
+                        type: number
+                        format: double
+      responses:
+        "200":
+          description: Cotización reabierta para nueva aprobación
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, purchase]
+                properties:
+                  ok:
+                    type: boolean
+                  purchase:
+                    $ref: '#/components/schemas/PurchaseOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+
+  /api/compras/ordenes/{id}/recepcion:
+    post:
+      tags: [M04-Compras]
+      summary: Certificar recepción física con Guía de Remisión o levantar reclamo (RN-COM-03 / RN-COM-04)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseReceptionRequest'
+      responses:
+        "200":
+          description: Recepción registrada (si conforme, incrementa stock; si dañada, bloquea pago)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, purchase]
+                properties:
+                  ok:
+                    type: boolean
+                  purchase:
+                    $ref: '#/components/schemas/PurchaseOrder'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/compras/ordenes/{id}/pagar:
+    post:
+      tags: [M04-Compras]
+      summary: Liquidar pago a proveedor y registrar Egreso (RN-COM-05 — bloqueado si hay reclamo)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [metodo_pago, referencia_banco]
+              properties:
+                metodo_pago:
+                  type: string
+                  enum: [transferencia, cheque, efectivo]
+                referencia_banco:
+                  type: string
+                  minLength: 4
+                fecha_pago:
+                  type: string
+                  format: date
+      responses:
+        "200":
+          description: Pago a proveedor liquidado y asiento Egreso registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, purchase, movimiento_egreso]
+                properties:
+                  ok:
+                    type: boolean
+                  purchase:
+                    $ref: '#/components/schemas/PurchaseOrder'
+                  movimiento_egreso:
+                    $ref: '#/components/schemas/PosCashMovement'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/marketing/publico:
+    get:
+      tags: [M05-Marketing]
+      summary: Feed público de portada Hero, Colecciones y badges de Campañas vigentes (sin cifras de cuota)
+      responses:
+        "200":
+          description: Contenido editorial y promocional público para storefront index.html
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, hero_slides, collections, active_campaign_badges]
+                properties:
+                  ok:
+                    type: boolean
+                  hero_slides:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketingHeroSlide'
+                  collections:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketingCollection'
+                  active_campaign_badges:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketingCampaignPublic'
+
+  /api/marketing/editorial:
+    get:
+      tags: [M05-Marketing]
+      summary: Listar overrides editoriales y cola de Recién Llegados
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de fichas editoriales por modelo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, items]
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductEditorialOverride'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/marketing/editorial/{groupId}:
+    put:
+      tags: [M05-Marketing]
+      summary: Actualizar ficha editorial, fotografía y alt_text de un modelo (RN-MKT-02 / RN-ACC-04)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductEditorialOverride'
+      responses:
+        "200":
+          description: Ficha editorial guardada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, override]
+                properties:
+                  ok:
+                    type: boolean
+                  override:
+                    $ref: '#/components/schemas/ProductEditorialOverride'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/marketing/uploads:
+    post:
+      tags: [M05-Marketing]
+      summary: Subir recurso visual para portada Hero o catálogo editorial
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                slot:
+                  type: string
+      responses:
+        "201":
+          description: Imagen almacenada y URL retornada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, url]
+                properties:
+                  ok:
+                    type: boolean
+                  url:
+                    type: string
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/marketing/hero:
+    get:
+      tags: [M05-Marketing]
+      summary: Listar slides configurables de portada Hero
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Slides Hero
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, slides]
+                properties:
+                  ok:
+                    type: boolean
+                  slides:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketingHeroSlide'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/marketing/hero/{id}:
+    put:
+      tags: [M05-Marketing]
+      summary: Actualizar slide de portada Hero
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketingHeroSlide'
+      responses:
+        "200":
+          description: Slide actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, slide]
+                properties:
+                  ok:
+                    type: boolean
+                  slide:
+                    $ref: '#/components/schemas/MarketingHeroSlide'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/marketing/colecciones:
+    get:
+      tags: [M05-Marketing]
+      summary: Listar colecciones curadas de la tienda
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Colecciones editoriales
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, collections]
+                properties:
+                  ok:
+                    type: boolean
+                  collections:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketingCollection'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/marketing/colecciones/{id}:
+    put:
+      tags: [M05-Marketing]
+      summary: Actualizar colección curada de prendas
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketingCollection'
+      responses:
+        "200":
+          description: Colección actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, collection]
+                properties:
+                  ok:
+                    type: boolean
+                  collection:
+                    $ref: '#/components/schemas/MarketingCollection'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/marketing/campanas:
+    get:
+      tags: [M05-Marketing]
+      summary: Listar campañas promocionales con stock_maximo y stock_consumido (TN03/TN01)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Campañas de marketing
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, campaigns]
+                properties:
+                  ok:
+                    type: boolean
+                  campaigns:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketingCampaign'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [M05-Marketing]
+      summary: Crear campaña con vigencia y stock_maximo INDECOPI (RN-MKT-01 / RN-MKT-03)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCampaignRequest'
+      responses:
+        "201":
+          description: Campaña creada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, campaign]
+                properties:
+                  ok:
+                    type: boolean
+                  campaign:
+                    $ref: '#/components/schemas/MarketingCampaign'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/marketing/campanas/{id}:
+    put:
+      tags: [M05-Marketing]
+      summary: Editar campaña promocional
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCampaignRequest'
+      responses:
+        "200":
+          description: Campaña actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, campaign]
+                properties:
+                  ok:
+                    type: boolean
+                  campaign:
+                    $ref: '#/components/schemas/MarketingCampaign'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/marketing/campanas/{id}/aprobar:
+    patch:
+      tags: [M05-Marketing]
+      summary: Aprobar campaña promocional por Dueño/Administrador (RN-MKT-04)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Campaña aprobada (aprobada_dueno = true)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, campaign]
+                properties:
+                  ok:
+                    type: boolean
+                  campaign:
+                    $ref: '#/components/schemas/MarketingCampaign'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /api/marketing/campanas/{id}/rechazar:
+    patch:
+      tags: [M05-Marketing]
+      summary: Rechazar campaña promocional con motivo (RN-MKT-04 — TN01)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo]
+              properties:
+                motivo:
+                  type: string
+                  minLength: 5
+      responses:
+        "200":
+          description: Campaña rechazada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, campaign]
+                properties:
+                  ok:
+                    type: boolean
+                  campaign:
+                    $ref: '#/components/schemas/MarketingCampaign'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/marketing/campanas/{id}/pausar:
+    patch:
+      tags: [M05-Marketing]
+      summary: Pausar o reactivar campaña promocional
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                activa:
+                  type: boolean
+      responses:
+        "200":
+          description: Estado de pausa actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, campaign]
+                properties:
+                  ok:
+                    type: boolean
+                  campaign:
+                    $ref: '#/components/schemas/MarketingCampaign'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /api/prestamos:
+    get:
+      tags: [M06-Prestamos]
+      summary: Listar préstamos en consignación con semáforo de vencimiento <= 7 días
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de préstamos
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, loans]
+                properties:
+                  ok:
+                    type: boolean
+                  loans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WarehouseLoan'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [M06-Prestamos]
+      summary: Registrar préstamo en consignación (plazo <= 7 días RN-PRE-02, Constancia Almacenero RN-PRE-01)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLoanRequest'
+      responses:
+        "201":
+          description: Préstamo registrado, stock descontado y AuditLog escrito atómicamente
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, loan]
+                properties:
+                  ok:
+                    type: boolean
+                  loan:
+                    $ref: '#/components/schemas/WarehouseLoan'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/prestamos/{id}/cerrar:
+    post:
+      tags: [M06-Prestamos]
+      summary: Cerrar préstamo por devolución intacta (RN-PRE-04), liquidación en Caja o deterioro mayorista (RN-PRE-05)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseLoanRequest'
+      responses:
+        "200":
+          description: Préstamo cerrado (restituye stock o genera CuentaAliado / facturación por deterioro)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, loan]
+                properties:
+                  ok:
+                    type: boolean
+                  loan:
+                    $ref: '#/components/schemas/WarehouseLoan'
+                  ally_debt:
+                    $ref: '#/components/schemas/PosAllyDebt'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/finanzas/planillas/actual:
+    get:
+      tags: [M07-Finanzas]
+      summary: Consultar planilla del periodo y verificación de liquidez bancaria (RN-FIN-02)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: periodo
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}$"
+      responses:
+        "200":
+          description: Planilla y disponibilidad de liquidez
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, payroll, liquidez]
+                properties:
+                  ok:
+                    type: boolean
+                  payroll:
+                    $ref: '#/components/schemas/AdminPayrollPeriod'
+                  liquidez:
+                    type: object
+                    required: [saldo_bancario_base, ingresos_caja_hoy, liquidez_efectiva, cobertura_ok]
+                    properties:
+                      saldo_bancario_base:
+                        type: number
+                        format: double
+                      ingresos_caja_hoy:
+                        type: number
+                        format: double
+                      liquidez_efectiva:
+                        type: number
+                        format: double
+                      cobertura_ok:
+                        type: boolean
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/finanzas/planillas/calcular:
+    post:
+      tags: [M07-Finanzas]
+      summary: Calcular planilla mensual por días laborados, bonificaciones y descuentos (RN-FIN-01)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [periodo]
+              properties:
+                periodo:
+                  type: string
+                  pattern: "^\\d{4}-\\d{2}$"
+                asistencias:
+                  type: array
+                  items:
+                    type: object
+                    required: [empleado_id, dias_laborados]
+                    properties:
+                      empleado_id:
+                        type: integer
+                      dias_laborados:
+                        type: integer
+                        minimum: 0
+                        maximum: 31
+                      bonificaciones:
+                        type: number
+                        format: double
+                        minimum: 0
+                      descuentos:
+                        type: number
+                        format: double
+                        minimum: 0
+      responses:
+        "200":
+          description: Planilla recalculada con decimal.js
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, payroll]
+                properties:
+                  ok:
+                    type: boolean
+                  payroll:
+                    $ref: '#/components/schemas/AdminPayrollPeriod'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/finanzas/planillas/{periodo}/cerrar:
+    post:
+      tags: [M07-Finanzas]
+      summary: Ejecutar pago y cierre inmutable de planilla (RN-FIN-02, RN-FIN-04, RN-FIN-05)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: periodo
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmado_inmutabilidad, metodo_desembolso]
+              properties:
+                confirmado_inmutabilidad:
+                  type: boolean
+                  enum: [true]
+                metodo_desembolso:
+                  type: string
+                  enum: [transferencia, efectivo]
+      responses:
+        "200":
+          description: Planilla pagada, MovimientoFinanciero Egreso creado y periodo bloqueado (cerrada = 1)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, payroll, movimiento_egreso, referencia_banco]
+                properties:
+                  ok:
+                    type: boolean
+                  payroll:
+                    $ref: '#/components/schemas/AdminPayrollPeriod'
+                  movimiento_egreso:
+                    $ref: '#/components/schemas/PosCashMovement'
+                  referencia_banco:
+                    type: string
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/finanzas/planillas/{periodo}/boletas/{empleadoId}:
+    get:
+      tags: [M07-Finanzas]
+      summary: Obtener boleta individual de pago de un trabajador (RN-FIN-03)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: periodo
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}$"
+        - in: path
+          name: empleadoId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Boleta de pago
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, boleta]
+                properties:
+                  ok:
+                    type: boolean
+                  boleta:
+                    $ref: '#/components/schemas/AdminPayrollEmployeeRow'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /api/finanzas/planillas/{periodo}/boletas/{empleadoId}/firmar:
+    patch:
+      tags: [M07-Finanzas]
+      summary: Registrar firma de conformidad de boleta de pago (RN-FIN-03)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: periodo
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}$"
+        - in: path
+          name: empleadoId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [boleta_firmada]
+              properties:
+                boleta_firmada:
+                  type: boolean
+                  enum: [true]
+      responses:
+        "200":
+          description: Firma de boleta registrada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, boleta]
+                properties:
+                  ok:
+                    type: boolean
+                  boleta:
+                    $ref: '#/components/schemas/AdminPayrollEmployeeRow'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+
+  /api/finanzas/movimientos:
+    get:
+      tags: [M07-Finanzas]
+      summary: Consultar libro de ingresos y egresos (dbo.MovimientoFinanciero)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: desde
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: hasta
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            enum: [Ingreso, Egreso]
+      responses:
+        "200":
+          description: Movimientos financieros
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, movimientos, saldo_neto]
+                properties:
+                  ok:
+                    type: boolean
+                  movimientos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PosCashMovement'
+                  saldo_neto:
+                    type: number
+                    format: double
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/dashboard/snapshot:
+    get:
+      tags: [M08-Dashboard]
+      summary: Obtener pulso ejecutivo KPI y cola de decisiones gerenciales de 5 áreas
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: severity
+          schema:
+            type: string
+            enum: [bloqueante, atencion, observacion]
+        - in: query
+          name: include_acknowledged
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Snapshot de Mesa de Control
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSnapshot'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/dashboard/decisiones/{id}/revisar:
+    post:
+      tags: [M08-Dashboard]
+      summary: Marcar decisión gerencial como revisada (acknowledge) y registrar en AuditLog
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                detail:
+                  type: string
+      responses:
+        "200":
+          description: Decisión marcada como revisada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, acknowledged_at]
+                properties:
+                  ok:
+                    type: boolean
+                  acknowledged_at:
+                    type: string
+                    format: date-time
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /api/dashboard/analitica:
+    get:
+      tags: [M08-Dashboard]
+      summary: Analítica multicanal, valuación por categoría, cuotas INDECOPI y resumen operativo
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: desde
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: hasta
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Métricas analíticas agregadas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, analytics]
+                properties:
+                  ok:
+                    type: boolean
+                  analytics:
+                    type: object
+                    properties:
+                      canal_breakdown:
+                        type: object
+                        properties:
+                          pos_tienda:
+                            type: number
+                          ecommerce_web:
+                            type: number
+                      categorias:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            categoria:
+                              type: string
+                            unidades:
+                              type: integer
+                            valorizacion:
+                              type: number
+                      campanas_activas:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/MarketingCampaign'
+                      proveedores_resumen:
+                        type: object
+                      consignaciones_resumen:
+                        type: object
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /api/dashboard/auditoria:
+    get:
+      tags: [M08-Dashboard]
+      summary: Consultar bitácora forense inmutable dbo.AuditLog (RN-SEG-03)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: modulo
+          schema:
+            type: string
+            enum: [todas, M01, M02, M03, M04, M05, M06, M07, M08, Auth, Catalogo]
+        - in: query
+          name: regla
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Entradas inmutables de auditoría
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, entries, total]
+                properties:
+                  ok:
+                    type: boolean
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminAuditEntry'
+                  total:
+                    type: integer
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
