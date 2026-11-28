@@ -145,24 +145,29 @@ GO
    ============================================================================ */
 IF COL_LENGTH('dbo.Producto', 'subcategoria_id') IS NULL
 BEGIN
-    ALTER TABLE dbo.Producto ADD subcategoria_id INT NULL;
-    ALTER TABLE dbo.Producto ADD CONSTRAINT FK_Producto_Subcategoria
+    ALTER TABLE dbo.Producto ADD subcategoria_id INT NULL
+        CONSTRAINT FK_Producto_Subcategoria
         FOREIGN KEY (subcategoria_id) REFERENCES dbo.Subcategoria(subcategoria_id);
 END;
+GO
 
 IF COL_LENGTH('dbo.Producto', 'genero') IS NULL
 BEGIN
     ALTER TABLE dbo.Producto ADD genero NVARCHAR(20) NOT NULL
-        CONSTRAINT DF_Producto_Genero DEFAULT (N'Unisex');
-    ALTER TABLE dbo.Producto ADD CONSTRAINT CK_Producto_Genero
-        CHECK (genero IN (N'Hombre', N'Mujer', N'Ninos', N'Unisex'));
+        CONSTRAINT DF_Producto_Genero DEFAULT (N'Unisex')
+        CONSTRAINT CK_Producto_Genero CHECK (genero IN (N'Hombre', N'Mujer', N'Ninos', N'Unisex'));
 END;
+GO
 
 IF COL_LENGTH('dbo.Producto', 'rango_edad') IS NULL
 BEGIN
-    ALTER TABLE dbo.Producto ADD rango_edad NVARCHAR(30) NULL;
-    ALTER TABLE dbo.Producto ADD CONSTRAINT CK_Producto_RangoEdad
-        CHECK (rango_edad IS NULL OR rango_edad IN (N'Bebes', N'Infantil', N'Junior'));
+    ALTER TABLE dbo.Producto ADD rango_edad NVARCHAR(30) NULL
+        CONSTRAINT CK_Producto_RangoEdad CHECK (rango_edad IS NULL OR rango_edad IN (N'Bebes', N'Infantil', N'Junior'));
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_Producto_NinosEdadObligatoria')
+BEGIN
     ALTER TABLE dbo.Producto ADD CONSTRAINT CK_Producto_NinosEdadObligatoria
         CHECK (genero <> N'Ninos' OR rango_edad IS NOT NULL);
 END;
@@ -181,15 +186,16 @@ GO
    ============================================================================ */
 IF COL_LENGTH('dbo.CampanaMarketing', 'genero_target') IS NULL
 BEGIN
-    ALTER TABLE dbo.CampanaMarketing ADD genero_target NVARCHAR(20) NULL;
-    ALTER TABLE dbo.CampanaMarketing ADD CONSTRAINT CK_Campana_GeneroTarget
+    ALTER TABLE dbo.CampanaMarketing ADD genero_target NVARCHAR(20) NULL
+        CONSTRAINT CK_Campana_GeneroTarget
         CHECK (genero_target IS NULL OR genero_target IN (N'Hombre', N'Mujer', N'Ninos', N'Todas'));
 END;
+GO
 
 IF COL_LENGTH('dbo.CampanaMarketing', 'rango_edad_target') IS NULL
 BEGIN
-    ALTER TABLE dbo.CampanaMarketing ADD rango_edad_target NVARCHAR(30) NULL;
-    ALTER TABLE dbo.CampanaMarketing ADD CONSTRAINT CK_Campana_EdadTarget
+    ALTER TABLE dbo.CampanaMarketing ADD rango_edad_target NVARCHAR(30) NULL
+        CONSTRAINT CK_Campana_EdadTarget
         CHECK (rango_edad_target IS NULL OR rango_edad_target IN (N'Bebes', N'Infantil', N'Junior'));
 END;
 GO

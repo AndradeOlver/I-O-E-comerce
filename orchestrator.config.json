@@ -1,0 +1,379 @@
+{
+  "project": {
+    "name": "IO E-Comerce",
+    "slug": "io-e-comerce",
+    "repoRoot": ".",
+    "description": "Multi-agent orchestrated repository with token-optimized handoff.",
+    "reportsDir": "reports",
+    "handoffFile": "MASTER_HANDOFF_STATE.md",
+    "orchestratorRoleFile": "ORCHESTRATOR_ROLE.md",
+    "toolchainStatusFile": "TOOLCHAIN_STATUS.md",
+    "devPort": 5173,
+    "vscodeProfile": ""
+  },
+  "lanes": {
+    "ANTIGRAVITY": {
+      "enabled": true,
+      "label": "Antigravity (Single Lane)",
+      "cli": "agy",
+      "workDir": ".",
+      "inbox": ".orchestrator/inboxes/INBOX_ANTIGRAVITY.md",
+      "reportPaths": [
+        "reports/last_report_antigravity.md"
+      ],
+      "writableGlobs": [
+        "."
+      ],
+      "readOnlyPaths": [],
+      "forbiddenPrefixes": [],
+      "promptTemplate": "Read and strictly execute {inbox}. Respect writable boundaries ({writable}). Write your closing report (max 15 lines) to {report}.",
+      "models": {
+        "BAJO": {
+          "model": "gemini-3.8-flash-medium",
+          "effort": "low"
+        },
+        "MEDIO": {
+          "model": "gemini-4-carbon-medium",
+          "effort": "medium"
+        },
+        "ALTO": {
+          "model": "gemini-4-neon-high",
+          "effort": "high"
+        }
+      },
+      "quotaFallbackModels": {
+        "BAJO": {
+          "model": "gemini-4-carbon-medium",
+          "effort": "low"
+        },
+        "MEDIO": {
+          "model": "gemini-3.8-flash-medium",
+          "effort": "medium"
+        },
+        "ALTO": {
+          "model": "gemini-4-carbon-medium",
+          "effort": "high"
+        }
+      }
+    },
+    "CODEX": {
+      "enabled": false,
+      "label": "Codex (Core / Runtime)",
+      "cli": "codex",
+      "workDir": ".",
+      "inbox": ".codex/INBOX_CODEX.md",
+      "reportPaths": [
+        ".last_report_codex.md"
+      ],
+      "writableGlobs": [
+        "src/"
+      ],
+      "readOnlyPaths": [],
+      "forbiddenPrefixes": [
+        "backend/",
+        "pipeline/"
+      ],
+      "promptTemplate": "Read and strictly execute {inbox}. Summarize your closing report in max 15 bullet lines (done, pending, paths/contracts).",
+      "models": {
+        "BAJO": {
+          "model": "gpt-6-luna",
+          "effort": "low"
+        },
+        "MEDIO": {
+          "model": "gpt-6-luna",
+          "effort": "medium"
+        },
+        "ALTO": {
+          "model": "gpt-6-luna",
+          "effort": "high"
+        }
+      }
+    },
+    "CLAUDE": {
+      "enabled": false,
+      "label": "Claude (Isolated UI)",
+      "cli": "agy",
+      "workDir": "src/ui",
+      "inbox": "src/ui/INBOX_CLAUDE.md",
+      "reportPaths": [
+        "src/ui/.last_report_claude.md"
+      ],
+      "writableGlobs": [
+        "src/ui/"
+      ],
+      "readOnlyPaths": [],
+      "forbiddenPrefixes": [
+        "backend/",
+        "pipeline/"
+      ],
+      "promptTemplate": "Read and strictly execute {inbox} working only inside {workDir}. Write your closing report (max 12 lines) to {report}.",
+      "models": {
+        "BAJO": {
+          "model": "claude-sonnet-5-5-low",
+          "effort": "low"
+        },
+        "MEDIO": {
+          "model": "claude-sonnet-5-5-medium",
+          "effort": "medium"
+        },
+        "ALTO": {
+          "model": "claude-sonnet-5-5-high",
+          "effort": "high"
+        }
+      }
+    }
+  },
+  "orchestrator": {
+    "cli": "agy",
+    "mentionHandle": "@orchestrator",
+    "models": {
+      "normal": {
+        "model": "gemini-4-neon-medium",
+        "effort": "medium"
+      },
+      "high": {
+        "model": "gemini-4-neon-high",
+        "effort": "high"
+      }
+    },
+    "quotaFallbackModels": {
+      "normal": {
+        "model": "gemini-4-carbon-medium",
+        "effort": "medium"
+      },
+      "high": {
+        "model": "gemini-4-carbon-medium",
+        "effort": "high"
+      }
+    },
+    "timeoutSeconds": 420,
+    "maxAttempts": 3,
+    "resetWaveEvery": 3,
+    "cleanWaveEvery": 5,
+    "handoffWindowSize": 6
+  },
+  "complexity": {
+    "highRegex": "(?i)\\b(rust|cargo|wasm|ffi|abi|shader|wgsl|webgpu|glsl|binary|disasm|netcode|webrtc|websocket|concurrency|security|migration|architecture)\\b",
+    "lowRegex": "(?i)\\b(cleanup|rename|css|typo|docs|lint|format|validate)\\b",
+    "lowMaxChars": 1400
+  },
+  "watchdog": {
+    "pollSeconds": 30,
+    "maxHardMinutes": 75,
+    "stallGraceMinutes": 10,
+    "watchDirs": [
+      "src",
+      "backend",
+      "pipeline"
+    ],
+    "processNames": [
+      "agy*",
+      "node",
+      "python",
+      "cargo",
+      "rustc"
+    ]
+  },
+  "quota": {
+    "regex": "(?i)(quota.?exceeded|rate.?limit|usage.?limit|http\\s*429|status\\s*429|resource_exhausted|limit\\s*reached|resets\\s*in\\s*\\d+|too\\s*many\\s*requests|insufficient_quota)",
+    "maxRollingMinutes": 330,
+    "stepMinutes": 20,
+    "probeModels": {
+      "antigravityPrimary": "gemini-4-carbon-medium",
+      "antigravitySecondary": "gemini-3.8-flash-medium",
+      "codex": ""
+    }
+  },
+  "tokenOptimizer": {
+    "maxReportLines": 15,
+    "maxDiffBytes": 18000,
+    "maxBriefBytes": 45000,
+    "compactHeadBytes": 28000,
+    "compactTailBytes": 12000,
+    "maxSkeletonBytes": 8500,
+    "diffPaths": [
+      "src",
+      "backend",
+      "pipeline"
+    ],
+    "apiSkeleton": {
+      "sourceDirs": [
+        "src"
+      ],
+      "extensions": [
+        ".ts",
+        ".tsx",
+        ".py"
+      ],
+      "dtsFiles": [],
+      "inventoryDir": "",
+      "inventoryExt": ".json"
+    }
+  },
+  "gates": {
+    "allowedWavePrefixes": [],
+    "verifyCommand": "",
+    "verifyWorkDir": ".",
+    "autoFixVerifyWithCodex": false,
+    "autoFixBuildCommand": "npm run build",
+    "browserAuditCommand": "",
+    "browserAuditWorkDir": ".",
+    "browserAuditPassRegex": "BROWSER_AUDIT_STATUS:\\s*PASS",
+    "browserScreenshotsDir": "reports/browser_audit",
+    "maxConsecutiveBrowserFails": 2,
+    "customCommands": [],
+    "contracts": {
+      "enabled": false,
+      "sourceDirs": [
+        "src"
+      ],
+      "sourceExtensions": [
+        ".ts",
+        ".tsx"
+      ],
+      "assetUrlPrefix": "/assets/",
+      "assetDiskDir": "public/assets",
+      "jsonCheckDir": "",
+      "failOnError": true
+    },
+    "regressionChecks": []
+  },
+  "git": {
+    "defaultBranch": "main",
+    "maxFileMb": 45.0,
+    "manageGitignore": false,
+    "gitignoreLines": [
+      "node_modules/",
+      "dist/",
+      "__pycache__/",
+      "*.pyc",
+      ".venv/",
+      "venv/",
+      "*.bak",
+      "*.tmp",
+      "*.log",
+      ".env",
+      ".env.*",
+      "*oauth*",
+      "*creds*",
+      "*secret*"
+    ]
+  },
+  "cleanup": {
+    "protectedPaths": [
+      "src",
+      "backend",
+      "pipeline"
+    ],
+    "keepRecentWaves": 2,
+    "extraTempDirs": [],
+    "activeReportFiles": [
+      "ORCHESTRATOR_BRIEF.md",
+      "API_SKELETON.txt",
+      "BROWSER_RUNTIME_REPORT.md",
+      "CONTRACTS_REPORT.md",
+      "LAST_ORCHESTRATOR_RESPONSE.md",
+      "WAVE_LEDGER.md",
+      "WAVE_HEALTH.json"
+    ]
+  },
+  "adapters": {
+    "antigravity": {
+      "geminiDir": "~/.gemini",
+      "pluginName": "",
+      "displayName": "",
+      "description": "Project-scoped agent rules and skills.",
+      "stashCandidates": [
+        "android-cli-plugin",
+        "chemistry",
+        "chrome-devtools-plugin",
+        "data-agent-kit-plugin",
+        "firebase",
+        "flutter",
+        "gemini-api",
+        "genomics",
+        "google-antigravity-sdk",
+        "google_maps_platform",
+        "modern-web-guidance-plugin",
+        "science-overview",
+        "scientific-literature",
+        "structural-biology"
+      ],
+      "skills": {},
+      "ruleFileName": "project-boundaries.md",
+      "extraRules": [
+        "Respect configured writable and read-only directories.",
+        "Write concise closing reports within the configured line limit."
+      ],
+      "enabled": true
+    },
+    "codex": {
+      "codexGlobalDir": "~/.codex",
+      "workspaceDir": ".",
+      "environmentName": "",
+      "verifyCommand": "node .codex/scripts/verify_gate.mjs",
+      "devCommand": "npm run dev",
+      "skills": {},
+      "extraRules": [
+        "Work strictly inside the configured Codex workspace.",
+        "Run verifyCommand and write a concise closing report before finishing."
+      ],
+      "enabled": false
+    },
+    "claude": {
+      "dataDir": "",
+      "candidateDataDirs": [
+        "~/AppData/Local/Claude-Data/claude_*",
+        "~/AppData/Roaming/Claude",
+        "~/AppData/Local/Packages/Claude_*/LocalCache/Roaming/Claude"
+      ],
+      "mcpServerName": "",
+      "mcpAllowedPaths": [
+        "src/ui"
+      ],
+      "rulesFile": "src/ui/CLAUDE_UI_RULES.md",
+      "extraRules": [
+        "Write only inside assigned UI directories.",
+        "Write a concise closing report before finishing."
+      ],
+      "enabled": false
+    },
+    "browserAuditRuleFiles": [
+      "MASTER_HANDOFF_STATE.md",
+      ".agents/rules/project-boundaries.md"
+    ]
+  },
+  "toolchain": {
+    "checks": [
+      {
+        "name": "Python",
+        "commands": [
+          "python",
+          "py"
+        ],
+        "globs": []
+      },
+      {
+        "name": "Node.js",
+        "commands": [
+          "node"
+        ],
+        "globs": []
+      },
+      {
+        "name": "Git",
+        "commands": [
+          "git"
+        ],
+        "globs": []
+      },
+      {
+        "name": "Antigravity CLI",
+        "commands": [
+          "agy"
+        ],
+        "globs": []
+      }
+    ]
+  }
+}
